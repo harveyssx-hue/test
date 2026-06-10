@@ -114,7 +114,7 @@ export async function loadQuantMonitor() {
             
             tbody.innerHTML = paginatedOrders.map(o => {
                 const profit = parseFloat(o.actualProfit || '0');
-                const algoName = o.algorithmModel ? o.algorithmModel.name : '神经网络高频量化';
+                const algoName = o.algorithmModel ? (o.algorithmModel.displayName || o.algorithmModel.name) : '神经网络高频量化';
                 
                 // Formulate dates and session
                 const dateObj = o.createdAt ? new Date(parseInt(o.createdAt)) : null;
@@ -363,12 +363,28 @@ async function loadPlatformStrategies() {
                 const statusActionBtnClass = m.enabled ? 'btn-reject' : 'btn-approve';
                 
                 // Extract translations
-                const zhTrans = m.translations ? m.translations.find(t => t.localeTag === 'zh-Hans') : null;
+                const hiTrans = m.translations ? m.translations.find(t => t.localeTag === 'hi') : null;
                 const enTrans = m.translations ? m.translations.find(t => t.localeTag === 'en') : null;
                 
-                const zhType = zhTrans ? zhTrans.typeLabel : '--';
+                let hiName = hiTrans ? hiTrans.displayName : '';
+                let enName = enTrans ? enTrans.displayName : '';
+                
+                if (!enName && !hiName && m.displayName) {
+                    if (m.displayName.includes(' / ')) {
+                        const parts = m.displayName.split(' / ');
+                        enName = parts[0].trim();
+                        hiName = parts[1].trim();
+                    } else {
+                        enName = m.displayName;
+                        hiName = m.displayName;
+                    }
+                }
+                if (!hiName) hiName = '--';
+                if (!enName) enName = '--';
+                
+                const hiType = hiTrans ? hiTrans.typeLabel : '--';
                 const enType = enTrans ? enTrans.typeLabel : '--';
-                const zhDesc = zhTrans ? zhTrans.description : '--';
+                const hiDesc = hiTrans ? hiTrans.description : '--';
                 const enDesc = enTrans ? enTrans.description : '--';
                 
                 const iconsList = ['🤖', '🐂', '🚀', '🦅'];
@@ -380,20 +396,26 @@ async function loadPlatformStrategies() {
                         <td style="font-family: monospace; font-size: 0.8rem; font-weight: 600; color: #64748B;">${m.id}</td>
                         <td style="font-weight: 700; color: var(--text-primary);">${m.name}</td>
                         <td>
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span style="font-size: 1.1rem;">${iconChar}</span>
-                                <span style="font-weight: 600; color: #0F172A;">${m.displayName}</span>
+                            <div style="display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem;">
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span>🇺🇸</span>
+                                    <span style="font-weight: 600; color: #0F172A;">${enName}</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem;">
+                                    <span>🇮🇳</span>
+                                    <span style="font-weight: 600; color: #64748B;">${hiName}</span>
+                                </div>
                             </div>
                         </td>
                         <td>
                             <div style="display: flex; flex-direction: column; gap: 4px; font-size: 0.78rem;">
-                                <div>🇨🇳 <span class="vip-tag" style="background: rgba(91,81,249,0.06); color: var(--primary); padding: 2px 6px;">${zhType}</span></div>
+                                <div>🇮🇳 <span class="vip-tag" style="background: rgba(91,81,249,0.06); color: var(--primary); padding: 2px 6px;">${hiType}</span></div>
                                 <div>🇺🇸 <span class="vip-tag" style="background: rgba(100,116,139,0.06); color: #64748B; padding: 2px 6px;">${enType}</span></div>
                             </div>
                         </td>
                         <td style="max-width: 250px;">
                             <div style="display: flex; flex-direction: column; gap: 4px; font-size: 0.75rem; color: #64748B; line-height: 1.4;">
-                                <div style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap; margin-bottom: 2px;" title="${zhDesc}">🇨🇳 ${zhDesc}</div>
+                                <div style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap; margin-bottom: 2px;" title="${hiDesc}">🇮🇳 ${hiDesc}</div>
                                 <div style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="${enDesc}">🇺🇸 ${enDesc}</div>
                             </div>
                         </td>
@@ -464,18 +486,19 @@ function openStrategyEditModal(strategyId) {
     // Clear and reset form fields
     document.getElementById('strategy-edit-id').value = '';
     document.getElementById('strategy-edit-name').value = '';
-    document.getElementById('strategy-edit-displayName').value = '';
     document.getElementById('strategy-edit-orderIndex').value = '1';
     document.getElementById('strategy-edit-enabled').value = 'true';
     document.getElementById('strategy-edit-icon').value = '';
     
-    // zh-Hans translation
-    document.getElementById('strategy-trans-id-zh').value = '';
-    document.getElementById('strategy-trans-typeLabel-zh').value = '';
-    document.getElementById('strategy-trans-description-zh').value = '';
+    // hi translation
+    document.getElementById('strategy-trans-id-hi').value = '';
+    document.getElementById('strategy-trans-displayName-hi').value = '';
+    document.getElementById('strategy-trans-typeLabel-hi').value = '';
+    document.getElementById('strategy-trans-description-hi').value = '';
     
     // en translation
     document.getElementById('strategy-trans-id-en').value = '';
+    document.getElementById('strategy-trans-displayName-en').value = '';
     document.getElementById('strategy-trans-typeLabel-en').value = '';
     document.getElementById('strategy-trans-description-en').value = '';
     
@@ -487,25 +510,37 @@ function openStrategyEditModal(strategyId) {
         if (m) {
             document.getElementById('strategy-edit-id').value = m.id;
             document.getElementById('strategy-edit-name').value = m.name || '';
-            document.getElementById('strategy-edit-displayName').value = m.displayName || '';
             document.getElementById('strategy-edit-orderIndex').value = m.orderIndex || '1';
             document.getElementById('strategy-edit-enabled').value = m.enabled ? 'true' : 'false';
             document.getElementById('strategy-edit-icon').value = m.icon || '';
             
             // Translations
-            const zhTrans = m.translations ? m.translations.find(t => t.localeTag === 'zh-Hans') : null;
-            if (zhTrans) {
-                document.getElementById('strategy-trans-id-zh').value = zhTrans.id || '';
-                document.getElementById('strategy-trans-typeLabel-zh').value = zhTrans.typeLabel || '';
-                document.getElementById('strategy-trans-description-zh').value = zhTrans.description || '';
+            const hiTrans = m.translations ? m.translations.find(t => t.localeTag === 'hi') : null;
+            const enTrans = m.translations ? m.translations.find(t => t.localeTag === 'en') : null;
+            
+            let hiName = hiTrans ? hiTrans.displayName : '';
+            let enName = enTrans ? enTrans.displayName : '';
+            
+            if (!enName && !hiName && m.displayName) {
+                if (m.displayName.includes(' / ')) {
+                    const parts = m.displayName.split(' / ');
+                    enName = parts[0].trim();
+                    hiName = parts[1].trim();
+                } else {
+                    enName = m.displayName;
+                    hiName = m.displayName;
+                }
             }
             
-            const enTrans = m.translations ? m.translations.find(t => t.localeTag === 'en') : null;
-            if (enTrans) {
-                document.getElementById('strategy-trans-id-en').value = enTrans.id || '';
-                document.getElementById('strategy-trans-typeLabel-en').value = enTrans.typeLabel || '';
-                document.getElementById('strategy-trans-description-en').value = enTrans.description || '';
-            }
+            document.getElementById('strategy-trans-id-hi').value = hiTrans ? (hiTrans.id || '') : '';
+            document.getElementById('strategy-trans-displayName-hi').value = hiName;
+            document.getElementById('strategy-trans-typeLabel-hi').value = hiTrans ? (hiTrans.typeLabel || '') : '';
+            document.getElementById('strategy-trans-description-hi').value = hiTrans ? (hiTrans.description || '') : '';
+            
+            document.getElementById('strategy-trans-id-en').value = enTrans ? (enTrans.id || '') : '';
+            document.getElementById('strategy-trans-displayName-en').value = enName;
+            document.getElementById('strategy-trans-typeLabel-en').value = enTrans ? (enTrans.typeLabel || '') : '';
+            document.getElementById('strategy-trans-description-en').value = enTrans ? (enTrans.description || '') : '';
         }
     } else {
         // Create Mode
@@ -527,39 +562,40 @@ async function submitStrategyChanges(event) {
     
     const strategyId = document.getElementById('strategy-edit-id').value;
     const name = document.getElementById('strategy-edit-name').value;
-    const displayName = document.getElementById('strategy-edit-displayName').value;
     const orderIndex = parseInt(document.getElementById('strategy-edit-orderIndex').value) || 1;
     const enabled = document.getElementById('strategy-edit-enabled').value === 'true';
     const icon = document.getElementById('strategy-edit-icon').value;
     
-    // zh-Hans translation values
-    const transIdZh = document.getElementById('strategy-trans-id-zh').value;
-    const typeLabelZh = document.getElementById('strategy-trans-typeLabel-zh').value;
-    const descriptionZh = document.getElementById('strategy-trans-description-zh').value;
+    // hi translation values
+    const transIdHi = document.getElementById('strategy-trans-id-hi').value;
+    const displayNameHi = document.getElementById('strategy-trans-displayName-hi').value;
+    const typeLabelHi = document.getElementById('strategy-trans-typeLabel-hi').value;
+    const descriptionHi = document.getElementById('strategy-trans-description-hi').value;
     
     // en translation values
     const transIdEn = document.getElementById('strategy-trans-id-en').value;
+    const displayNameEn = document.getElementById('strategy-trans-displayName-en').value;
     const typeLabelEn = document.getElementById('strategy-trans-typeLabel-en').value;
     const descriptionEn = document.getElementById('strategy-trans-description-en').value;
     
     const translations = [];
     
-    // Push zh-Hans
-    const zhObj = {
-        localeTag: 'zh-Hans',
-        displayName: displayName,
-        typeLabel: typeLabelZh,
-        description: descriptionZh,
+    // Push hi
+    const hiObj = {
+        localeTag: 'hi',
+        displayName: displayNameHi,
+        typeLabel: typeLabelHi,
+        description: descriptionHi,
         isDefault: false
     };
-    if (transIdZh) zhObj.id = transIdZh;
-    if (strategyId) zhObj.modelId = strategyId;
-    translations.push(zhObj);
+    if (transIdHi) hiObj.id = transIdHi;
+    if (strategyId) hiObj.modelId = strategyId;
+    translations.push(hiObj);
     
     // Push en
     const enObj = {
         localeTag: 'en',
-        displayName: name,
+        displayName: displayNameEn,
         typeLabel: typeLabelEn,
         description: descriptionEn,
         isDefault: true
@@ -570,7 +606,7 @@ async function submitStrategyChanges(event) {
     
     const payload = {
         name: name,
-        displayName: displayName,
+        displayName: `${displayNameEn} / ${displayNameHi}`,
         orderIndex: orderIndex,
         enabled: enabled,
         icon: icon,
@@ -858,7 +894,7 @@ function renderActiveSettleListHtml() {
     const paginatedList = paginateList(activeSettleOrders, 'quantSettle');
     tbody.innerHTML = paginatedList.map(o => {
         const profit = parseFloat(o.actualProfit || '0');
-        const algoName = o.algorithmModel ? o.algorithmModel.name : '神经网络高频量化';
+        const algoName = o.algorithmModel ? (o.algorithmModel.displayName || o.algorithmModel.name) : '神经网络高频量化';
         const date = o.createdAt ? new Date(parseInt(o.createdAt)).toLocaleString() : '--';
         
         let instrumentName = 'BTC/USDT';

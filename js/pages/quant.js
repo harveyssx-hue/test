@@ -1,6 +1,58 @@
 // Quant AI Trading Page View Controller
 import { state } from '../modules/state.js?v=2.2.0';
 
+function getStrategyDisplayName(m) {
+    if (!m) return '';
+    if (m.translations && m.translations.length > 0) {
+        const trans = m.translations.find(t => t.localeTag === currentLocale);
+        if (trans && trans.displayName) {
+            return trans.displayName;
+        }
+        const fallback = m.translations.find(t => t.localeTag === 'en') || m.translations[0];
+        if (fallback && fallback.displayName) {
+            return fallback.displayName;
+        }
+    }
+    if (m.displayName) {
+        if (m.displayName.includes(' / ')) {
+            const parts = m.displayName.split(' / ');
+            return currentLocale === 'hi' ? parts[1].trim() : parts[0].trim();
+        }
+        return m.displayName;
+    }
+    return t(m.name);
+}
+
+function getStrategyTypeLabel(m, defaultVal) {
+    if (!m) return defaultVal;
+    if (m.translations && m.translations.length > 0) {
+        const trans = m.translations.find(t => t.localeTag === currentLocale);
+        if (trans && trans.typeLabel) {
+            return trans.typeLabel;
+        }
+        const fallback = m.translations.find(t => t.localeTag === 'en') || m.translations[0];
+        if (fallback && fallback.typeLabel) {
+            return fallback.typeLabel;
+        }
+    }
+    return m.typeLabel || defaultVal;
+}
+
+function getStrategyDescription(m, defaultVal) {
+    if (!m) return defaultVal;
+    if (m.translations && m.translations.length > 0) {
+        const trans = m.translations.find(t => t.localeTag === currentLocale);
+        if (trans && trans.description) {
+            return trans.description;
+        }
+        const fallback = m.translations.find(t => t.localeTag === 'en') || m.translations[0];
+        if (fallback && fallback.description) {
+            return fallback.description;
+        }
+    }
+    return m.description || defaultVal;
+}
+
 async function loadQuantConfig() {
     let success = false;
     if (currentUser) {
@@ -60,7 +112,7 @@ async function loadQuantConfig() {
                     <span class="feat-tag tag-${classTags[idx]}">${tags[idx]}</span>
                     <div class="feat-avatar-row">
                         <div class="feat-avatar">${icons[idx]}</div>
-                        <span class="feat-name-lbl">${t(m.name)}</span>
+                        <span class="feat-name-lbl">${getStrategyDisplayName(m)}</span>
                     </div>
                     <div class="feat-yield-box">
                         <span class="feat-yield-val">${yields[idx]}</span>
@@ -147,10 +199,10 @@ function renderStrategyLobby() {
                     <div class="s-title-block">
                         <div class="s-avatar">${icons[mappedIdx]}</div>
                         <div class="s-meta-flex">
-                            <h4>${t(m.name)}</h4>
+                            <h4>${getStrategyDisplayName(m)}</h4>
                             <div class="s-meta-badge-row">
                                 <span class="s-badge-p">Pro</span>
-                                <span class="s-badge-r bg-${classTags[mappedIdx]}">${tags[mappedIdx]}</span>
+                                <span class="s-badge-r bg-${classTags[mappedIdx]}">${getStrategyTypeLabel(m, tags[mappedIdx])}</span>
                             </div>
                         </div>
                     </div>
@@ -215,7 +267,7 @@ function openOrderDetailsDrawer(orderId) {
     const sellTrade = order.trades ? order.trades.find(t => t.tradeType === 'SELL') : null;
     
     // Set text elements
-    const algoName = order.algorithmModel ? order.algorithmModel.name : (currentLocale === 'hi' ? 'क्वांट एआई रणनीति' : 'Quant AI Strategy');
+    const algoName = order.algorithmModel ? getStrategyDisplayName(order.algorithmModel) : (currentLocale === 'hi' ? 'क्वांट एआई रणनीति' : 'Quant AI Strategy');
     const modelId = order.algorithmModelId || 1;
     const icons = ['🤖', '🐂', '🚀', '🦅'];
     const avatarIdx = (modelId - 1) % 4;
@@ -309,8 +361,8 @@ function openOrderDrawer(modelId) {
         
         modelsContainer.innerHTML = strategyModels.map((m, idx) => {
             const activeClass = m.id.toString() === currentSelectedModelId.toString() ? 'active' : '';
-            const displayName = names[idx % 4];
-            const displaySub = subNames[idx % 4];
+            const displayName = getStrategyDisplayName(m) || names[idx % 4];
+            const displaySub = getStrategyDescription(m, subNames[idx % 4]);
             
             // Blue tick mark in SVGs
             const tickHtml = m.id.toString() === currentSelectedModelId.toString() ? `

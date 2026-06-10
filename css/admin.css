@@ -47,7 +47,7 @@ body {
     background-color: var(--bg-dark);
     color: var(--text-primary);
     font-family: var(--font-body);
-    min-height: 100vh;
+    height: 100vh;
     display: flex;
     overflow: hidden;
 }
@@ -124,6 +124,7 @@ body {
     transition: all 0.25s ease;
     border-radius: 6px;
     margin: 4px 0 0 0;
+    flex-shrink: 0;
 }
 .menu-group-title:hover {
     color: var(--primary);
@@ -152,6 +153,7 @@ body {
     opacity: 1;
     overflow: hidden;
     transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+    flex-shrink: 0;
 }
 .menu-group-items.collapsed {
     max-height: 0 !important;
@@ -1191,7 +1193,8 @@ tr:hover td {
     transition: opacity 0.3s ease;
     pointer-events: none;
 }
-.sidebar-backdrop.active {
+.sidebar-backdrop.active,
+.sidebar-backdrop.visible {
     opacity: 1;
     pointer-events: auto;
 }
@@ -1234,7 +1237,8 @@ tr:hover td {
         z-index: 100;
         transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .sidebar.active {
+    .sidebar.active,
+    .sidebar.open {
         transform: translateX(0);
     }
     .sidebar-backdrop {

@@ -1,6 +1,28 @@
 // Assets Page View Controller
 import { state } from '../modules/state.js?v=2.2.0';
 
+function getStrategyDisplayName(m) {
+    if (!m) return '';
+    if (m.translations && m.translations.length > 0) {
+        const trans = m.translations.find(t => t.localeTag === currentLocale);
+        if (trans && trans.displayName) {
+            return trans.displayName;
+        }
+        const fallback = m.translations.find(t => t.localeTag === 'en') || m.translations[0];
+        if (fallback && fallback.displayName) {
+            return fallback.displayName;
+        }
+    }
+    if (m.displayName) {
+        if (m.displayName.includes(' / ')) {
+            const parts = m.displayName.split(' / ');
+            return currentLocale === 'hi' ? parts[1].trim() : parts[0].trim();
+        }
+        return m.displayName;
+    }
+    return t(m.name);
+}
+
 async function loadUserAssets() {
     if (!currentUser) return;
     
@@ -187,7 +209,7 @@ function renderPortfolioOrdersList() {
         const rate = (profit / parseFloat(o.investAmount) * 100) || 0.00;
         const rateStr = `${rate >= 0 ? '+' : ''}${rate.toFixed(2)}%`;
         
-        const algoName = o.algorithmModel ? o.algorithmModel.name : quantAiStr;
+        const algoName = o.algorithmModel ? getStrategyDisplayName(o.algorithmModel) : quantAiStr;
         const modelId = o.algorithmModelId || 1;
         
         return `
