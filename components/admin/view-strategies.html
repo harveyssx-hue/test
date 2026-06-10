@@ -17,10 +17,14 @@
                             <thead>
                                 <tr>
                                     <th>策略 ID</th>
+                                    <th>图标</th>
                                     <th>技术标识 (Name)</th>
                                     <th>显示名 (DisplayName)</th>
                                     <th>类型标签 (TypeLabel)</th>
                                     <th>描述文案 (Description)</th>
+                                    <th>收益率</th>
+                                    <th>胜率</th>
+                                    <th>跟随人数</th>
                                     <th>排序权重</th>
                                     <th>最低起投金 (USDT)</th>
                                     <th>启用状态</th>
@@ -69,7 +73,35 @@
                     </div>
                     <div class="auth-input-group">
                         <label>单独最低起投金额 (USDT)</label>
-                        <input type="number" id="strategy-edit-icon" step="any" min="0" placeholder="留空或设为 0 使用全局默认限制">
+                        <input type="number" id="strategy-edit-min-amount" step="any" min="0" placeholder="留空或设为 0 使用全局默认限制">
+                    </div>
+                </div>
+
+                <div class="form-grid-3" style="margin-bottom: 12px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+                    <div class="auth-input-group">
+                        <label>30日收益率 (%)</label>
+                        <input type="number" id="strategy-edit-yield" step="any" placeholder="例如: 32.58">
+                    </div>
+                    <div class="auth-input-group">
+                        <label>胜率 (%)</label>
+                        <input type="number" id="strategy-edit-winrate" step="any" placeholder="例如: 87.3">
+                    </div>
+                    <div class="auth-input-group">
+                        <label>跟随人数</label>
+                        <input type="number" id="strategy-edit-followers" placeholder="例如: 12483">
+                    </div>
+                </div>
+
+                <div class="auth-input-group" style="margin-bottom: 15px;">
+                    <label>策略图标图片 (Icon Image)</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="text" id="strategy-edit-icon-url" placeholder="上传图片或直接填写 URL 地址..." style="flex: 1; height: 42px;">
+                        <input type="file" id="strategy-edit-file" style="display: none;" onchange="handleStrategyFileSelect(event)">
+                        <button type="button" class="action-btn" onclick="triggerStrategyUpload()" style="height: 42px; background: #10B981; color: white; border: none; padding: 0 16px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">📤 上传图片</button>
+                    </div>
+                    <div id="strategy-icon-preview-container" style="display: none; align-items: center; gap: 10px; margin-top: 8px; background: rgba(255, 255, 255, 0.05); padding: 8px; border-radius: 8px; border: 1.5px dashed var(--border-light);">
+                        <img id="strategy-icon-preview-img" style="width: 36px; height: 36px; border-radius: 6px; object-fit: cover; background: rgba(255,255,255,0.1);">
+                        <span style="font-size: 0.72rem; color: #64748B;">✓ 策略图标上传预览成功，保存后即可同步生效</span>
                     </div>
                 </div>
 

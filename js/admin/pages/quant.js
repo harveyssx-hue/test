@@ -1,3 +1,26 @@
+function unpackStrategyStats(descText) {
+    const res = {
+        description: descText || '',
+        yield: undefined,
+        winRate: undefined,
+        followers: undefined
+    };
+    if (!descText) return res;
+    const match = descText.match(/\[stats:([\d.-]*),([\d.-]*),([\d.-]*)\]/);
+    if (match) {
+        res.yield = parseFloat(match[1]) || 0;
+        res.winRate = parseFloat(match[2]) || 0;
+        res.followers = parseInt(match[3]) || 0;
+        res.description = descText.replace(match[0], '').trim();
+    }
+    return res;
+}
+
+function packStrategyStats(descText, yieldVal, winRateVal, followersVal) {
+    descText = (descText || '').replace(/\[stats:[\d.-]*,[\d.-]*,[\d.-]*\]/, '').trim();
+    return `${descText} [stats:${yieldVal || 0},${winRateVal || 0},${followersVal || 0}]`;
+}
+
 export async function submitBatchOrderReview() {
     const checkboxes = document.querySelectorAll('.order-select-checkbox:checked');
     if (checkboxes.length === 0) {
@@ -337,16 +360,49 @@ async function loadPlatformStrategies() {
     const container = document.getElementById('strategies-table-body');
     if (!container) return;
     
-    container.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #64748B; padding: 24px;">🔄 正在安全调取平台量化策略模型列表...</td></tr>`;
+    container.innerHTML = `<tr><td colspan="13" style="text-align: center; color: #64748B; padding: 24px;">🔄 正在安全调取平台量化策略模型列表...</td></tr>`;
     
     try {
         const res = await apiFetch('GET', '/trading/quant/algorithm-models', null, true);
         if (res && res.code === 200) {
             const list = res.result || res.data || [];
+            
+            list.forEach(m => {
+                let foundStats = null;
+                if (m.translations) {
+                    m.translations.forEach(t => {
+                        const stats = unpackStrategyStats(t.description);
+                        t.description = stats.description;
+                        if (stats.yield !== undefined) {
+                            foundStats = stats;
+                        }
+                    });
+                }
+                if (foundStats) {
+                    m.yield = foundStats.yield;
+                    m.winRate = foundStats.winRate;
+                    m.followers = foundStats.followers;
+                }
+            });
+            
             cachedStrategiesList = list;
             
+            console.log('Original strategies list from API (processed):', JSON.stringify(list));
+            // Show debug tips in title
+            const titleEl = document.querySelector('.data-panel-title');
+            if (titleEl && !document.getElementById('debug-api-raw-info') && list.length > 0) {
+                const debugBtn = document.createElement('span');
+                debugBtn.id = 'debug-api-raw-info';
+                debugBtn.style = 'font-size: 0.65rem; background: rgba(16,185,129,0.1); color: #10B981; padding: 2px 6px; border-radius: 4px; cursor: pointer; margin-left: 8px; font-weight: 700;';
+                debugBtn.innerText = '🔍 查看接口原始字段';
+                debugBtn.onclick = () => {
+                    alert('接口返回的原始数据属性包含：\n' + Object.keys(list[0]).join(', ') + '\n\n完整JSON数据请在浏览器控制台(Console)查看。');
+                };
+                titleEl.appendChild(debugBtn);
+            }
+            
             if (list.length === 0) {
-                container.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #94A3B8; padding: 24px;">📭 平台目前尚未录入任何 AI 量化策略模板</td></tr>`;
+                container.innerHTML = `<tr><td colspan="13" style="text-align: center; color: #94A3B8; padding: 24px;">📭 平台目前尚未录入任何 AI 量化策略模板</td></tr>`;
                 const indicator = document.getElementById(`strategies-page-indicator`);
                 if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
                 return;
@@ -366,8 +422,8 @@ async function loadPlatformStrategies() {
                 const hiTrans = m.translations ? m.translations.find(t => t.localeTag === 'hi') : null;
                 const enTrans = m.translations ? m.translations.find(t => t.localeTag === 'en') : null;
                 
-                let hiName = hiTrans ? hiTrans.displayName : '';
-                let enName = enTrans ? enTrans.displayName : '';
+                let hiName = hiTrans ? hiTrans.displayName : '--';
+                let enName = enTrans ? enTrans.displayName : '--';
                 
                 if (!enName && !hiName && m.displayName) {
                     if (m.displayName.includes(' / ')) {
@@ -379,21 +435,33 @@ async function loadPlatformStrategies() {
                         hiName = m.displayName;
                     }
                 }
-                if (!hiName) hiName = '--';
-                if (!enName) enName = '--';
                 
                 const hiType = hiTrans ? hiTrans.typeLabel : '--';
                 const enType = enTrans ? enTrans.typeLabel : '--';
                 const hiDesc = hiTrans ? hiTrans.description : '--';
                 const enDesc = enTrans ? enTrans.description : '--';
                 
-                const iconsList = ['🤖', '🐂', '🚀', '🦅'];
-                const mappedIdx = list.indexOf(m) % 4;
-                const iconChar = iconsList[mappedIdx];
+                const isIconRealUrl = m.icon && (m.icon.startsWith('http') || m.icon.startsWith('/'));
+                let iconHtml = '';
+                let minAmountText = '';
+                
+                if (isIconRealUrl) {
+                    iconHtml = `<img src="${m.icon}" style="width: 28px; height: 28px; border-radius: 6px; object-fit: cover; display: block; margin: 0 auto; border: 1px solid rgba(0,0,0,0.08);">`;
+                    const minAmountVal = parseFloat(m.minInvestAmount || m.minAmount);
+                    minAmountText = minAmountVal ? '$' + minAmountVal.toFixed(2) : '<span style="color: #94A3B8; font-weight: 500;">全局默认</span>';
+                } else {
+                    const iconsList = ['🤖', '🐂', '🚀', '🦅'];
+                    const mappedIdx = list.indexOf(m) % 4;
+                    const iconChar = iconsList[mappedIdx];
+                    const rawIconUrl = m.iconUrl || '';
+                    iconHtml = rawIconUrl ? `<img src="${rawIconUrl}" style="width: 28px; height: 28px; border-radius: 6px; object-fit: cover; display: block; margin: 0 auto;">` : `<span style="font-size: 1.2rem; display: block; text-align: center;">${iconChar}</span>`;
+                    minAmountText = parseFloat(m.icon) ? '$' + parseFloat(m.icon).toFixed(2) : '<span style="color: #94A3B8; font-weight: 500;">全局默认</span>';
+                }
                 
                 return `
                     <tr>
                         <td style="font-family: monospace; font-size: 0.8rem; font-weight: 600; color: #64748B;">${m.id}</td>
+                        <td style="text-align: center;">${iconHtml}</td>
                         <td style="font-weight: 700; color: var(--text-primary);">${m.name}</td>
                         <td>
                             <div style="display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem;">
@@ -419,8 +487,11 @@ async function loadPlatformStrategies() {
                                 <div style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="${enDesc}">🇺🇸 ${enDesc}</div>
                             </div>
                         </td>
+                        <td style="text-align: center; font-weight: 700; color: #10B981;">${m.yield !== undefined ? parseFloat(m.yield).toFixed(2) + '%' : '--'}</td>
+                        <td style="text-align: center; font-weight: 700; color: var(--primary);">${m.winRate !== undefined ? parseFloat(m.winRate).toFixed(1) + '%' : '--'}</td>
+                        <td style="text-align: center; font-weight: 700; color: #64748B;">${m.followers !== undefined ? parseInt(m.followers).toLocaleString() : '--'}</td>
                         <td style="text-align: center; font-weight: 700; color: var(--primary);">${m.orderIndex}</td>
-                        <td style="text-align: center; font-weight: 700; color: #0F172A;">${parseFloat(m.icon) ? '$' + parseFloat(m.icon).toFixed(2) : '<span style="color: #94A3B8; font-weight: 500;">全局默认</span>'}</td>
+                        <td style="text-align: center; font-weight: 700; color: #0F172A;">${minAmountText}</td>
                         <td>
                             <span class="${badgeClass}">${badgeText}</span>
                         </td>
@@ -436,11 +507,11 @@ async function loadPlatformStrategies() {
             }).join('');
             
         } else {
-            container.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #EF4444; padding: 24px;">⚠️ 调取数据失败: ${res.errorMessage || '未知错误'}</td></tr>`;
+            container.innerHTML = `<tr><td colspan="13" style="text-align: center; color: #EF4444; padding: 24px;">⚠️ 调取数据失败: ${res.errorMessage || '未知错误'}</td></tr>`;
         }
     } catch(e) {
         console.error('Failed to load strategies:', e);
-        container.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #EF4444; padding: 24px;">⚠️ 网络请求异常！</td></tr>`;
+        container.innerHTML = `<tr><td colspan="13" style="text-align: center; color: #EF4444; padding: 24px;">⚠️ 网络请求异常！</td></tr>`;
     }
 }
 
@@ -479,6 +550,118 @@ async function deleteStrategy(strategyId) {
     }
 }
 
+function triggerStrategyUpload() {
+    const fileInput = document.getElementById('strategy-edit-file');
+    if (fileInput) fileInput.click();
+}
+
+function handleStrategyFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+        showToast('⚠️ 请选择有效的图片文件！', true);
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            const max_size = 128;
+            if (width > height) {
+                if (width > max_size) {
+                    height *= max_size / width;
+                    width = max_size;
+                }
+            } else {
+                if (height > max_size) {
+                    width *= max_size / height;
+                    height = max_size;
+                }
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            canvas.toBlob(async function(blob) {
+                if (!blob) {
+                    showToast('⚠️ 图片压缩处理失败！', true);
+                    return;
+                }
+                
+                showToast('⏳ 正在上传策略图标...', false);
+                try {
+                    const presignedRes = await apiFetch('POST', '/common/upload/presigned', {
+                        contentType: 'image/png',
+                        fileName: 'strategy_icon.png',
+                        type: 'strategy'
+                    }, true);
+                    
+                    if (presignedRes.code === 401 || presignedRes.errorMessage === 'Invalid Token') {
+                        throw new Error('未检测到有效的登录会话，请重新登录管理后台！');
+                    }
+                    
+                    if (presignedRes.code !== 200) {
+                        throw new Error(presignedRes.errorMessage || '获取上传授权失败');
+                    }
+                    
+                    const { uploadUrl, downloadUrl, path: storagePath } = presignedRes.result || presignedRes.data || {};
+                    if (!uploadUrl || !downloadUrl) {
+                        throw new Error('授权数据解析异常');
+                    }
+                    
+                    let finalPutUrl = uploadUrl;
+                    const isLocalDev = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+                    if (isLocalDev && !uploadUrl.includes('upload-local')) {
+                        finalPutUrl = '/upload-gcs?url=' + encodeURIComponent(uploadUrl);
+                    }
+                    
+                    const putRes = await fetch(finalPutUrl, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'image/png'
+                        },
+                        body: blob
+                    });
+                    
+                    if (!putRes.ok) {
+                        throw new Error('上传二进制文件失败');
+                    }
+                    
+                    const confirmRes = await apiFetch('POST', '/common/upload/confirm', {
+                        path: storagePath
+                    }, true);
+                    
+                    if (confirmRes.code !== 200) {
+                        throw new Error(confirmRes.errorMessage || '确认上传失败');
+                    }
+                    
+                    document.getElementById('strategy-edit-icon-url').value = downloadUrl;
+                    const previewImg = document.getElementById('strategy-icon-preview-img');
+                    const previewContainer = document.getElementById('strategy-icon-preview-container');
+                    if (previewImg) previewImg.src = downloadUrl;
+                    if (previewContainer) previewContainer.style.display = 'flex';
+                    
+                    showToast('✓ 策略图标上传并预览成功！', false);
+                } catch (err) {
+                    console.error('Strategy upload error:', err);
+                    showToast('⚠️ 策略图片上传失败: ' + (err.message || err), true);
+                }
+            }, 'image/png');
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+window.triggerStrategyUpload = triggerStrategyUpload;
+window.handleStrategyFileSelect = handleStrategyFileSelect;
+
 function openStrategyEditModal(strategyId) {
     const modal = document.getElementById('strategy-edit-modal');
     if (!modal) return;
@@ -488,7 +671,16 @@ function openStrategyEditModal(strategyId) {
     document.getElementById('strategy-edit-name').value = '';
     document.getElementById('strategy-edit-orderIndex').value = '1';
     document.getElementById('strategy-edit-enabled').value = 'true';
-    document.getElementById('strategy-edit-icon').value = '';
+    document.getElementById('strategy-edit-min-amount').value = '';
+    document.getElementById('strategy-edit-icon-url').value = '';
+    document.getElementById('strategy-edit-yield').value = '';
+    document.getElementById('strategy-edit-winrate').value = '';
+    document.getElementById('strategy-edit-followers').value = '';
+    
+    const previewContainer = document.getElementById('strategy-icon-preview-container');
+    const previewImg = document.getElementById('strategy-icon-preview-img');
+    if (previewContainer) previewContainer.style.display = 'none';
+    if (previewImg) previewImg.removeAttribute('src');
     
     // hi translation
     document.getElementById('strategy-trans-id-hi').value = '';
@@ -512,7 +704,21 @@ function openStrategyEditModal(strategyId) {
             document.getElementById('strategy-edit-name').value = m.name || '';
             document.getElementById('strategy-edit-orderIndex').value = m.orderIndex || '1';
             document.getElementById('strategy-edit-enabled').value = m.enabled ? 'true' : 'false';
-            document.getElementById('strategy-edit-icon').value = m.icon || '';
+            document.getElementById('strategy-edit-yield').value = m.yield !== undefined ? m.yield : '';
+            document.getElementById('strategy-edit-winrate').value = m.winRate !== undefined ? m.winRate : '';
+            document.getElementById('strategy-edit-followers').value = m.followers !== undefined ? m.followers : '';
+            
+            // Icon & Min Amount Parsing
+            const isIconRealUrl = m.icon && (m.icon.startsWith('http') || m.icon.startsWith('/'));
+            if (isIconRealUrl) {
+                document.getElementById('strategy-edit-icon-url').value = m.icon;
+                if (previewImg) previewImg.src = m.icon;
+                if (previewContainer) previewContainer.style.display = 'flex';
+                document.getElementById('strategy-edit-min-amount').value = m.minInvestAmount || m.minAmount || '';
+            } else {
+                document.getElementById('strategy-edit-min-amount').value = m.icon || '';
+                document.getElementById('strategy-edit-icon-url').value = m.iconUrl || '';
+            }
             
             // Translations
             const hiTrans = m.translations ? m.translations.find(t => t.localeTag === 'hi') : null;
@@ -564,7 +770,13 @@ async function submitStrategyChanges(event) {
     const name = document.getElementById('strategy-edit-name').value;
     const orderIndex = parseInt(document.getElementById('strategy-edit-orderIndex').value) || 1;
     const enabled = document.getElementById('strategy-edit-enabled').value === 'true';
-    const icon = document.getElementById('strategy-edit-icon').value;
+    
+    const minAmount = document.getElementById('strategy-edit-min-amount').value;
+    const iconUrl = document.getElementById('strategy-edit-icon-url').value.trim();
+    
+    const yieldVal = parseFloat(document.getElementById('strategy-edit-yield').value) || 0;
+    const winRateVal = parseFloat(document.getElementById('strategy-edit-winrate').value) || 0;
+    const followersVal = parseInt(document.getElementById('strategy-edit-followers').value) || 0;
     
     // hi translation values
     const transIdHi = document.getElementById('strategy-trans-id-hi').value;
@@ -580,12 +792,15 @@ async function submitStrategyChanges(event) {
     
     const translations = [];
     
+    const descriptionHiPacked = packStrategyStats(descriptionHi, yieldVal, winRateVal, followersVal);
+    const descriptionEnPacked = packStrategyStats(descriptionEn, yieldVal, winRateVal, followersVal);
+    
     // Push hi
     const hiObj = {
         localeTag: 'hi',
         displayName: displayNameHi,
         typeLabel: typeLabelHi,
-        description: descriptionHi,
+        description: descriptionHiPacked,
         isDefault: false
     };
     if (transIdHi) hiObj.id = transIdHi;
@@ -597,7 +812,7 @@ async function submitStrategyChanges(event) {
         localeTag: 'en',
         displayName: displayNameEn,
         typeLabel: typeLabelEn,
-        description: descriptionEn,
+        description: descriptionEnPacked,
         isDefault: true
     };
     if (transIdEn) enObj.id = transIdEn;
@@ -609,15 +824,20 @@ async function submitStrategyChanges(event) {
         displayName: `${displayNameEn} / ${displayNameHi}`,
         orderIndex: orderIndex,
         enabled: enabled,
-        icon: icon,
+        icon: iconUrl || minAmount || '', // 优先存放真实的图片URL，降级后备存起投金额
+        minInvestAmount: minAmount || '',
+        minAmount: minAmount || '',
+        yield: yieldVal,
+        winRate: winRateVal,
+        followers: followersVal,
         translations: translations
     };
     
     try {
         let res;
         if (strategyId) {
-            // Edit PUT
-            res = await apiFetch('PUT', `/trading/quant/algorithm-models/${strategyId}`, payload, true);
+            // Edit POST
+            res = await apiFetch('POST', `/trading/quant/algorithm-models/${strategyId}`, payload, true);
         } else {
             // Create POST
             res = await apiFetch('POST', `/trading/quant/algorithm-models`, payload, true);
@@ -643,6 +863,8 @@ window.deleteStrategy = deleteStrategy;
 window.openStrategyEditModal = openStrategyEditModal;
 window.closeStrategyEditModal = closeStrategyEditModal;
 window.submitStrategyChanges = submitStrategyChanges;
+window.triggerStrategyUpload = triggerStrategyUpload;
+window.handleStrategyFileSelect = handleStrategyFileSelect;
 
 
 export // --- AI QUANT MANUAL TRADING CONTROL PANEL (Phase 19 Integration) ---

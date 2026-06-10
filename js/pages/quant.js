@@ -1,6 +1,55 @@
 // Quant AI Trading Page View Controller
 import { state } from '../modules/state.js?v=2.2.0';
 
+function unpackStrategyStats(descText) {
+    const res = {
+        description: descText || '',
+        yield: undefined,
+        winRate: undefined,
+        followers: undefined
+    };
+    if (!descText) return res;
+    const match = descText.match(/\[stats:([\d.-]*),([\d.-]*),([\d.-]*)\]/);
+    if (match) {
+        res.yield = parseFloat(match[1]) || 0;
+        res.winRate = parseFloat(match[2]) || 0;
+        res.followers = parseInt(match[3]) || 0;
+        res.description = descText.replace(match[0], '').trim();
+    }
+    return res;
+}
+
+function getStrategyFallbackEmoji(name) {
+    name = (name || '').toUpperCase();
+    if (name.includes('MLP') || name.includes('NEURAL')) return '🤖';
+    if (name.includes('GRID') || name.includes('ARBITRAGE')) return '🐂';
+    if (name.includes('TRANSFORMER') || name.includes('TREND')) return '🚀';
+    if (name.includes('XGBOOST') || name.includes('MOMENTUM') || name.includes('EAGLE')) return '🦅';
+    return '🧠';
+}
+
+function generateDeterministicCurve(strategyId) {
+    let seed = 0;
+    const str = String(strategyId || 'seed');
+    for (let i = 0; i < str.length; i++) {
+        seed = (seed * 31 + str.charCodeAt(i)) & 0xFFFFFFFF;
+    }
+    function random() {
+        seed = (seed * 1103515245 + 12345) & 0x7FFFFFFF;
+        return seed / 0x7FFFFFFF;
+    }
+    const points = [];
+    let currentVal = 10 + random() * 10;
+    points.push(currentVal);
+    const length = 12 + Math.floor(random() * 4);
+    for (let i = 1; i < length; i++) {
+        const change = (random() - 0.33) * 5;
+        currentVal = Math.max(2, currentVal + change);
+        points.push(currentVal);
+    }
+    return points;
+}
+
 function getStrategyDisplayName(m) {
     if (!m) return '';
     if (m.translations && m.translations.length > 0) {
@@ -35,7 +84,7 @@ function getStrategyTypeLabel(m, defaultVal) {
             return fallback.typeLabel;
         }
     }
-    return m.typeLabel || defaultVal;
+    return m.typeLabel ? t(m.typeLabel) : defaultVal;
 }
 
 function getStrategyDescription(m, defaultVal) {
@@ -50,7 +99,7 @@ function getStrategyDescription(m, defaultVal) {
             return fallback.description;
         }
     }
-    return m.description || defaultVal;
+    return m.description ? t(m.description) : defaultVal;
 }
 
 async function loadQuantConfig() {
@@ -61,6 +110,13 @@ async function loadQuantConfig() {
             if (res && res.code === 200) {
                 const config = res.result || res.data;
                 if (config && config.models && config.models.length > 0) {
+                    config.models.forEach(m => {
+                        const stats = unpackStrategyStats(m.description);
+                        m.yield = stats.yield;
+                        m.winRate = stats.winRate;
+                        m.followers = stats.followers;
+                        m.description = stats.description;
+                    });
                     strategyModels = config.models;
                     success = true;
                 }
@@ -83,18 +139,12 @@ async function loadQuantConfig() {
     if (homeFeatured) {
         const miniData = strategyModels.slice(0, 3);
         
-        // Static mappings matching UX mockup
-        const yields = ['+32.58%', '+24.17%', '+48.72%'];
-        const rates = ['87.3%', '81.6%', '78.9%'];
-        const followers = ['12,483', '8,392', '6,721'];
-        
         const tags_i18n = {
             'en': ['Popular', 'Stable Rec', 'High Yield'],
             'hi': ['सर्वाधिक लोकप्रिय', 'स्थिर सिफारिश', 'उच्च उपज']
         };
         const tags = tags_i18n[currentLocale] || tags_i18n['en'];
         const classTags = ['hot', 'stable', 'high'];
-        const icons = ['🤖', '🐂', '🚀'];
         
         const isInr = assetDisplayCurrency === 'INR';
         
@@ -105,26 +155,43 @@ async function loadQuantConfig() {
         const labelMinShort = currentLocale === 'hi' ? 'न्यूनतम' : 'Min';
         
         homeFeatured.innerHTML = miniData.map((m, idx) => {
-            const strategyMinInvest = (m.icon && !isNaN(parseFloat(m.icon)) && parseFloat(m.icon) > 0) ? parseFloat(m.icon) : minInvestAmount;
+            const isIconRealUrl = m.icon && (m.icon.startsWith('http') || m.icon.startsWith('/'));
+            let strategyMinInvest = minInvestAmount;
+            let avatarHtml = `<div class="feat-avatar">${getStrategyFallbackEmoji(m.name)}</div>`;
+            
+            if (isIconRealUrl) {
+                avatarHtml = `<img src="${m.icon}" style="width: 24px; height: 24px; border-radius: 6px; object-fit: cover; margin-right: 6px; border: 1px solid rgba(255,255,255,0.1);">`;
+                const minVal = parseFloat(m.minInvestAmount || m.minAmount);
+                if (minVal > 0) strategyMinInvest = minVal;
+            } else {
+                const parsedVal = parseFloat(m.icon);
+                if (m.icon && !isNaN(parsedVal) && parsedVal > 0) {
+                    strategyMinInvest = parsedVal;
+                }
+                if (m.iconUrl) {
+                    avatarHtml = `<img src="${m.iconUrl}" style="width: 24px; height: 24px; border-radius: 6px; object-fit: cover; margin-right: 6px;">`;
+                }
+            }
+            
             const featMinText = isInr ? `${labelMinShort} \u20b9${(strategyMinInvest * 83.00).toFixed(0)}` : `${labelMinShort} $${strategyMinInvest.toFixed(0)}`;
             return `
                 <div class="feat-strat-card" onclick="switchTab('follow'); setTimeout(() => openOrderDrawer('${m.id}'), 150);">
                     <span class="feat-tag tag-${classTags[idx]}">${tags[idx]}</span>
                     <div class="feat-avatar-row">
-                        <div class="feat-avatar">${icons[idx]}</div>
+                        ${avatarHtml}
                         <span class="feat-name-lbl">${getStrategyDisplayName(m)}</span>
                     </div>
                     <div class="feat-yield-box">
-                        <span class="feat-yield-val">${yields[idx]}</span>
+                        <span class="feat-yield-val">${m.yield !== undefined ? (m.yield >= 0 ? '+' : '') + parseFloat(m.yield).toFixed(2) + '%' : '--'}</span>
                         <span class="feat-yield-lbl">${labelYield30d}</span>
                     </div>
                     <div class="feat-grid-stats">
                         <div class="feat-g-stat">
-                            <span class="val">${rates[idx]}</span>
+                            <span class="val">${m.winRate !== undefined ? parseFloat(m.winRate).toFixed(1) + '%' : '--'}</span>
                             <span class="lbl">${labelWinRate}</span>
                         </div>
                         <div class="feat-g-stat">
-                            <span class="val">${followers[idx]}</span>
+                            <span class="val">${m.followers !== undefined ? parseInt(m.followers).toLocaleString() : '--'}</span>
                             <span class="lbl">${labelFollowers}</span>
                         </div>
                     </div>
@@ -160,10 +227,7 @@ function renderStrategyLobby() {
         return;
     }
     
-    // Mockup values mapped strictly
-    const yields = ['+32.58%', '+24.17%', '+48.72%', '+19.35%'];
-    const winrates = ['87.3%', '81.6%', '78.9%', '79.2%'];
-    const followers = ['12,483', '8,392', '6,721', '5,231'];
+    // Read directly from backend data model
     
     const risks_i18n = {
         'en': ['Medium', 'Stable', 'Aggressive', 'Stable'],
@@ -176,9 +240,7 @@ function renderStrategyLobby() {
     const risks = risks_i18n[currentLocale] || risks_i18n['en'];
     const tags = tags_i18n[currentLocale] || tags_i18n['en'];
     
-    const drawdowns = ['8.2%', '6.5%', '12.4%', '4.8%'];
     const classTags = ['pop', 'rec', 'high', 'rec'];
-    const icons = ['🤖', '🐂', '🚀', '🦅'];
     
     const isInr = assetDisplayCurrency === 'INR';
     
@@ -190,14 +252,32 @@ function renderStrategyLobby() {
     
     listEl.innerHTML = filtered.map((m, idx) => {
         const mappedIdx = strategyModels.indexOf(m) % 4;
-        const strategyMinInvest = (m.icon && !isNaN(parseFloat(m.icon)) && parseFloat(m.icon) > 0) ? parseFloat(m.icon) : minInvestAmount;
+        
+        const isIconRealUrl = m.icon && (m.icon.startsWith('http') || m.icon.startsWith('/'));
+        let strategyMinInvest = minInvestAmount;
+        let avatarHtml = `<div class="s-avatar">${getStrategyFallbackEmoji(m.name)}</div>`;
+        
+        if (isIconRealUrl) {
+            avatarHtml = `<img src="${m.icon}" style="width: 38px; height: 38px; border-radius: 8px; object-fit: cover; border: 1px solid rgba(255,255,255,0.15);">`;
+            const minVal = parseFloat(m.minInvestAmount || m.minAmount);
+            if (minVal > 0) strategyMinInvest = minVal;
+        } else {
+            const parsedVal = parseFloat(m.icon);
+            if (m.icon && !isNaN(parsedVal) && parsedVal > 0) {
+                strategyMinInvest = parsedVal;
+            }
+            if (m.iconUrl) {
+                avatarHtml = `<img src="${m.iconUrl}" style="width: 38px; height: 38px; border-radius: 8px; object-fit: cover;">`;
+            }
+        }
+        
         const lobbyMinText = isInr ? `${labelMin} <span>\u20b9${(strategyMinInvest * 83.00).toFixed(0)}</span>` : `${labelMin} <span>$${strategyMinInvest.toFixed(0)}</span>`;
         
         return `
             <div class="strat-card-big" onclick="openOrderDrawer('${m.id}')">
                 <div class="strat-top-inner">
                     <div class="s-title-block">
-                        <div class="s-avatar">${icons[mappedIdx]}</div>
+                        ${avatarHtml}
                         <div class="s-meta-flex">
                             <h4>${getStrategyDisplayName(m)}</h4>
                             <div class="s-meta-badge-row">
@@ -206,17 +286,17 @@ function renderStrategyLobby() {
                             </div>
                         </div>
                     </div>
-                    <span class="s-yield-val">${yields[mappedIdx]}</span>
+                    <span class="s-yield-val">${m.yield !== undefined ? (m.yield >= 0 ? '+' : '') + parseFloat(m.yield).toFixed(2) + '%' : '--'}</span>
                 </div>
                 <div class="strat-mid-body">
                     <div class="strat-stats-flex">
                         <div class="stat-row-item">
                             <span class="lbl">${labelWinRate}</span>
-                            <span class="val">${winrates[mappedIdx]}</span>
+                            <span class="val">${m.winRate !== undefined ? parseFloat(m.winRate).toFixed(1) + '%' : '--'}</span>
                         </div>
                         <div class="stat-row-item">
                             <span class="lbl">${labelFollowers}</span>
-                            <span class="val">${followers[mappedIdx]}</span>
+                            <span class="val">${m.followers !== undefined ? parseInt(m.followers).toLocaleString() : '--'}</span>
                         </div>
                         <div class="stat-row-item">
                             <span class="lbl">${labelRiskLevel}</span>
@@ -234,16 +314,10 @@ function renderStrategyLobby() {
         `;
     }).join('');
     
-    // Draw canvas sparklines
+    // Draw canvas sparklines dynamically
     filtered.forEach((m) => {
-        const mappedIdx = strategyModels.indexOf(m) % 4;
-        const mockCurves = [
-            [10, 12, 11, 15, 14, 18, 17, 22, 20, 25, 24, 28, 26, 32],
-            [20, 21, 23, 22, 25, 24, 26, 28, 27, 30, 29, 32],
-            [10, 8, 14, 12, 19, 15, 24, 20, 28, 25, 34, 30, 42, 38, 48],
-            [15, 16, 15, 17, 18, 17, 19, 18, 20, 21, 20, 22, 23]
-        ];
-        drawIndexSparkline(`s-canvas-${m.id}`, mockCurves[mappedIdx], true);
+        const curve = generateDeterministicCurve(m.id);
+        drawIndexSparkline(`s-canvas-${m.id}`, curve, true);
     });
 }
 
@@ -373,10 +447,17 @@ function openOrderDrawer(modelId) {
                 </div>
             ` : '';
             
+            const isIconRealUrl = m.icon && (m.icon.startsWith('http') || m.icon.startsWith('/'));
+            const finalIconHtml = isIconRealUrl 
+                ? `<div class="new-model-icon" style="background:none;"><img src="${m.icon}" style="width: 32px; height: 32px; border-radius: 6px; object-fit: cover; border: 1px solid rgba(255,255,255,0.08);"></div>`
+                : (m.iconUrl 
+                    ? `<div class="new-model-icon" style="background:none;"><img src="${m.iconUrl}" style="width: 32px; height: 32px; border-radius: 6px; object-fit: cover;"></div>`
+                    : `<div class="new-model-icon">${getStrategyFallbackEmoji(m.name)}</div>`);
+            
             return `
                 <div class="new-model-card ${activeClass}" id="model-card-${m.id}" onclick="selectNewModel('${m.id}')">
                     ${tickHtml}
-                    <div class="new-model-icon">🧠</div>
+                    ${finalIconHtml}
                     <h4>${displayName}</h4>
                     <p>${displaySub}</p>
                 </div>

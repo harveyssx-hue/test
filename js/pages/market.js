@@ -1,4 +1,4 @@
-﻿// Market Page View Controller
+// Market Page View Controller
 import { state } from '../modules/state.js?v=2.2.0';
 
 // Expose key functions to window immediately to avoid timing issues with inline event handlers
@@ -142,7 +142,8 @@ function drawIndexSparkline(canvasId, dataArr, isUp) {
 }
 
 // --- LIGHTWEIGHT CHARTS INTEGRATION (Light Theme Skin) ---
-function initChart() {
+// --- LIGHTWEIGHT CHARTS INTEGRATION (Light Theme Skin) ---
+async function initChart() {
     const container = document.getElementById('kline-chart');
     if (!container) return;
     
@@ -182,7 +183,39 @@ function initChart() {
         wickDownColor: '#ef4444',
     });
 
-    // Load initial visual data block
+    // Try fetching real history from online API first
+    const inst = recommendedInstruments.find(i => i.symbol.toLowerCase() === activeSymbol);
+    if (inst && inst.exchangeId) {
+        try {
+            const res = await apiFetch('GET', `/market/klines?exchangeId=${inst.exchangeId}&symbol=${inst.symbol.toUpperCase()}&interval=1m&limit=80`, null, false);
+            const klines = res ? (res.result || res.data || []) : [];
+            if (klines.length > 0) {
+                const chartData = klines.map(k => ({
+                    time: Math.floor(k.timestamp / 1000),
+                    open: parseFloat(k.open),
+                    high: parseFloat(k.high),
+                    low: parseFloat(k.low),
+                    close: parseFloat(k.close)
+                })).sort((a, b) => a.time - b.time);
+                
+                // Remove duplicate time entries if any, as lightweight-charts throws error on duplicate time keys
+                const uniqueChartData = [];
+                const seenTimes = new Set();
+                for (const d of chartData) {
+                    if (!seenTimes.has(d.time)) {
+                        seenTimes.add(d.time);
+                        uniqueChartData.push(d);
+                    }
+                }
+                candleSeries.setData(uniqueChartData);
+                return;
+            }
+        } catch (e) {
+            console.warn('Failed to load real klines history, falling back to simulation:', e);
+        }
+    }
+
+    // Load initial visual data block (Fallback simulation if offline/failed)
     const data = [];
     let time = Math.floor(Date.now() / 1000) - 80 * 60;
     let basePrice = activeSymbol === 'btcusdt' ? 65000.00 : (activeSymbol === 'ethusdt' ? 3200.00 : (activeSymbol === 'solusdt' ? 145.00 : 0.52));
@@ -855,3 +888,12 @@ window.renderSearchResults = renderSearchResults;
 
 // --- DUAL-CURRENCY DYNAMIC STATE ACTIONS & EYE TOGGLES ---
 // window assignments relocated to top of file
+
+let chartResizeTimeout = null;
+window.addEventListener('resize', () => {
+    if (!currentChart) return;
+    if (chartResizeTimeout) clearTimeout(chartResizeTimeout);
+    chartResizeTimeout = setTimeout(() => {
+        relayoutTradingChart();
+    }, 100);
+});

@@ -1,4 +1,4 @@
-﻿// User Session Authentication Controller
+// User Session Authentication Controller
 import { state } from '../modules/state.js?v=2.2.0';
 
 function checkAuthSession() {
@@ -63,13 +63,13 @@ function checkAuthSession() {
         syncKycStatusFromServer();
         syncUserInfoFromServer();
         
-        // 激活 15 秒轻量资产轮询定时器
+        // 激活 60 秒轻量资产轮询定时器
         if (!assetPollInterval) {
             assetPollInterval = setInterval(() => {
                 if (currentUser) {
                     loadUserAssets();
                 }
-            }, 15000);
+            }, 60000);
         }
     } else {
         currentUser = null;
@@ -579,7 +579,7 @@ async function openAppDownloadModal() {
             androidBtn.onclick = () => {
                 const msg = currentLocale === 'hi' 
                     ? '⚠️ डाउनलोड लिंक अभी तक कॉन्फ़िगर नहीं किया गया है!' 
-                    : (currentLocale === 'en' ? '⚠️ Android download link is not configured yet!' : '⚠️ 安卓下载链接暂未配置，请稍后再试！');
+                    : '⚠️ Android download link is not configured yet!';
                 showToast(msg, true);
             };
         }
@@ -594,7 +594,7 @@ async function openAppDownloadModal() {
             iosBtn.onclick = () => {
                 const msg = currentLocale === 'hi' 
                     ? '⚠️ डाउनलोड लिंक अभी तक कॉन्फ़िगर नहीं किया गया है!' 
-                    : (currentLocale === 'en' ? '⚠️ iOS download link is not configured yet!' : '⚠️ 苹果下载链接暂未配置，请稍后再试！');
+                    : '⚠️ iOS download link is not configured yet!';
                 showToast(msg, true);
             };
         }

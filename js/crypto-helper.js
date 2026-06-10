@@ -9,8 +9,8 @@ function getLocalizedError(key) {
             'hi': '⚠️ बहुत अधिक अनुरोध, कृपया बाद में पुनः प्रयास करें।'
         },
         'network_cors': {
-            'en': '⚠️ Network connection failed or blocked by CORS! If you are using a local development environment, please [completely close all opened Chrome browser windows], and then double-click [启动无跨域浏览器.bat] to bypass CORS restrictions.',
-            'hi': '⚠️ नेटवर्क कनेक्शन विफल या CORS द्वारा अवरुद्ध! यदि आप स्थानीय विकास परिवेश का उपयोग कर रहे हैं, तो कृपया [सभी खुले हुए Chrome ब्राउज़र विंडो को पूरी तरह से बंद करें], और फिर CORS प्रतिबंधों को बायपास करने के लिए [启动无跨域浏览器.bat] पर double-click करें।'
+            'en': '⚠️ Network connection failed or blocked by CORS! If you are using a local development environment, please [completely close all opened Chrome browser windows], and then double-click [start_chrome_no_cors.bat] to bypass CORS restrictions.',
+            'hi': '⚠️ नेटवर्क कनेक्शन विफल या CORS द्वारा अवरुद्ध! यदि आप स्थानीय विकास परिवेश का उपयोग कर रहे हैं, तो कृपया [सभी खुले हुए Chrome ब्राउज़र विंडो को पूरी तरह से बंद करें], और फिर CORS प्रतिबंधों को बायपास करने के लिए [start_chrome_no_cors.bat] पर double-click करें।'
         },
         'network_failed': {
             'en': 'Network connection failed',
@@ -202,7 +202,10 @@ async function apiFetch(method, path, body = null, requireAuth = true) {
     // Intelligent environment routing: detect admin page context or admin routes
     let baseUrl = CONFIG.APP_API_BASE;
     const isAdminRequest = window.isAdminPanel === true || window.location.pathname.includes('admin') || realPath.startsWith('/api/v1/admin') || realPath.includes('audit') || realPath.includes('approve') || realPath.includes('reject');
-    if (isAdminRequest) {
+    const isCommonEndpoint = realPath.includes('/common/');
+    const isAdminPageContext = window.isAdminPanel === true || window.location.pathname.includes('admin');
+    const routeToAdmin = isAdminPageContext || (isAdminRequest && !isCommonEndpoint);
+    if (routeToAdmin) {
         baseUrl = CONFIG.ADMIN_API_BASE;
     }
     
@@ -219,7 +222,7 @@ async function apiFetch(method, path, body = null, requireAuth = true) {
     };
     
     // Admin API endpoints are strictly cookie-based and must not carry User App Bearer Tokens
-    if (requireAuth && accessToken && !isAdminRequest) {
+    if (requireAuth && accessToken && !routeToAdmin) {
         headers['X-Token'] = `Bearer ${accessToken}`;
         if (sessionKey) {
             // Apply HMAC signature strictly conforming to SIGN-SPEC-1.0: exclude QueryString from path
@@ -230,8 +233,7 @@ async function apiFetch(method, path, body = null, requireAuth = true) {
     }
     
     try {
-        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const finalPath = (isAdminRequest && !isLocalhost) ? '/admin-proxy' + realPath : realPath;
+        const finalPath = routeToAdmin ? '/admin-proxy' + realPath : realPath;
         const response = await fetch(baseUrl + finalPath, {
             method: method,
             headers: headers,
@@ -337,7 +339,10 @@ async function apiFetchRaw(method, path, body = null, requireAuth = true) {
     
     let baseUrl = CONFIG.APP_API_BASE;
     const isAdminRequest = window.isAdminPanel === true || window.location.pathname.includes('admin') || realPath.startsWith('/api/v1/admin') || realPath.includes('audit') || realPath.includes('approve') || realPath.includes('reject');
-    if (isAdminRequest) {
+    const isCommonEndpoint = realPath.includes('/common/');
+    const isAdminPageContext = window.isAdminPanel === true || window.location.pathname.includes('admin');
+    const routeToAdmin = isAdminPageContext || (isAdminRequest && !isCommonEndpoint);
+    if (routeToAdmin) {
         baseUrl = CONFIG.ADMIN_API_BASE;
     }
     
@@ -352,7 +357,7 @@ async function apiFetchRaw(method, path, body = null, requireAuth = true) {
         'X-Locale': CONFIG.DEFAULT_LOCALE
     };
     
-    if (requireAuth && accessToken && !isAdminRequest) {
+    if (requireAuth && accessToken && !routeToAdmin) {
         headers['X-Token'] = `Bearer ${accessToken}`;
         if (sessionKey) {
             // Apply HMAC signature strictly conforming to SIGN-SPEC-1.0: exclude QueryString from path
@@ -363,8 +368,7 @@ async function apiFetchRaw(method, path, body = null, requireAuth = true) {
     }
     
     try {
-        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const finalPath = (isAdminRequest && !isLocalhost) ? '/admin-proxy' + realPath : realPath;
+        const finalPath = routeToAdmin ? '/admin-proxy' + realPath : realPath;
         const response = await fetch(baseUrl + finalPath, {
             method: method,
             headers: headers,
@@ -421,7 +425,10 @@ async function apiFetchWithRawBody(method, path, rawBodyStr, requireAuth = true)
     
     let baseUrl = CONFIG.APP_API_BASE;
     const isAdminRequest = window.isAdminPanel === true || window.location.pathname.includes('admin') || realPath.startsWith('/api/v1/admin') || realPath.includes('audit') || realPath.includes('approve') || realPath.includes('reject');
-    if (isAdminRequest) {
+    const isCommonEndpoint = realPath.includes('/common/');
+    const isAdminPageContext = window.isAdminPanel === true || window.location.pathname.includes('admin');
+    const routeToAdmin = isAdminPageContext || (isAdminRequest && !isCommonEndpoint);
+    if (routeToAdmin) {
         baseUrl = CONFIG.ADMIN_API_BASE;
     }
     
@@ -436,7 +443,7 @@ async function apiFetchWithRawBody(method, path, rawBodyStr, requireAuth = true)
         'X-Locale': CONFIG.DEFAULT_LOCALE
     };
     
-    if (requireAuth && accessToken && !isAdminRequest) {
+    if (requireAuth && accessToken && !routeToAdmin) {
         headers['X-Token'] = `Bearer ${accessToken}`;
         if (sessionKey) {
             // Apply HMAC signature strictly conforming to SIGN-SPEC-1.0: exclude QueryString from path
@@ -447,8 +454,7 @@ async function apiFetchWithRawBody(method, path, rawBodyStr, requireAuth = true)
     }
     
     try {
-        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const finalPath = (isAdminRequest && !isLocalhost) ? '/admin-proxy' + realPath : realPath;
+        const finalPath = routeToAdmin ? '/admin-proxy' + realPath : realPath;
         const response = await fetch(baseUrl + finalPath, {
             method: method,
             headers: headers,
