@@ -8265,6 +8265,11 @@
             "type": "string",
             "example": "基于多层前馈神经网络的机器学习算法"
           },
+          "followers": {
+            "description": "跟随人数",
+            "type": "integer",
+            "example": 12483
+          },
           "icon": {
             "description": "图标URL",
             "type": "string",
@@ -8283,6 +8288,16 @@
             "description": "类型标签",
             "type": "string",
             "example": "Neural Network"
+          },
+          "winRate": {
+            "description": "胜率(%)",
+            "type": "number",
+            "example": 87.3
+          },
+          "yield": {
+            "description": "30日收益率(%)",
+            "type": "number",
+            "example": 32.58
           }
         }
       },

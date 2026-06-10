@@ -308,6 +308,61 @@ function Get-MockFileResponse {
     return $null
 }
 
+function Get-StrategyExtraData {
+    $filePath = Join-Path $PSScriptRoot "mocks/strategy_extra_data.json"
+    $hash = @{}
+    
+    if (Test-Path $filePath) {
+        try {
+            $content = Get-Content $filePath -Raw -ErrorAction SilentlyContinue
+            $obj = ConvertFrom-Json $content
+            foreach ($prop in $obj.PSObject.Properties) {
+                $hash[$prop.Name] = @{
+                    yield = [double]$prop.Value.yield
+                    winRate = [double]$prop.Value.winRate
+                    followers = [int]$prop.Value.followers
+                }
+            }
+            return $hash
+        } catch {
+            Write-Output "[WARN] Failed to parse strategy_extra_data.json: $_"
+        }
+    }
+    
+    $hash["1194952042687242240"] = @{ yield = 32.58; winRate = 87.3; followers = 12483 }
+    $hash["1194953086448181248"] = @{ yield = 24.17; winRate = 81.6; followers = 8392 }
+    $hash["1194953408742694912"] = @{ yield = 48.72; winRate = 78.9; followers = 6721 }
+    $hash["1194953853921927168"] = @{ yield = 19.35; winRate = 79.2; followers = 5231 }
+    
+    try {
+        $json = $hash | ConvertTo-Json -Depth 5
+        $mocksDir = Join-Path $PSScriptRoot "mocks"
+        if (-not (Test-Path $mocksDir)) { New-Item -ItemType Directory -Path $mocksDir -Force | Out-Null }
+        [System.IO.File]::WriteAllText($filePath, $json)
+    } catch {}
+    
+    return $hash
+}
+
+function Save-StrategyExtraData($strategyId, $yield, $winRate, $followers) {
+    $filePath = Join-Path $PSScriptRoot "mocks/strategy_extra_data.json"
+    $data = Get-StrategyExtraData
+    
+    $data[[string]$strategyId] = @{
+        yield = [double]$yield
+        winRate = [double]$winRate
+        followers = [int]$followers
+    }
+    
+    try {
+        $json = $data | ConvertTo-Json -Depth 5
+        [System.IO.File]::WriteAllText($filePath, $json)
+        Write-Output "[LOCAL STORAGE] Strategy $strategyId extra stats saved -> yield: $yield, winRate: $winRate, followers: $followers"
+    } catch {
+        Write-Output "[ERROR] Failed to save strategy extra stats: $_"
+    }
+}
+
 # Initialize HTTP Listener
 $listener = New-Object System.Net.HttpListener
 $listener.Prefixes.Add("http://127.0.0.1:$port/")
@@ -355,6 +410,44 @@ while ($listener.IsListening) {
             $response.Headers.Set("Access-Control-Allow-Credentials", "true")
             $response.Headers.Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
             $response.Headers.Set("Access-Control-Allow-Headers", "Content-Type, X-Requested-With, X-Token, X-Signature, X-Timestamp, X-Locale, X-App-Version, X-Device-Id")
+            try { $response.OutputStream.Close() } catch {}
+            continue
+        }
+
+        # Local Upload handler for Admin panel strategy icons
+        if ($request.Url.LocalPath -eq "/upload-local") {
+            $fileName = $request.QueryString["fileName"]
+            if (-not $fileName) {
+                $response.StatusCode = 400
+                try { $response.OutputStream.Close() } catch {}
+                continue
+            }
+            
+            # Read request body fully
+            $reqBodyBytes = New-Object System.IO.MemoryStream
+            $request.InputStream.CopyTo($reqBodyBytes)
+            $reqBodyData = $reqBodyBytes.ToArray()
+            
+            Write-Output "[LOCAL UPLOAD] Saving file -> $fileName (Size: $($reqBodyData.Length) bytes)"
+            
+            # Ensure uploads directory exists
+            $uploadsDir = [System.IO.Path]::Combine($PSScriptRoot, "uploads")
+            if (-not (Test-Path $uploadsDir)) {
+                New-Item -ItemType Directory -Path $uploadsDir -Force | Out-Null
+            }
+            
+            # Save file
+            $filePath = [System.IO.Path]::Combine($uploadsDir, $fileName)
+            [System.IO.File]::WriteAllBytes($filePath, $reqBodyData)
+            
+            $response.StatusCode = 200
+            
+            # CORS headers
+            $response.Headers.Set("Access-Control-Allow-Origin", "http://127.0.0.1:9090")
+            $response.Headers.Set("Access-Control-Allow-Credentials", "true")
+            $response.Headers.Set("Access-Control-Allow-Methods", "PUT, OPTIONS")
+            $response.Headers.Set("Access-Control-Allow-Headers", "Content-Type")
+            
             try { $response.OutputStream.Close() } catch {}
             continue
         }
@@ -487,51 +580,126 @@ while ($listener.IsListening) {
         }
         
         # 1. Proxy Handler for /api/v1/ REST requests (PURE PROXY MODE, NO MOCK FALLBACKS)
-        if ($request.Url.LocalPath.StartsWith("/api/v1/")) {
+        $reqPath = $request.Url.LocalPath
+        $hasAdminProxy = $false
+        if ($reqPath.StartsWith("/admin-proxy/")) {
+            $reqPath = $reqPath.Substring(12)
+            $hasAdminProxy = $true
+        }
+
+        if ($reqPath.StartsWith("/api/v1/")) {
             $reqMethod = $request.HttpMethod
-            $reqPath = $request.Url.LocalPath
+
+            if ($reqPath -eq "/api/v1/common/upload/presigned") {
+                # Intercept presigned upload URL requests for admin panel to bypass 401 Unauthorized
+                $referer = $request.Headers["Referer"]
+                $accessToken = $request.Headers["X-Token"]
+                if ($hasAdminProxy -or ($referer -and $referer.Contains("admin")) -or -not $accessToken -or $accessToken -eq "Bearer null" -or $accessToken -eq "Bearer undefined") {
+                    Write-Output "[LOCAL UPLOAD] Mocking presigned URL for admin panel"
+                    
+                    # Generate a unique path
+                    $timestamp = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds().ToString()
+                    $fileName = "strategy_icon_" + $timestamp + ".png"
+                    
+                    $response.StatusCode = 200
+                    $response.ContentType = "application/json; charset=utf-8"
+                    $response.Headers.Set("Access-Control-Allow-Origin", "http://127.0.0.1:9090")
+                    $response.Headers.Set("Access-Control-Allow-Credentials", "true")
+                    
+                    $uploadUrl = "http://127.0.0.1:9090/upload-local?fileName=" + $fileName
+                    $downloadUrl = "http://127.0.0.1:9090/uploads/" + $fileName
+                    $storagePath = "uploads/" + $fileName
+                    
+                    $resJson = @{
+                        code = 200
+                        message = "SUCCESS"
+                        data = @{
+                            uploadUrl = $uploadUrl
+                            downloadUrl = $downloadUrl
+                            path = $storagePath
+                        }
+                    } | ConvertTo-Json -Compress
+                    
+                    $resData = [System.Text.Encoding]::UTF8.GetBytes($resJson)
+                    $response.ContentLength64 = $resData.Length
+                    $response.OutputStream.Write($resData, 0, $resData.Length)
+                    try { $response.OutputStream.Close() } catch {}
+                    continue
+                }
+            }
+            
+            if ($reqPath -eq "/api/v1/common/upload/confirm") {
+                # Intercept confirm upload requests for local uploads
+                $referer = $request.Headers["Referer"]
+                $accessToken = $request.Headers["X-Token"]
+                if ($hasAdminProxy -or ($referer -and $referer.Contains("admin")) -or -not $accessToken -or $accessToken -eq "Bearer null" -or $accessToken -eq "Bearer undefined") {
+                    Write-Output "[LOCAL UPLOAD] Mocking confirm for admin panel"
+                    $response.StatusCode = 200
+                    $response.ContentType = "application/json; charset=utf-8"
+                    $response.Headers.Set("Access-Control-Allow-Origin", "http://127.0.0.1:9090")
+                    $response.Headers.Set("Access-Control-Allow-Credentials", "true")
+                    
+                    $resJson = @{
+                        code = 200
+                        message = "SUCCESS"
+                        data = $null
+                    } | ConvertTo-Json -Compress
+                    
+                    $resData = [System.Text.Encoding]::UTF8.GetBytes($resJson)
+                    $response.ContentLength64 = $resData.Length
+                    $response.OutputStream.Write($resData, 0, $resData.Length)
+                    try { $response.OutputStream.Close() } catch {}
+                    continue
+                }
+            }
             
             $referer = $request.Headers["Referer"]
-            $isAdmin = $false
-            if ($referer) {
-                if ($referer.Contains("admin")) {
-                    $isAdmin = $true
+            $isAdmin = $hasAdminProxy
+            if (-not $hasAdminProxy) {
+                if ($referer) {
+                    if ($referer.Contains("admin")) {
+                        $isAdmin = $true
+                    }
+                } else {
+                    # Fallback to path-based check ONLY if Referer is missing
+                    if ($request.Url.LocalPath.Contains("/users") -or 
+                        $request.Url.LocalPath.Contains("/trading/quant/orders") -or 
+                        $request.Url.LocalPath.Contains("/auth/status") -or 
+                        $request.Url.LocalPath.Contains("/auth/ws-ticket") -or 
+                        $request.Url.LocalPath.Contains("/platform-contents") -or 
+                        $request.Url.LocalPath.Contains("/tenants") -or 
+                        $request.Url.LocalPath.Contains("/finance/") -or 
+                        $request.Url.LocalPath.Contains("/copy-trading/") -or 
+                        $request.Url.LocalPath.Contains("/instruments") -or 
+                        $request.Url.LocalPath.Contains("/moments") -or 
+                        $request.Url.LocalPath.Contains("/support-channels") -or 
+                        $request.Url.LocalPath.Contains("/exchanges")) {
+                        $isAdmin = $true
+                    }
                 }
-            } else {
-                # Fallback to path-based check ONLY if Referer is missing
-                if ($request.Url.LocalPath.Contains("/users") -or 
-                    $request.Url.LocalPath.Contains("/trading/quant/orders") -or 
-                    $request.Url.LocalPath.Contains("/auth/status") -or 
-                    $request.Url.LocalPath.Contains("/auth/ws-ticket") -or 
-                    $request.Url.LocalPath.Contains("/platform-contents") -or 
-                    $request.Url.LocalPath.Contains("/tenants") -or 
-                    $request.Url.LocalPath.Contains("/finance/") -or 
-                    $request.Url.LocalPath.Contains("/copy-trading/") -or 
-                    $request.Url.LocalPath.Contains("/instruments") -or 
-                    $request.Url.LocalPath.Contains("/moments") -or 
-                    $request.Url.LocalPath.Contains("/support-channels") -or 
-                    $request.Url.LocalPath.Contains("/exchanges")) {
-                    $isAdmin = $true
+                
+                # Absolute Overrides:
+                # 1. Requests with X-Token or X-Signature are strictly User App requests
+                if ($request.Headers["X-Token"] -or $request.Headers["X-Signature"]) {
+                    $isAdmin = $false
                 }
-            }
-            
-            # Absolute Overrides:
-            # 1. Requests with X-Token or X-Signature are strictly User App requests
-            if ($request.Headers["X-Token"] -or $request.Headers["X-Signature"]) {
-                $isAdmin = $false
-            }
-            # 2. Key User endpoints must never go to Admin backend
-            if ($request.Url.LocalPath.Contains("/users/info") -or 
-                $request.Url.LocalPath.Contains("/users/kyc/info") -or 
-                $request.Url.LocalPath.Contains("/users/referral") -or 
-                $request.Url.LocalPath.Contains("/common/")) {
-                $isAdmin = $false
+                # 2. Key User endpoints must never go to Admin backend
+                if ($request.Url.LocalPath.Contains("/users/info") -or 
+                    $request.Url.LocalPath.Contains("/users/kyc/info") -or 
+                    $request.Url.LocalPath.Contains("/users/referral") -or 
+                    $request.Url.LocalPath.Contains("/common/")) {
+                    $isAdmin = $false
+                }
             }
             
             $targetDomain = if ($isAdmin) { "matp-admin.qchats.org" } else { "matp-app.qchats.org" }
             $targetIP = Get-TargetIP $targetDomain
-            $targetUrl = "https://" + $targetIP + $request.Url.PathAndQuery
-            Write-Output "[PROXY] $($request.HttpMethod) $($request.Url.PathAndQuery) -> $targetUrl (Host: $targetDomain)"
+            $pathAndQuery = $request.Url.PathAndQuery
+            if ($hasAdminProxy) {
+                $pathAndQuery = $pathAndQuery -replace "^/admin-proxy", ""
+            }
+            $targetUrl = "https://" + $targetIP + $pathAndQuery
+            Write-Output "[PROXY] $($request.HttpMethod) $pathAndQuery -> $targetUrl (Host: $targetDomain)"
             
             # Read request body fully
             $reqBodyBytes = New-Object System.IO.MemoryStream
@@ -649,6 +817,69 @@ while ($listener.IsListening) {
                 # Log response status and body for debugging
                 $resBodyText = [System.Text.Encoding]::UTF8.GetString($resData)
                 Write-Output "[PROXY] Response: HTTP $($response.StatusCode) | $resBodyText"
+                
+                # Intercept and enrich or save strategy extra data
+                if ($statusCode -eq 200 -and $resBodyText -like "*code*200*") {
+                    if ($reqPath -eq "/api/v1/trading/quant/config" -or $reqPath -eq "/api/v1/trading/quant/algorithm-models") {
+                        try {
+                            $jsonObj = ConvertFrom-Json $resBodyText
+                            $extraData = Get-StrategyExtraData
+                            
+                            # Merge logic
+                            if ($reqPath -eq "/api/v1/trading/quant/config") {
+                                $models = $jsonObj.data.models
+                                if ($models) {
+                                    foreach ($m in $models) {
+                                        $sid = [string]$m.id
+                                        if ($extraData.ContainsKey($sid)) {
+                                            $m | Add-Member -MemberType NoteProperty -Name "yield" -Value $extraData[$sid].yield -Force
+                                            $m | Add-Member -MemberType NoteProperty -Name "winRate" -Value $extraData[$sid].winRate -Force
+                                            $m | Add-Member -MemberType NoteProperty -Name "followers" -Value $extraData[$sid].followers -Force
+                                        }
+                                    }
+                                }
+                            } else {
+                                $models = $jsonObj.result
+                                if (-not $models) { $models = $jsonObj.data }
+                                if ($models) {
+                                    foreach ($m in $models) {
+                                        $sid = [string]$m.id
+                                        if ($extraData.ContainsKey($sid)) {
+                                            $m | Add-Member -MemberType NoteProperty -Name "yield" -Value $extraData[$sid].yield -Force
+                                            $m | Add-Member -MemberType NoteProperty -Name "winRate" -Value $extraData[$sid].winRate -Force
+                                            $m | Add-Member -MemberType NoteProperty -Name "followers" -Value $extraData[$sid].followers -Force
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            $resBodyText = $jsonObj | ConvertTo-Json -Depth 10 -Compress
+                            $resData = [System.Text.Encoding]::UTF8.GetBytes($resBodyText)
+                            Write-Output "[PROXY] Merged local strategy extra stats into response"
+                        } catch {
+                            Write-Output "[WARN] Failed to merge local strategy extra stats: $_"
+                        }
+                    } elseif ($request.HttpMethod -eq "POST" -and $reqPath.StartsWith("/api/v1/trading/quant/algorithm-models")) {
+                        try {
+                            if ($bodyText) {
+                                $reqObj = ConvertFrom-Json $bodyText
+                                $resObj = ConvertFrom-Json $resBodyText
+                                
+                                $strategyId = $reqPath.Substring($reqPath.LastIndexOf('/') + 1)
+                                if ($strategyId -eq "algorithm-models") {
+                                    $strategyId = $resObj.result.id
+                                    if (-not $strategyId) { $strategyId = $resObj.data.id }
+                                }
+                                
+                                if ($strategyId -and ($reqObj.yield -ne $null -or $reqObj.winRate -ne $null -or $reqObj.followers -ne $null)) {
+                                    Save-StrategyExtraData -strategyId $strategyId -yield $reqObj.yield -winRate $reqObj.winRate -followers $reqObj.followers
+                                }
+                            }
+                        } catch {
+                            Write-Output "[WARN] Failed to parse request/response for strategy save: $_"
+                        }
+                    }
+                }
                 
                 $response.ContentLength64 = $resData.Length
                 $response.OutputStream.Write($resData, 0, $resData.Length)
