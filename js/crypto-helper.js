@@ -172,11 +172,12 @@ async function apiFetch(method, path, body = null, requireAuth = true) {
     // Normalize path with `/api/v1` prefix
     let realPath = path.startsWith('/api/v1') ? path : '/api/v1' + path;
     
-    // Add trailing slash only to specific admin endpoints that require it (users, kyc, tenants)
+    // Add trailing slash only to specific admin endpoints that require it (users, kyc, tenants, risk-levels)
     const pathsWithTrailingSlash = [
         '/api/v1/users',
         '/api/v1/users/kyc',
-        '/api/v1/tenants'
+        '/api/v1/tenants',
+        '/api/v1/users/risk-levels'
     ];
     let [pathPart, queryPart] = realPath.split('?');
     if (pathsWithTrailingSlash.includes(pathPart) && !pathPart.endsWith('/')) {
@@ -308,11 +309,12 @@ async function apiFetchRaw(method, path, body = null, requireAuth = true) {
     
     let realPath = path.startsWith('/api/v1') ? path : '/api/v1' + path;
     
-    // Add trailing slash only to specific admin endpoints that require it (users, kyc, tenants)
+    // Add trailing slash only to specific admin endpoints that require it (users, kyc, tenants, risk-levels)
     const pathsWithTrailingSlash = [
         '/api/v1/users',
         '/api/v1/users/kyc',
-        '/api/v1/tenants'
+        '/api/v1/tenants',
+        '/api/v1/users/risk-levels'
     ];
     let [pathPart, queryPart] = realPath.split('?');
     if (pathsWithTrailingSlash.includes(pathPart) && !pathPart.endsWith('/')) {
@@ -396,11 +398,12 @@ async function apiFetchWithRawBody(method, path, rawBodyStr, requireAuth = true)
     
     let realPath = path.startsWith('/api/v1') ? path : '/api/v1' + path;
     
-    // Add trailing slash only to specific admin endpoints that require it (users, kyc, tenants)
+    // Add trailing slash only to specific admin endpoints that require it (users, kyc, tenants, risk-levels)
     const pathsWithTrailingSlash = [
         '/api/v1/users',
         '/api/v1/users/kyc',
-        '/api/v1/tenants'
+        '/api/v1/tenants',
+        '/api/v1/users/risk-levels'
     ];
     let [pathPart, queryPart] = realPath.split('?');
     if (pathsWithTrailingSlash.includes(pathPart) && !pathPart.endsWith('/')) {
