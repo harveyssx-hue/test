@@ -24,6 +24,7 @@ const copyAssetsPlugin = () => ({
     console.log('Copying dynamic assets to dist...');
     copyDir(resolve(__dirname, 'components'), resolve(__dirname, 'dist/components'));
     copyDir(resolve(__dirname, 'css'), resolve(__dirname, 'dist/css'));
+    copyDir(resolve(__dirname, 'images'), resolve(__dirname, 'dist/images'));
     
     // Copy specific JS files
     fs.mkdirSync(resolve(__dirname, 'dist/js'), { recursive: true });
