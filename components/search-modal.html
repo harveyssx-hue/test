@@ -1,0 +1,16 @@
+﻿<div class="overlay" id="search-modal">
+                    <div class="glass-panel modal-content" style="max-height: 80vh; display: flex; flex-direction: column;">
+                        <button class="modal-close" onclick="closeSearchModal()">✕</button>
+                        <div class="modal-header" style="margin-bottom: 15px;">
+                            <h2 data-i18n="search_title">🔍 Search Hub</h2>
+                            <p data-i18n="search_subtitle">Find quant strategies and hot crypto assets</p>
+                        </div>
+                        <div class="search-input-wrapper" style="position: relative; margin-bottom: 15px;">
+                            <input type="text" id="search-query-input" oninput="handleSearchInputChange()" placeholder="Enter strategy name, model or coin symbol..." data-i18n-placeholder="search_placeholder" style="width: 100%; padding: 12px 15px 12px 40px; border-radius: 12px; border: 1px solid var(--border-light); background: rgba(255,255,255,0.7); font-size: 0.9rem; color: var(--text-primary); outline: none; transition: all 0.2s;">
+                            <span style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1rem;">🔍</span>
+                        </div>
+                        <div class="search-results-area" id="search-results-list" style="flex: 1; overflow-y: auto; max-height: 50vh;">
+                            <!-- Dynamically populated -->
+                        </div>
+                    </div>
+                </div>

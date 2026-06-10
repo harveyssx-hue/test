@@ -1,0 +1,162 @@
+﻿            <div class="view-tab-content active" id="view-rates">
+                <div class="glass-panel data-panel" style="padding: 18px;">
+                    <div style="border-bottom: 1.5px solid var(--border-light); padding-bottom: 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <div class="data-panel-title" style="font-size: 1.1rem; color: var(--primary); display: flex; align-items: center; gap: 6px;">🪙 平台资产结算汇率管理</div>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <!-- Pagination Controls Right -->
+                            <div style="display: flex; gap: 6px; align-items: center; background: rgba(255, 255, 255, 0.05); padding: 2px 8px; border-radius: 6px; border: 1.5px solid var(--border-light);">
+                                <button class="action-btn" onclick="changeAdminPage('rates', -1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">上一页</button>
+                                <span id="rates-page-indicator" style="font-size: 0.72rem; font-weight: 600; color: var(--text-primary); margin: 0 4px; white-space: nowrap;">第 1 / 1 页 (共 0 条)</span>
+                                <button class="action-btn" onclick="changeAdminPage('rates', 1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">下一页</button>
+                            </div>
+                            <button class="action-btn btn-approve" onclick="openRateEditModal(null)" style="padding: 6px 14px; font-size: 0.85rem; border-radius: 6px; cursor: pointer; font-weight: 600; background: #5B51F9; border: none; color: #FFF;">+ 新增结算汇率</button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>汇率 ID</th>
+                                    <th>基准资产 (Base Asset)</th>
+                                    <th>目标资产 (Quote Asset)</th>
+                                    <th>兑换汇率 (Exchange Rate)</th>
+                                    <th>状态</th>
+                                    <th>备注说明</th>
+                                    <th>操作选项</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rates-table-body">
+                                <!-- Loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 9: QUANT STRATEGIES TEMPLATES MANAGEMENT (策略模板管理) -->
+                        <select id="payment-add-assetClass" required class="payment-add-select">
+                            <option value="CRYPTO">加密货币 (CRYPTO)</option>
+                            <option value="FIAT">法定货币 (FIAT)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="auth-input-group">
+                        <label>业务类型 (BizType)</label>
+                        <select id="payment-add-bizType" required class="payment-add-select">
+                            <option value="DEPOSIT">充值入金 (DEPOSIT)</option>
+                            <option value="WITHDRAWAL">提现出金 (WITHDRAWAL)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="auth-input-group">
+                        <label>通道类型 (ChannelType)</label>
+                        <select id="payment-add-channelType" required class="payment-add-select">
+                            <option value="PAYMENT_GATEWAY">三方支付网关 (PAYMENT_GATEWAY)</option>
+                            <option value="BANK_TRANSFER">银行卡转账 (BANK_TRANSFER)</option>
+                            <option value="CRYPTO_GATEWAY">加密数字网关 (CRYPTO_GATEWAY)</option>
+                            <option value="CRYPTO_ON_RAMP">数字货币入金 (CRYPTO_ON_RAMP)</option>
+                            <option value="E_WALLET">电子钱包 (E_WALLET)</option>
+                            <option value="INTERNAL">系统内部划转 (INTERNAL)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="auth-input-group">
+                        <label>支付方式 (PaymentMethodType)</label>
+                        <select id="payment-add-paymentMethodType" required class="payment-add-select">
+                            <option value="CARD">信用卡/借记卡 (CARD)</option>
+                            <option value="BANK_TRANSFER">银行转账 (BANK_TRANSFER)</option>
+                            <option value="UPI">UPI 网关 (UPI)</option>
+                            <option value="CRYPTO_WALLET">数字钱包上链 (CRYPTO_WALLET)</option>
+                            <option value="PAYPAL">PayPal (PAYPAL)</option>
+                            <option value="ALIPAY">支付宝 (ALIPAY)</option>
+                            <option value="WECHAT_PAY">微信支付 (WECHAT_PAY)</option>
+                            <option value="APPLE_PAY">Apple Pay (APPLE_PAY)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="auth-input-group">
+                        <label>接收目标类型 (ReceivingTargetType)</label>
+                        <select id="payment-add-receivingTargetType" required class="payment-add-select">
+                            <option value="CRYPTO">加密数字账户 (CRYPTO)</option>
+                            <option value="FIAT">法币银行账户 (FIAT)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="auth-input-group">
+                        <label>接口动作类别 (ActionType)</label>
+                        <select id="payment-add-actionType" required class="payment-add-select">
+                            <option value="SHOW_CRYPTO_ADDRESS">展示收款钱包地址 (SHOW_CRYPTO_ADDRESS)</option>
+                            <option value="OPEN_REDIRECT">跳转三方支付网关 (OPEN_REDIRECT)</option>
+                            <option value="SHOW_BANK_ACCOUNT">展示收款银行卡 (SHOW_BANK_ACCOUNT)</option>
+                            <option value="API_REQUEST">直连三方 API 创单 (API_REQUEST)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="auth-input-group" style="width: 100%; margin-bottom: 8px;">
+                    <label>通道参数配置 (备注/收款收款地址)</label>
+                    <textarea id="payment-add-memo" required placeholder="若为加密通道，请输入充值目标公钥地址 (如: TY23N9pCgB6a4E1oZk8s7eWq2r3y5t6u7i)；若为法币通道，请输入收款银行信息或附言提示" style="height: 76px; resize: none;"></textarea>
+                </div>
+                
+                <button type="submit" class="admin-auth-btn" style="margin-top: 12px; height: 46px; border-radius: 10px; font-weight: 700; letter-spacing: 0.5px;">立即发布并启用新支付通道</button>
+            </form>
+        </div>
+     </div>
+
+    <!-- EXCHANGE RATE EDIT MODAL -->
+    <div class="overlay" id="rate-edit-modal">
+        <div class="glass-panel modal-content-payment" style="max-width: 480px;">
+            <button class="drawer-close-btn" onclick="closeRateEditModal()" style="top: 24px; right: 24px; font-size: 1.2rem;">✕</button>
+            <div class="modal-header-admin" style="margin-bottom: 24px; border-bottom: 1px solid #F1F5F9; padding-bottom: 16px;">
+                <h2 style="font-size: 1.35rem; display: flex; align-items: center; gap: 8px; color: var(--text-primary);" id="rate-modal-title">🪙 配置结算汇率</h2>
+                <p style="font-size: 0.78rem; color: #64748B; margin-top: 6px; font-weight: 500;">设定与修改不同资产兑换 INR 法币的官方清算和计价汇率</p>
+            </div>
+            
+            <form class="auth-form" onsubmit="submitRateChanges(event)">
+                <input type="hidden" id="rate-edit-id">
+                
+                <div class="auth-input-group" style="margin-bottom: 16px;">
+                    <label>基准资产 (Base Asset)</label>
+                    <select id="rate-edit-baseAssetId" required class="payment-add-select" onchange="toggleCustomAssetId('base')">
+                        <option value="1183348576672026624">USDT (USDT to INR)</option>
+                        <option value="1126151490264633373">HKD (HKD to INR)</option>
+                        <option value="1126151490264633349">USD (USD to INR)</option>
+                        <option value="1126151490264633358">EUR (EUR to INR)</option>
+                        <option value="1183348576642666496">BTC (BTC to INR)</option>
+                        <option value="1183348576630083584">ETH (ETH to INR)</option>
+                        <option value="CUSTOM">--- 输入自定义资产 ID ---</option>
+                    </select>
+                    <input type="text" id="rate-edit-baseAssetId-custom" class="auth-form input" placeholder="请输入自定义基准资产 ID" style="display: none; margin-top: 8px; width: 100%; box-sizing: border-box; padding: 10px; border-radius: 6px; border: 1px solid #E2E8F0;">
+                </div>
+                
+                <div class="auth-input-group" style="margin-bottom: 16px;">
+                    <label>目标结算货币 (Quote Asset)</label>
+                    <select id="rate-edit-quoteAssetId" required class="payment-add-select" onchange="toggleCustomAssetId('quote')">
+                        <option value="1126151490264633456">INR (卢比法币本位)</option>
+                        <option value="CUSTOM">--- 输入自定义资产 ID ---</option>
+                    </select>
+                    <input type="text" id="rate-edit-quoteAssetId-custom" class="auth-form input" placeholder="请输入自定义目标货币 ID" style="display: none; margin-top: 8px; width: 100%; box-sizing: border-box; padding: 10px; border-radius: 6px; border: 1px solid #E2E8F0;">
+                </div>
+                
+                <div class="auth-input-group" style="margin-bottom: 16px;">
+                    <label>官方清算汇率 (Exchange Rate)</label>
+                    <input type="number" step="0.0001" id="rate-edit-rate" required placeholder="例如: 83.00 或 14.16">
+                </div>
+                
+                <div class="auth-input-group" style="margin-bottom: 16px;">
+                    <label>状态</label>
+                    <select id="rate-edit-enabled" required class="payment-add-select">
+                        <option value="true">启用 (ENABLED)</option>
+                        <option value="false">禁用 (DISABLED)</option>
+                    </select>
+                </div>
+                
+                <div class="auth-input-group" style="width: 100%; margin-bottom: 16px;">
+                    <label>汇率备注说明</label>
+                    <textarea id="rate-edit-remark" placeholder="例如: USDT to INR rate" style="height: 60px; resize: none;"></textarea>
+                </div>
+                
+                <button type="submit" class="admin-auth-btn" style="margin-top: 8px; height: 46px; border-radius: 10px; font-weight: 700; letter-spacing: 0.5px;" id="rate-modal-submit-btn">确认并提交配置</button>
+            </form>
+        </div>
+    </div>

@@ -1,0 +1,9 @@
+{
+  "code": 200,
+  "message": "SUCCESS",
+  "data": {
+    "status": "VERIFIED",
+    "realName": "Test Name",
+    "idCard": "110101********0001"
+  }
+}

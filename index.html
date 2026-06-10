@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    <title>AI Trading - Intelligent Copy Trading System</title>
+    <!-- Google Fonts for premium typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css?v=2.2.0">
+    <!-- TradingView Lightweight Charts -->
+    <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+</head>
+<body>
+
+    <!-- Main Desktop Frame Wrapper -->
+    <div class="phone-mockup-wrapper">
+        <div class="phone-shell">
+            <div class="phone-camera"></div>
+            <div class="phone-speaker"></div>
+            <div class="phone-screen">
+                
+                <!-- TOP STATUS BAR (Dynamic simulated time and signals) -->
+                <div class="phone-status-bar">
+                    <span class="status-time" id="live-time">09:41</span>
+                    <div class="status-icons">
+                        <!-- Signal strength -->
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                            <rect x="2" y="16" width="3" height="4" rx="0.5"/>
+                            <rect x="7" y="12" width="3" height="8" rx="0.5"/>
+                            <rect x="12" y="8" width="3" height="12" rx="0.5"/>
+                            <rect x="17" y="4" width="3" height="16" rx="0.5"/>
+                        </svg>
+                        <!-- Wifi -->
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                            <path d="M12 21a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm-8-8a8 8 0 0 1 12 0m-16-4a12 12 0 0 1 20 0m-24-4a16 16 0 0 1 28 0"/>
+                        </svg>
+                        <!-- Battery -->
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                            <rect x="1" y="6" width="16" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+                            <rect x="3" y="8" width="10" height="8" rx="1"/>
+                            <path d="M18 10h1.5a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5H18" fill="currentColor"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- DYNAMIC CONTENT AREA -->
+                <div class="phone-content" id="app-content">
+                    <!-- Premium App Splash Screen -->
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; min-height: 400px; gap: 16px;">
+                        <style>
+                            @keyframes matp-spin {
+                                0% { transform: rotate(0deg); }
+                                100% { transform: rotate(360deg); }
+                            }
+                        </style>
+                        <div style="width: 36px; height: 36px; border: 3.5px solid rgba(91, 81, 249, 0.08); border-top-color: #5B51F9; border-radius: 50%; animation: matp-spin 0.85s linear infinite;"></div>
+                        <span style="font-size: 0.82rem; color: #64748B; font-weight: 600; letter-spacing: 0.3px;">Loading AI Trading System...</span>
+                    </div>
+                </div>
+                    
+                    <!-- PHONE GLOBAL FIXED BOTTOM NAV BAR -->
+                <div class="phone-bottom-nav">
+                    <button class="nav-tab active" id="btn-nav-home" onclick="switchTab('home')">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                        <span data-i18n="nav_home">Home</span>
+                    </button>
+                    <button class="nav-tab" id="btn-nav-market" onclick="switchTab('market')">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83M22 12A10 10 0 0 0 12 2v10z"/></svg>
+                        <span data-i18n="nav_market">Market</span>
+                    </button>
+                    <button class="nav-tab" id="btn-nav-follow" onclick="switchTab('follow')">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 0 0-10 10v4a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2h-1a7 7 0 0 1 14 0h-1a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2v-4a10 10 0 0 0-10-10z"/><circle cx="12" cy="13" r="3"/></svg>
+                        <span data-i18n="nav_follow">Follow</span>
+                    </button>
+                    <button class="nav-tab" id="btn-nav-assets" onclick="switchTab('assets')">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M12 4v16M2 10h20"/></svg>
+                        <span data-i18n="nav_assets">Assets</span>
+                    </button>
+                    <button class="nav-tab" id="btn-nav-profile" onclick="switchTab('profile')">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <span data-i18n="nav_profile">Profile</span>
+                    </button>
+                </div>
+
+                <!-- SLIDING TRANSACTION ORDER DRAWER -->
+                <div id="order-drawer-overlay" class="order-drawer-overlay" onclick="closeOrderDrawer()"></div>
+                <div id="order-drawer-sheet" class="order-drawer-sheet">
+                    <div class="new-drawer-header">
+                        <button class="new-back-circle-btn" onclick="closeOrderDrawer()">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#0F172A" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="new-drawer-body">
+                        <div class="new-section-title" data-i18n="drawer_title_model">Model Selection</div>
+                        <div class="new-models-scroll-container">
+                            <div id="new-models-list" style="display: flex; gap: 14px;"></div>
+                        </div>
+
+                        <div class="new-section-title" data-i18n="drawer_title_risk">Risk Level</div>
+                        <div class="new-risk-slider-container">
+                            <div class="new-risk-track">
+                                <div class="new-risk-line"></div>
+                                <div class="new-risk-dot-group">
+                                    <div class="new-risk-dot-item" id="risk-item-LOW" onclick="selectNewRiskLevel('LOW')">
+                                        <div class="new-risk-dot"></div>
+                                        <span class="new-risk-lbl" data-i18n="drawer_risk_low">Low</span>
+                                    </div>
+                                    <div class="new-risk-dot-item" id="risk-item-MEDIUM" onclick="selectNewRiskLevel('MEDIUM')">
+                                        <div class="new-risk-dot"></div>
+                                        <span class="new-risk-lbl" data-i18n="drawer_risk_medium">Medium</span>
+                                    </div>
+                                    <div class="new-risk-dot-item" id="risk-item-HIGH" onclick="selectNewRiskLevel('HIGH')">
+                                        <div class="new-risk-dot"></div>
+                                        <span class="new-risk-lbl" data-i18n="drawer_risk_high">High</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="new-section-title" data-i18n="drawer_title_stoploss">Stop Loss</div>
+                        <div class="new-stoploss-container">
+                            <div class="new-stoploss-track">
+                                <div class="new-stoploss-line">
+                                    <div id="new-stoploss-progress-bar" class="new-stoploss-progress"></div>
+                                </div>
+                                <div id="new-stoploss-dots-group" class="new-stoploss-dots">
+                                    <!-- Dots rendered dynamically -->
+                                </div>
+                            </div>
+                            <div class="new-stoploss-labels">
+                                <span>0%</span>
+                                <span>50%</span>
+                                <span>100%</span>
+                            </div>
+                        </div>
+
+                        <div class="new-investment-card">
+                            <div class="new-balance-row">
+                                <div class="new-balance-info">
+                                    <span class="new-balance-lbl" data-i18n="drawer_avail_balance">Available Balance</span>
+                                    <div class="new-balance-amount-box">
+                                        <span class="new-balance-val" id="new-avail-balance">$0.00 USDT</span>
+                                        <button class="new-balance-refresh-btn" onclick="refreshBalanceInOrder(event)">
+                                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                <button class="new-addfunds-btn" onclick="switchTab('profile'); closeOrderDrawer(); setTimeout(() => switchTab('deposit'), 100);" data-i18n="drawer_add_funds">Add Funds</button>
+                            </div>
+                            <div class="new-card-divider"></div>
+                            <div class="new-amount-row">
+                                <span class="new-amount-lbl" id="new-amount-min-lbl">Purchase amount (min: $90)</span>
+                                <div class="new-amount-input-box">
+                                    <span class="new-currency-symbol" id="new-amount-currency-symbol">$</span>
+                                    <input type="number" id="new-purchase-amount-input" class="new-amount-input" value="100" oninput="recalcAgreeButtonState()">
+                                    <div class="new-edit-pencil">
+                                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="new-consent-row">
+                            <label class="new-checkbox-label">
+                                <input type="checkbox" id="new-agreement-checkbox" onchange="recalcAgreeButtonState()">
+                                        <div class="new-custom-checkbox"></div>
+                                <span class="new-consent-text" data-i18n="drawer_agree_terms_short">I agree</span>
+                            </label>
+                        </div>
+
+                        <div class="new-action-box">
+                            <button class="new-submit-btn disabled" id="new-submit-btn" disabled onclick="submitQuantFollowOrderNew()" data-i18n="drawer_submit_btn">Review by order</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CENTRED QUANT ORDER SUCCESS MODAL -->
+                <div id="order-success-modal" class="new-success-modal-overlay">
+                    <div class="new-success-panel">
+                        <div class="new-success-check-wrapper">
+                            <div class="new-success-check-circle">
+                                <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="#22C55E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
+                        </div>
+                        <h3 class="new-success-title" data-i18n="success_title">Order Submitted Successfully</h3>
+                        <p class="new-success-subtitle" data-i18n="success_subtitle">Please wait for system audit verification</p>
+                        
+                        <div class="new-success-details-box">
+                            <div class="new-detail-row">
+                                <span class="lbl" data-i18n="success_lbl_order_id">Quant Follow ID</span>
+                                <span class="val font-mono" id="success-order-id">--</span>
+                            </div>
+                            <div class="new-detail-row">
+                                <span class="lbl" data-i18n="success_lbl_amount">Invested Assets</span>
+                                <span class="val" id="success-order-amount">--</span>
+                            </div>
+                            <div class="new-detail-row">
+                                <span class="lbl" data-i18n="success_lbl_stoploss">Max Stop Loss Rate</span>
+                                <span class="val color-red" id="success-order-stoploss">--</span>
+                            </div>
+                            <div class="new-detail-row">
+                                <span class="lbl" data-i18n="success_lbl_time">Deployment Time</span>
+                                <span class="val" id="success-order-time">--</span>
+                            </div>
+                        </div>
+                        
+                        <div class="new-success-actions">
+                            <button class="new-success-btn-primary" onclick="closeSuccessAndShowOrders()" data-i18n="success_btn_positions">Positions Detail</button>
+                            <button class="new-success-btn-secondary" onclick="closeSuccessAndGoHome()" data-i18n="success_btn_home">Back to Lobby</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ORDER DETAILS SLIDE DRAWER -->
+                <div id="order-details-overlay" class="order-drawer-overlay" onclick="closeOrderDetailsDrawer()"></div>
+                <div id="order-details-drawer-sheet" class="order-drawer-sheet">
+                    <div class="drawer-drag-indicator"></div>
+                    <div class="drawer-header">
+                        <button class="drawer-back-btn" onclick="closeOrderDetailsDrawer()" style="background:none; border:none; cursor:pointer;">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
+                            <span data-i18n="back_btn">Back</span>
+                        </button>
+                    </div>
+                    <div class="drawer-body">
+                        <div class="drawer-section-title" data-i18n="drawer_title_details">Quant Follow Details</div>
+                        
+                        <div class="drawer-strat-card" style="margin-top: 10px;">
+                            <div class="d-strat-top">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div class="d-strat-avatar" id="detail-algo-icon">🤖</div>
+                                    <div class="d-strat-meta" style="display: flex; flex-direction: column;">
+                                        <h4 id="detail-algo-name">LSTM/GRU</h4>
+                                        <span class="d-strat-badge" id="detail-order-no">Order No: --</span>
+                                    </div>
+                                </div>
+                                <div class="d-strat-yield" style="text-align: right;">
+                                    <span class="yield-lbl" data-i18n="details_lbl_status">Status</span>
+                                    <span class="badge" id="detail-order-status" style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700;">ACTIVE</span>
+                                </div>
+                            </div>
+                            
+                            <div style="margin: 14px 0 6px;">
+                                <span style="font-size: 0.65rem; color: var(--text-muted); font-weight: 600;" data-i18n="success_lbl_amount">Invested Assets</span>
+                                <h3 id="detail-invest-amount" style="font-size: 1.25rem; font-weight: 850; color: var(--text-primary); margin-top: 2px;">--</h3>
+                            </div>
+                            
+                            <div class="d-strat-grid-stats" style="margin-top: 12px; border-top: 1px solid var(--border-light); padding-top: 12px;">
+                                <div class="ds-stat">
+                                    <span class="ds-lbl" data-i18n="success_lbl_stoploss">Max Stop Loss</span>
+                                    <span class="ds-val" id="detail-stop-loss">10%</span>
+                                </div>
+                                <div class="ds-stat">
+                                    <span class="ds-lbl" data-i18n="success_lbl_time">Deploy Time</span>
+                                    <span class="ds-val" id="detail-order-time" style="font-size: 0.58rem; font-family: monospace;">--</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="drawer-section-title" data-i18n="details_sec_execution">Intelligent Quant Trade Details</div>
+                        <div class="drawer-strat-card" style="display: flex; flex-direction: column; gap: 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem;">
+                                <span style="color: var(--text-muted);" data-i18n="details_lbl_buy_price">Entry Buy Price</span>
+                                <span id="detail-buy-price" style="font-weight: 700; color: var(--text-primary);">--</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem;">
+                                <span style="color: var(--text-muted);" data-i18n="details_lbl_sell_price">Exit Sell Price</span>
+                                <span id="detail-sell-price" style="font-weight: 700; color: var(--text-primary);">--</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; border-top: 1px solid var(--border-light); padding-top: 10px;">
+                                <span style="color: var(--text-muted);" data-i18n="details_lbl_total_profit">Total Follow Profits</span>
+                                <span id="detail-profit-amount" style="font-weight: 800; font-size: 0.82rem;">--</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem;">
+                                <span style="color: var(--text-muted);" data-i18n="details_lbl_roi">Quant Return on Investment (ROI)</span>
+                                <span id="detail-profit-rate" style="font-weight: 800; font-size: 0.82rem;">--</span>
+                            </div>
+                        </div>
+                        
+                        <button class="new-success-btn-primary" style="margin-top: auto;" onclick="closeOrderDetailsDrawer()" data-i18n="details_btn_close">I Understand</button>
+                    </div>
+                </div>
+
+                <!-- Dynamic Modals / Overlays Container -->
+                <div id="modal-container"></div>
+                
+                <!-- REAL-TIME BIZ TOAST NOTIFICATION POPUP -->
+                <div class="alert-popup" id="alert-toast">
+                    🔔 Notification Content
+                </div>
+
+            </div> <!-- /phone-screen -->
+        </div> <!-- /phone-shell -->
+    </div> <!-- /phone-mockup-wrapper -->
+
+    <!-- Global App Scripts -->
+    <script src="js/config.js?v=2.2.0"></script>
+    <script src="js/crypto-helper.js?v=2.2.0"></script>
+    <script type="module" src="js/app.js?v=2.2.0"></script>
+</body>
+</html>

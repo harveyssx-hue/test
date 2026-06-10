@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    <title>MATP Core - 管理端合规鉴权中心</title>
+    <!-- Google Fonts for premium typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #F4F7FE; /* Elegant Light Grey-Blue Page Main background */
+            --primary: #5B51F9; /* Royal purple brand main */
+            --primary-light: rgba(91, 81, 249, 0.08);
+            --primary-glow: rgba(91, 81, 249, 0.15);
+            --text-primary: #0F172A; /* Slate 900 */
+            --text-secondary: #475569; /* Slate 600 */
+            --text-muted: #94A3B8; /* Slate 400 */
+            --border: #E2E8F0; /* Slate 200 */
+            --border-light: #F1F5F9; /* Slate 100 */
+            --shadow-large: 0 20px 40px rgba(15, 23, 42, 0.06);
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Decorative background blobs for premium feel */
+        .decor-blob-1 {
+            position: absolute;
+            width: 350px;
+            height: 350px;
+            background: radial-gradient(circle, rgba(91, 81, 249, 0.12) 0%, rgba(91, 81, 249, 0) 70%);
+            top: -50px;
+            left: -50px;
+            z-index: -1;
+            filter: blur(40px);
+            animation: float-slow 15s infinite ease-in-out;
+        }
+
+        .decor-blob-2 {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, rgba(139, 92, 246, 0) 70%);
+            bottom: -80px;
+            right: -80px;
+            z-index: -1;
+            filter: blur(45px);
+            animation: float-slow 18s infinite ease-in-out reverse;
+        }
+
+        @keyframes float-slow {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(30px, -20px) scale(1.05); }
+        }
+
+        /* Premium Glassmorphism Card */
+        .login-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 24px;
+            padding: 40px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: var(--shadow-large), 0 4px 20px rgba(91, 81, 249, 0.01);
+            transform: translateY(0);
+            animation: card-appear 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transition: var(--transition);
+        }
+
+        .login-card:hover {
+            box-shadow: 0 25px 50px rgba(15, 23, 42, 0.08);
+            border-color: rgba(255, 255, 255, 0.8);
+        }
+
+        @keyframes card-appear {
+            0% { opacity: 0; transform: translateY(30px) scale(0.98); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        /* Brand Logo Design */
+        .logo-box {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary) 0%, #8B5CF6 100%);
+            border-radius: 12px;
+            margin-bottom: 16px;
+            box-shadow: 0 6px 16px rgba(91, 81, 249, 0.25);
+            animation: pulse-slow 3s infinite;
+        }
+
+        @keyframes pulse-slow {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.04); }
+        }
+
+        .logo-icon {
+            width: 22px;
+            height: 22px;
+            border: 2.5px solid #FFFFFF;
+            border-radius: 6px;
+        }
+
+        .login-header h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.45rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+            margin-bottom: 6px;
+        }
+
+        .login-header p {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .auth-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .auth-input-group label {
+            font-size: 0.72rem;
+            font-weight: 750;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .auth-input-group input {
+            width: 100%;
+            height: 44px;
+            background: #F8FAFC;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            padding: 0 16px;
+            font-size: 0.82rem;
+            color: var(--text-primary);
+            font-weight: 600;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .auth-input-group input:focus {
+            border-color: var(--primary);
+            background-color: #FFFFFF;
+            box-shadow: 0 0 0 3.5px rgba(91, 81, 249, 0.08);
+        }
+
+        .admin-auth-btn {
+            background: linear-gradient(135deg, var(--primary) 0%, #7C3AED 100%);
+            color: #FFFFFF;
+            font-size: 0.85rem;
+            font-weight: 800;
+            height: 46px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(91, 81, 249, 0.2);
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 8px;
+        }
+
+        .admin-auth-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(91, 81, 249, 0.3);
+            filter: brightness(1.05);
+        }
+
+        .admin-auth-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Sleek Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translate(-50%, 100px);
+            padding: 12px 24px;
+            background: #0F172A;
+            color: #FFFFFF;
+            border-radius: 10px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.15);
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toast.active {
+            transform: translate(-50%, 0);
+            opacity: 1;
+        }
+
+        .toast.err {
+            background: #EF4444;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="decor-blob-1"></div>
+    <div class="decor-blob-2"></div>
+
+    <div class="login-card">
+        <div class="login-header">
+            <div class="logo-box">
+                <div class="logo-icon"></div>
+            </div>
+            <h1>MATP Core 审计中心</h1>
+            <p>请输入合规管理员的审计凭证以开启大屏控制</p>
+        </div>
+        
+        <form class="auth-form" onsubmit="handleLogin(event)">
+            <div class="auth-input-group">
+                <label for="username">管理员账号 (Username)</label>
+                <input type="text" id="username" required placeholder="请输入账号" value="admin">
+            </div>
+            <div class="auth-input-group">
+                <label for="password">安全审计验证密码 (Password)</label>
+                <input type="password" id="password" required placeholder="请输入密码" value="Aa123456">
+            </div>
+            <button type="submit" class="admin-auth-btn" id="submit-btn">立即登录核心管理大屏</button>
+        </form>
+    </div>
+
+    <div id="toast" class="toast">🔔 提示内容</div>
+
+    <!-- Configuration and API logic -->
+    <script src="js/config.js?v=1.8.0"></script>
+    <script src="js/crypto-helper.js?v=1.8.0"></script>
+    <script>
+        // Set isAdminPanel globally so crypto-helper routes admin requests correctly
+        window.isAdminPanel = true;
+
+        // Auto-focus username field
+        document.getElementById('username').focus();
+
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            if (isError) {
+                toast.classList.add('err');
+            } else {
+                toast.classList.remove('err');
+            }
+            toast.classList.add('active');
+            setTimeout(() => {
+                toast.classList.remove('active');
+            }, 3000);
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const btn = document.getElementById('submit-btn');
+
+            if (!username || !password) {
+                showToast('请输入完整的账号和密码！', true);
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = '正在校验审计安全证书...';
+
+            try {
+                const res = await apiFetch('POST', '/auth/login', { username: username, password: password }, false);
+                if (res.code === 200) {
+                    showToast('✓ 安全审计登录成功！正在跳转大屏...', false);
+                    localStorage.setItem('matp_admin_user_email', username);
+                    localStorage.setItem('matp_admin_access_token', 'cookie_session'); // local storage dummy matching admin.js
+                    setTimeout(() => {
+                        window.location.href = 'admin.html';
+                    }, 1000);
+                } else {
+                    showToast(res.errorMessage || '❌ 验证码审计失败，用户名或密码错误！', true);
+                    btn.disabled = false;
+                    btn.innerText = '立即登录核心管理大屏';
+                }
+            } catch (e) {
+                console.error(e);
+                showToast('❌ 无法连接至核心合规授权服务器！', true);
+                btn.disabled = false;
+                btn.innerText = '立即登录核心管理大屏';
+            }
+        }
+    </script>
+</body>
+</html>

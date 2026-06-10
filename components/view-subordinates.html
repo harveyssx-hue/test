@@ -1,0 +1,62 @@
+<div id="view-subordinates" class="view-tab-content" style="background: #F8FAFC; min-height: calc(100vh - 65px); display: flex; flex-direction: column;">
+    <!-- Header -->
+    <div class="subordinates-header" style="display: flex; align-items: center; padding: 16px; position: sticky; top: 0; z-index: 100; background: #FFFFFF; border-bottom: 1px solid #E2E8F0;">
+        <button class="back-btn" onclick="switchTab('invite')" style="background: none; border: none; outline: none; cursor: pointer; display: flex; align-items: center; color: #1E293B; padding: 0; margin-right: 12px;">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+        </button>
+        <span style="font-size: 1.1rem; font-weight: 850; color: #1E293B;" data-i18n="invite_lbl_my_referrals">👥 Invited Friends & Inviter</span>
+    </div>
+    
+    <!-- Content -->
+    <div class="subordinates-body" style="flex: 1; padding: 20px; box-sizing: border-box; overflow-y: auto;">
+        <!-- My Referrer binding area -->
+        <div id="my-referrer-section" style="margin-bottom: 20px; text-align: left; padding: 16px; border-radius: 16px; background: #FFFFFF; border: 1px solid #E2E8F0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
+            <!-- Case A: Already bound -->
+            <div id="referrer-bound-box" style="display: none; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background: #EFF6FF; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #2563EB;">👤</div>
+                    <div>
+                        <div style="font-size: 0.75rem; color: #64748B; font-weight: 500;" data-i18n="invite_lbl_inviter">My Inviter</div>
+                        <div style="font-size: 0.9rem; font-weight: 700; color: #1E293B;" id="bound-referrer-name">--</div>
+                     </div>
+                </div>
+                <span class="badge badge-VERIFIED" style="background: rgba(16,185,129,0.1); color: #10B981; font-size: 0.72rem; padding: 4px 10px; border-radius: 8px; font-weight: 750;" data-i18n="invite_status_bound">Secured Bound</span>
+            </div>
+            
+            <!-- Case B: Unbound, show bind input -->
+            <div id="referrer-unbound-box" style="display: none;">
+                <div style="font-size: 0.85rem; font-weight: 800; color: #1E293B; margin-bottom: 10px;" data-i18n="invite_lbl_bind">🔗 Bind Your Inviter (Optional)</div>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="bind-referrer-input" placeholder="Enter inviter's User ID" style="flex: 1; height: 42px; font-size: 0.85rem; padding: 0 12px; border-radius: 10px; background: #F8FAFC; border: 1px solid #E2E8F0; color: #1E293B; outline: none; box-shadow: inset 0 2px 4px rgba(0,0,0,0.01);">
+                    <button type="button" class="invite-primary-btn" style="width: auto; padding: 0 18px; height: 42px; font-size: 0.85rem; border-radius: 10px; margin: 0; background: #1E293B; color: #FFF; border: none; font-weight: 700; cursor: pointer; transition: all 0.2s;" onclick="verifyAndBindReferrer()" data-i18n="invite_btn_verify">Verify</button>
+                </div>
+                <!-- Inviter preview area -->
+                <div id="bind-referrer-preview" style="display: none; margin-top: 12px; font-size: 0.8rem; color: #10B981; background: rgba(16,185,129,0.06); padding: 12px 14px; border-radius: 10px; justify-content: space-between; align-items: center; border: 1px solid rgba(16,185,129,0.15);">
+                    <span><span data-i18n="invite_lbl_inviter_preview">🔍 Inviter: </span><strong id="preview-referrer-name" style="color: #059669;">--</strong></span>
+                    <button type="button" style="background: #10B981; color: #FFF; border: none; font-size: 0.75rem; padding: 6px 12px; border-radius: 8px; font-weight: 700; cursor: pointer;" onclick="confirmBindReferrerSubmit()" data-i18n="invite_btn_confirm">Confirm</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Subordinates List Section -->
+        <div class="invite-friends-section" style="text-align: left; background: #FFFFFF; padding: 18px; border-radius: 16px; border: 1px solid #E2E8F0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
+            <h3 style="font-size: 0.95rem; font-weight: 800; color: #1E293B; margin: 0 0 16px 0; display: flex; align-items: center; justify-content: space-between;">
+                <span style="display: flex; align-items: center; gap: 6px;" data-i18n="invite_lbl_my_referrals">👥 Successfully Invited Friends</span>
+                <span class="invite-count-badge" id="profile-invitees-count" style="font-size: 0.75rem; padding: 2px 10px; border-radius: 12px; background: rgba(225, 29, 72, 0.1); color: #E11D48; font-weight: 700;">0 people</span>
+            </h3>
+            
+            <!-- Subordinate list container -->
+            <div id="profile-invitees-list" style="display: flex; flex-direction: column; gap: 10px;">
+                <!-- Loading placeholder -->
+                <div id="invitees-loading" style="text-align: center; padding: 40px 10px; color: #64748B; font-size: 0.85rem;" data-i18n="invite_loading_referrals">
+                    🔄 Fetching your invited friends list...
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bottom Spacer for nav bar overlay -->
+    <div style="height: 70px;"></div>
+</div>

@@ -1,0 +1,134 @@
+﻿<div id="view-kyc" class="view-tab-content">
+                        <div class="sub-header-sticky">
+                            <div class="strategy-header-row">
+                                <button class="back-text-btn" onclick="closeKycModal()">
+                                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
+                                    <span data-i18n="profile_menu_kyc">KYC Verification</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div style="padding: 10px 4px 15px;">
+                            <div class="modal-header" style="margin-bottom: 15px; padding-left: 5px;">
+                                <h2 style="font-size: 1.4rem; font-weight: 800; color: var(--text-primary);" data-i18n="kyc_title">KYC Compliance Realname Verification</h2>
+                                <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;" data-i18n="kyc_desc">Submit realname identity info to activate full AI trading privileges</p>
+                            </div>
+                            
+                            <form class="auth-form" onsubmit="handleKycSubmit(event)">
+                                <!-- Group 1: Basic Identity Information -->
+                                <div style="background: #F8FAFC; border: 1px solid #E2E8F0; padding: 16px; border-radius: 16px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px;">
+                                    <div style="font-size: 0.8rem; font-weight: 750; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #E2E8F0; padding-bottom: 6px; margin-bottom: 4px;">Basic Identity Info</div>
+                                    <div class="auth-input-group">
+                                        <label data-i18n="kyc_name_lbl">Real Name</label>
+                                        <input type="text" id="kyc-name" required placeholder="Enter full name as on ID document" data-i18n-placeholder="kyc_name_placeholder">
+                                    </div>
+                                    <div class="auth-input-group">
+                                        <label data-i18n="kyc_gender_lbl">Gender</label>
+                                        <select id="kyc-gender" style="width: 100%; height: 44px; background: #F8FAFC; border: 1.5px solid var(--border); border-radius: 10px; padding: 0 16px; font-size: 0.82rem; font-weight: 600; outline: none; transition: var(--transition);">
+                                            <option value="MALE">Male</option>
+                                            <option value="FEMALE">Female</option>
+                                            <option value="OTHER">Other</option>
+                                        </select>
+                                    </div>
+                                    <div class="auth-input-group">
+                                        <label data-i18n="kyc_dob_lbl">Date of Birth</label>
+                                        <input type="date" id="kyc-dob" required value="1990-01-01" style="width: 100%; height: 44px; background: #F8FAFC; border: 1.5px solid var(--border); border-radius: 10px; padding: 0 16px; font-size: 0.82rem; font-weight: 600; outline: none; transition: var(--transition);">
+                                    </div>
+                                    <div class="auth-input-group">
+                                        <label data-i18n="kyc_region_lbl">Country / Region Code</label>
+                                        <input type="text" id="kyc-region" required placeholder="e.g. IN, CN, US" value="IN">
+                                    </div>
+                                </div>
+
+                                <!-- Group 2: Contact Information -->
+                                <div style="background: #F8FAFC; border: 1px solid #E2E8F0; padding: 16px; border-radius: 16px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px;">
+                                    <div style="font-size: 0.8rem; font-weight: 750; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #E2E8F0; padding-bottom: 6px; margin-bottom: 4px;">Contact Info</div>
+                                    <div class="auth-input-group">
+                                        <label data-i18n="kyc_phone_lbl">Contact Phone Number</label>
+                                        <input type="text" id="kyc-phone" required readonly style="background-color: #F1F5F9; cursor: not-allowed;" placeholder="Enter phone number with country code">
+                                    </div>
+                                    <div class="auth-input-group">
+                                        <label data-i18n="kyc_email_lbl">Contact Email Address</label>
+                                        <input type="email" id="kyc-email" required placeholder="Enter email address">
+                                    </div>
+                                </div>
+
+                                <!-- Group 3: Professional & Financial Status -->
+                                <div style="background: #F8FAFC; border: 1px solid #E2E8F0; padding: 16px; border-radius: 16px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px;">
+                                    <div style="font-size: 0.8rem; font-weight: 750; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #E2E8F0; padding-bottom: 6px; margin-bottom: 4px;">Professional & Financial Status</div>
+                                    <div class="auth-input-group">
+                                        <label data-i18n="kyc_company_lbl">Company Name</label>
+                                        <input type="text" id="kyc-company" required placeholder="Enter company name" value="AI Trading Group">
+                                    </div>
+                                    <div class="auth-input-group">
+                                        <label data-i18n="kyc_occupation_lbl">Occupation</label>
+                                        <input type="text" id="kyc-occupation" required placeholder="Enter occupation" value="Trader">
+                                    </div>
+                                    <div class="auth-input-group">
+                                        <label data-i18n="kyc_salary_lbl">Annual Salary / Income</label>
+                                        <input type="text" id="kyc-salary" required placeholder="Enter salary range" value="250000">
+                                    </div>
+                                    <div class="auth-input-group">
+                                        <label data-i18n="kyc_address_lbl">Residential Address</label>
+                                        <input type="text" id="kyc-address" required placeholder="Enter residential address" value="Xuhui District, Shanghai, China">
+                                    </div>
+                                </div>
+
+                                <!-- Group 4: ID Document Proofs -->
+                                <div style="background: #F8FAFC; border: 1px solid #E2E8F0; padding: 16px; border-radius: 16px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px;">
+                                    <div style="font-size: 0.8rem; font-weight: 750; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #E2E8F0; padding-bottom: 6px; margin-bottom: 4px;">ID Document Proof</div>
+                                    <div class="auth-input-group">
+                                        <label data-i18n="kyc_type_lbl">ID Document Type</label>
+                                        <select id="kyc-id-type" style="width: 100%; height: 44px; background: #F8FAFC; border: 1.5px solid var(--border); border-radius: 10px; padding: 0 16px; font-size: 0.82rem; font-weight: 600; outline: none; transition: var(--transition);">
+                                            <option value="ID_CARD">🪪 Aadhaar Card (Indian National ID)</option>
+                                            <option value="PASSPORT">🌐 International Passport (Global)</option>
+                                            <option value="DRIVERS_LICENSE">🚗 Drivers License</option>
+                                        </select>
+                                    </div>
+                                    <div class="auth-input-group">
+                                        <label data-i18n="kyc_number_lbl">Document Number</label>
+                                        <input type="text" id="kyc-id-number" required placeholder="Enter ID document number" data-i18n-placeholder="kyc_number_placeholder">
+                                    </div>
+                                    <div class="auth-input-group">
+                                        <label data-i18n="kyc_front_lbl">ID Card Front Photo</label>
+                                        <div class="upload-container" id="kyc-front-upload-box" style="border: 2px dashed rgba(91,81,249,0.25); border-radius: 12px; padding: 16px 12px; text-align: center; cursor: pointer; background: rgba(91,81,249,0.02); transition: all 0.2s;" onclick="triggerKycUpload('front')">
+                                            <div id="kyc-front-placeholder">
+                                                <div style="font-size: 1.6rem; margin-bottom: 6px;">📸</div>
+                                                <div style="font-weight: 700; font-size: 0.8rem; color: var(--primary);" data-i18n="kyc_upload_front">Click to upload ID Card Front</div>
+                                                <div style="font-size: 0.65rem; color: var(--text-secondary); margin-top: 3px;" data-i18n="kyc_upload_desc">Supports PNG, JPG, JPEG formats</div>
+                                            </div>
+                                            <div id="kyc-front-preview-container" style="display: none; flex-direction: column; align-items: center; gap: 6px;">
+                                                <img id="kyc-front-preview-img" src="" style="max-height: 100px; border-radius: 6px; box-shadow: 0 3px 8px rgba(0,0,0,0.1); object-fit: contain;">
+                                                <span style="font-size: 0.68rem; color: #10B981; font-weight: 600;">✓ Front Photo Ready</span>
+                                            </div>
+                                            <input type="file" id="kyc-front-file" accept="image/*" style="display: none;" onchange="handleKycFileSelect(event, 'front')">
+                                        </div>
+                                        <input type="hidden" id="kyc-front-url" required value="">
+                                    </div>
+                                    <div class="auth-input-group">
+                                        <label data-i18n="kyc_back_lbl">ID Card Back Photo</label>
+                                        <div class="upload-container" id="kyc-back-upload-box" style="border: 2px dashed rgba(91,81,249,0.25); border-radius: 12px; padding: 16px 12px; text-align: center; cursor: pointer; background: rgba(91,81,249,0.02); transition: all 0.2s;" onclick="triggerKycUpload('back')">
+                                            <div id="kyc-back-placeholder">
+                                                <div style="font-size: 1.6rem; margin-bottom: 6px;">📸</div>
+                                                <div style="font-weight: 700; font-size: 0.8rem; color: var(--primary);" data-i18n="kyc_upload_back">Click to upload ID Card Back</div>
+                                                <div style="font-size: 0.65rem; color: var(--text-secondary); margin-top: 3px;" data-i18n="kyc_upload_desc">Supports PNG, JPG, JPEG formats</div>
+                                            </div>
+                                            <div id="kyc-back-preview-container" style="display: none; flex-direction: column; align-items: center; gap: 6px;">
+                                                <img id="kyc-back-preview-img" src="" style="max-height: 100px; border-radius: 6px; box-shadow: 0 3px 8px rgba(0,0,0,0.1); object-fit: contain;">
+                                                <span style="font-size: 0.68rem; color: #10B981; font-weight: 600;">✓ Back Photo Ready</span>
+                                            </div>
+                                            <input type="file" id="kyc-back-file" accept="image/*" style="display: none;" onchange="handleKycFileSelect(event, 'back')">
+                                        </div>
+                                        <input type="hidden" id="kyc-back-url" required value="">
+                                    </div>
+                                </div>
+                                
+                                <div class="security-privacy-tip" style="margin-bottom: 20px; font-size: 0.72rem; color: var(--text-muted); line-height: 1.4;" data-i18n="kyc_privacy">
+                                    🔒 Sensitive data encrypted via AES-256 locally for AML audits only.
+                                </div>
+                                
+                                <button type="submit" class="auth-btn" data-i18n="kyc_submit">Submit KYC Application</button>
+                            </form>
+                        </div>
+                        <div style="height: 70px;"></div>
+                    </div>

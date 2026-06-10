@@ -1,0 +1,69 @@
+﻿            <div class="view-tab-content active" id="view-withdraw">
+                <div class="glass-panel data-panel" style="padding: 18px;">
+                    <!-- Unified Advanced Query and Filter Panel -->
+                    <div style="border-bottom: 1.5px solid var(--border-light); padding-bottom: 15px; margin-bottom: 15px;">
+                        <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap; justify-content: space-between;">
+                            <!-- Filter Inputs Left -->
+                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1;">
+                                <div class="data-panel-title" style="font-size: 1.0rem; color: var(--primary); display: flex; align-items: center; gap: 6px; margin-right: 10px; font-weight: bold;">💸 提现审核</div>
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">手机号码</span>
+                                    <input type="text" id="filter-withdraw-phone" placeholder="输入手机号" oninput="window.adminPages.withdraw.current=1; loadWithdrawList()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 6px; width: 120px; background: transparent; color: var(--text-primary);">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">流水 ID</span>
+                                    <input type="text" id="filter-withdraw-id" placeholder="输入流水ID" oninput="window.adminPages.withdraw.current=1; loadWithdrawList()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 6px; width: 120px; background: transparent; color: var(--text-primary);">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">状态</span>
+                                    <select class="filter-select" id="withdraw-status-filter" onchange="window.adminPages.withdraw.current=1; loadWithdrawList()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 4px; width: 140px;">
+                                        <option value="ALL">全部状态</option>
+                                        <option value="PENDING">待审核 (PENDING)</option>
+                                        <option value="ACCEPTED">已受理 (ACCEPTED)</option>
+                                        <option value="COMPLETED">已完成 (COMPLETED)</option>
+                                        <option value="REJECTED">已拒绝 (REJECTED)</option>
+                                        <option value="FAILED">已失败 (FAILED)</option>
+                                        <option value="CANCELED">已取消 (CANCELED)</option>
+                                    </select>
+                                </div>
+                                <button class="action-btn" onclick="loadWithdrawList()" style="background: #5B51F9; color: #FFF; font-size: 0.72rem; padding: 4px 10px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 28px;">查询</button>
+                                <button class="action-btn" onclick="resetWithdrawFilters()" style="background: #E2E8F0; color: #475569; font-size: 0.72rem; padding: 4px 10px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 28px;">重置</button>
+                            </div>
+                            
+                            <!-- Pagination Controls Right -->
+                            <div style="display: flex; gap: 6px; align-items: center; background: rgba(255, 255, 255, 0.05); padding: 2px 8px; border-radius: 6px; border: 1.5px solid var(--border-light);">
+                                <select class="filter-select" id="withdraw-size-select" onchange="changeAdminPageSize('withdraw', this.value)" style="height: 24px; font-size: 0.7rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 2px; width: 85px; background: transparent; color: var(--text-primary); font-weight: 600; cursor: pointer; outline: none; margin-right: 5px;">
+                                    <option value="5">5 条/页</option>
+                                    <option value="10" selected>10 条/页</option>
+                                    <option value="20">20 条/页</option>
+                                    <option value="50">50 条/页</option>
+                                </select>
+                                <button class="action-btn" onclick="changeAdminPage('withdraw', -1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">上一页</button>
+                                <span id="withdraw-page-indicator" style="font-size: 0.72rem; font-weight: 600; color: var(--text-primary); margin: 0 4px; white-space: nowrap;">第 1 / 1 页 (共 0 条)</span>
+                                <button class="action-btn" onclick="changeAdminPage('withdraw', 1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">下一页</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>流水 ID</th>
+                                    <th>手机号码</th>
+                                    <th>出金通道 / 网络</th>
+                                    <th>提现申请金额</th>
+                                    <th>目标接收地址 / 银行账号</th>
+                                    <th>状态</th>
+                                    <th>申请时间</th>
+                                    <th class="sticky-right" style="text-align: center;">操作选项</th>
+                                </tr>
+                            </thead>
+                            <tbody id="withdraw-table-body">
+                                <!-- Loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 7: PLATFORM PAYMENT CHANNELS MANAGEMENT (支付通道管理) -->

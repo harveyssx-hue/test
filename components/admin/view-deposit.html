@@ -1,0 +1,68 @@
+﻿            <div class="view-tab-content active" id="view-deposit">
+                <div class="glass-panel data-panel" style="padding: 18px;">
+                    <!-- Unified Advanced Query and Filter Panel -->
+                    <div style="border-bottom: 1.5px solid var(--border-light); padding-bottom: 15px; margin-bottom: 15px;">
+                        <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap; justify-content: space-between;">
+                            <!-- Filter Inputs Left -->
+                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1;">
+                                <div class="data-panel-title" style="font-size: 1.0rem; color: var(--primary); display: flex; align-items: center; gap: 6px; margin-right: 10px; font-weight: bold;">💰 充值审核</div>
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">注册手机号</span>
+                                    <input type="text" id="filter-deposit-phone" placeholder="输入手机号" oninput="window.adminPages.deposit.current=1; loadDepositList()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 6px; width: 130px; background: transparent; color: var(--text-primary);">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">防伪识别码</span>
+                                    <input type="text" id="filter-deposit-remittance" placeholder="输入防伪识别码" oninput="window.adminPages.deposit.current=1; loadDepositList()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 6px; width: 130px; background: transparent; color: var(--text-primary);">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">状态</span>
+                                    <select class="filter-select" id="deposit-status-filter" onchange="window.adminPages.deposit.current=1; loadDepositList()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 4px; width: 140px;">
+                                        <option value="ALL">全部状态</option>
+                                        <option value="PENDING">待审核 (PENDING)</option>
+                                        <option value="CONFIRMED">已确认 (CONFIRMED)</option>
+                                        <option value="CREDITED">已入账 (CREDITED)</option>
+                                        <option value="REJECTED">已拒绝 (REJECTED)</option>
+                                        <option value="TIMEOUT">已超时 (TIMEOUT)</option>
+                                    </select>
+                                </div>
+                                <button class="action-btn" onclick="loadDepositList()" style="background: #5B51F9; color: #FFF; font-size: 0.72rem; padding: 4px 10px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 28px;">查询</button>
+                                <button class="action-btn" onclick="resetDepositFilters()" style="background: #E2E8F0; color: #475569; font-size: 0.72rem; padding: 4px 10px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 28px;">重置</button>
+                            </div>
+                            
+                            <!-- Pagination Controls Right -->
+                            <div style="display: flex; gap: 6px; align-items: center; background: rgba(255, 255, 255, 0.05); padding: 2px 8px; border-radius: 6px; border: 1.5px solid var(--border-light);">
+                                <select class="filter-select" id="deposit-size-select" onchange="changeAdminPageSize('deposit', this.value)" style="height: 24px; font-size: 0.7rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 2px; width: 85px; background: transparent; color: var(--text-primary); font-weight: 600; cursor: pointer; outline: none; margin-right: 5px;">
+                                    <option value="5">5 条/页</option>
+                                    <option value="10" selected>10 条/页</option>
+                                    <option value="20">20 条/页</option>
+                                    <option value="50">50 条/页</option>
+                                </select>
+                                <button class="action-btn" onclick="changeAdminPage('deposit', -1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">上一页</button>
+                                <span id="deposit-page-indicator" style="font-size: 0.72rem; font-weight: 600; color: var(--text-primary); margin: 0 4px; white-space: nowrap;">第 1 / 1 页 (共 0 条)</span>
+                                <button class="action-btn" onclick="changeAdminPage('deposit', 1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">下一页</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>注册手机号</th>
+                                    <th>充值方式</th>
+                                    <th>充值金额 (USDT)</th>
+                                    <th>防伪识别码</th>
+                                    <th>凭证截图</th>
+                                    <th>状态</th>
+                                    <th>申请时间</th>
+                                    <th class="sticky-right" style="text-align: center;">操作选项</th>
+                                </tr>
+                            </thead>
+                            <tbody id="deposit-table-body">
+                                <!-- Loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 6: WITHDRAW AUDIT CENTER (提现审核) -->

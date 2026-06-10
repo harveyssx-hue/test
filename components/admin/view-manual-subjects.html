@@ -1,0 +1,90 @@
+﻿            <div class="view-tab-content active" id="view-manual-subjects">
+                <div class="glass-panel data-panel" style="padding: 18px;">
+                    <!-- Unified Filter Panel -->
+                    <div style="border-bottom: 1.5px solid var(--border-light); padding-bottom: 15px; margin-bottom: 15px;">
+                        <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap; justify-content: space-between;">
+                            <!-- Header and Add Button Left -->
+                            <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap; flex: 1;">
+                                <div class="data-panel-title" style="font-size: 1.0rem; color: var(--primary); display: flex; align-items: center; gap: 6px; margin-right: 10px; font-weight: bold;">📚 存提科目管理</div>
+                                <button class="action-btn btn-approve" onclick="openSubjectAddModal()" style="background: #5B51F9; color: #FFF; font-size: 0.72rem; padding: 4px 12px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 28px;">+ 新增会计科目</button>
+                            </div>
+                            
+                            <!-- Pagination Controls Right -->
+                            <div style="display: flex; gap: 6px; align-items: center; background: rgba(255, 255, 255, 0.05); padding: 2px 8px; border-radius: 6px; border: 1.5px solid var(--border-light);">
+                                <select class="filter-select" id="manualSubjects-size-select" onchange="changeAdminPageSize('manualSubjects', this.value)" style="height: 24px; font-size: 0.7rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 2px; width: 85px; background: transparent; color: var(--text-primary); font-weight: 600; cursor: pointer; outline: none; margin-right: 5px;">
+                                    <option value="5">5 条/页</option>
+                                    <option value="10" selected>10 条/页</option>
+                                    <option value="20">20 条/页</option>
+                                </select>
+                                <button class="action-btn" onclick="changeAdminPage('manualSubjects', -1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">上一页</button>
+                                <span id="manualSubjects-page-indicator" style="font-size: 0.72rem; font-weight: 600; color: var(--text-primary); margin: 0 4px; white-space: nowrap;">第 1 / 1 页 (共 0 条)</span>
+                                <button class="action-btn" onclick="changeAdminPage('manualSubjects', 1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">下一页</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>科目 ID</th>
+                                    <th>科目名称</th>
+                                    <th>识别编码</th>
+                                    <th>适用范围</th>
+                                    <th>备注描述</th>
+                                    <th>启用状态</th>
+                                    <th>操作选项</th>
+                                </tr>
+                            </thead>
+                            <tbody id="manual-subjects-table-body">
+                                <!-- Loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION: TRADING INSTRUMENTS MANAGEMENT (交易商品管理) -->
+    <!-- VIEW: MANUAL SUBJECT CREATION/EDIT MODAL -->
+    <div class="overlay" id="manual-subject-modal">
+        <div class="glass-panel modal-content-payment" style="max-width: 480px; padding: 30px;">
+            <button class="drawer-close-btn" onclick="closeSubjectModal()" style="top: 24px; right: 24px; font-size: 1.2rem; color: var(--text-secondary); background: transparent; border: none; cursor: pointer;">✕</button>
+            <div class="modal-header-admin" style="margin-bottom: 24px; border-bottom: 1px solid #F1F5F9; padding-bottom: 16px;">
+                <h2 style="font-size: 1.35rem; display: flex; align-items: center; gap: 8px; color: var(--text-primary); margin: 0;" id="manual-subject-title">📚 会计科目配置</h2>
+                <p style="font-size: 0.78rem; color: #64748B; margin-top: 6px; font-weight: 500; margin-bottom: 0;">配置并管理手工出入金归集所依据的会计分类科目及其适用范围</p>
+            </div>
+            
+            <form class="auth-form" onsubmit="submitSubjectForm(event)">
+                <input type="hidden" id="manual-subject-edit-id">
+                
+                <div class="form-grid-2" style="margin-bottom: 15px;">
+                    <div class="auth-input-group">
+                        <label>科目名称</label>
+                        <input type="text" id="manual-subject-name" required placeholder="如: 拉新赠金">
+                    </div>
+                    <div class="auth-input-group">
+                        <label>识别代码 (Code)</label>
+                        <input type="text" id="manual-subject-code" required placeholder="如: WELCOME_BONUS" style="text-transform: uppercase;">
+                    </div>
+                </div>
+                
+                <div class="auth-input-group" style="margin-bottom: 15px;">
+                    <label>适用范围 (Scope)</label>
+                    <select id="manual-subject-scope" required class="payment-add-select">
+                        <option value="DEPOSIT">仅适用于充值 (DEPOSIT)</option>
+                        <option value="WITHDRAW">仅适用于扣款 (WITHDRAW)</option>
+                        <option value="BOTH">充值扣款通用 (BOTH)</option>
+                    </select>
+                </div>
+                
+                <div class="auth-input-group" style="width: 100%; margin-bottom: 20px;">
+                    <label>备注说明 (Memo)</label>
+                    <textarea id="manual-subject-memo" placeholder="该会计科目流向的具体业务说明或约束场景" style="height: 70px; resize: none; box-sizing: border-box;"></textarea>
+                </div>
+                
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" class="action-btn" style="flex: 1; background: rgba(0,0,0,0.05); color: var(--text-primary); height: 42px; border: 1.5px solid var(--border-light); cursor: pointer; border-radius: 8px;" onclick="closeSubjectModal()">取消</button>
+                    <button type="submit" class="action-btn" style="flex: 1.5; background: var(--primary); color: #FFF; height: 42px; border: none; cursor: pointer; border-radius: 8px; font-weight: bold;">保存科目信息</button>
+                </div>
+            </form>
+        </div>
+    </div>

@@ -1,0 +1,8 @@
+{
+  "code": 200,
+  "message": "SUCCESS",
+  "data": {
+    "accessToken": "mock_access_token_val_999888",
+    "sessionKey": "bW9ja19zZXNzaW9uX2tleV9mb3JfZGV2ZWxvcG1lbnRfc2VjdXJpdHlfYWN0aXZlXzEyMw=="
+  }
+}

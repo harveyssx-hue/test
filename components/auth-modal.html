@@ -1,0 +1,81 @@
+﻿<div class="overlay" id="auth-modal">
+                    <!-- Screen 1: Phone Number Input (Full Screen Style) -->
+                    <div class="auth-screen-container" id="auth-step-phone">
+                        <!-- Top Left Close Button for Guest Mode -->
+                        <button type="button" class="auth-sheet-close" onclick="closeAuthModal()" style="left: 16px; right: auto; top: 16px;">✕</button>
+                        
+                        <!-- Top Right Language Selector -->
+                        <div class="auth-lang-container">
+                            <button type="button" onclick="toggleAuthLangDropdown(event)" class="auth-lang-btn" style="background: #FFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 4px 8px; display: flex; align-items: center; gap: 4px; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.02); height: 32px; outline: none;">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="color: #475569;">
+                                    <path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/>
+                                </svg>
+                                <span style="font-size: 0.5rem; color: #94A3B8; margin-left: 2px;">▼</span>
+                            </button>
+                            <div id="auth-lang-dropdown" class="lang-dropdown" style="display: none; right: 0; top: 36px; min-width: 110px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); background: #fff; border: 1px solid #E2E8F0; z-index: 2005;">
+                                <div class="lang-option" onclick="changeAuthLanguage('en', event)">English</div>
+                                <div class="lang-option" onclick="changeAuthLanguage('hi', event)">हिन्दी</div>
+                            </div>
+                        </div>
+
+                        <!-- Middle Content -->
+                        <div class="auth-center-content">
+                            <!-- App Logo Squircle -->
+                            <img src="images/app_logo.png" class="auth-app-logo" alt="Logo">
+                            
+                            <h2 class="auth-main-title" data-i18n="auth_phone_title">What's your number?</h2>
+                            <p class="auth-sub-title" data-i18n="auth_phone_subtitle">We will create an account if you don't have one.</p>
+
+                            <!-- Phone Input Box -->
+                            <div class="auth-phone-input-wrapper">
+                                <span class="auth-phone-prefix">+91</span>
+                                <span class="auth-phone-divider">|</span>
+                                <input type="tel" id="auth-phone" required placeholder="Enter mobile number" data-i18n-placeholder="auth_phone_placeholder">
+                            </div>
+                        </div>
+
+                        <!-- Bottom Actions -->
+                        <div class="auth-bottom-content">
+                            <!-- Hidden input to store referral code if present -->
+                            <input type="hidden" id="auth-invite-code">
+                            
+                            <button type="button" class="auth-primary-btn" onclick="submitAuthPhoneStep()" data-i18n="auth_proceed_btn">Proceed</button>
+                            
+                            <p class="auth-terms-text">
+                                <span data-i18n="auth_terms_prefix">By continuing, you agree to our </span>
+                                <a href="javascript:void(0)" onclick="openPlatformAgreementModal('login-privacy', event)" data-i18n="auth_terms_policy">Privacy Policy</a>
+                                <span data-i18n="auth_terms_and"> and </span>
+                                <a href="javascript:void(0)" onclick="openPlatformAgreementModal('login-conditions', event)" data-i18n="auth_terms_conditions">Terms and Conditions</a>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Screen 2: OTP Bottom Sheet Overlay -->
+                    <div class="auth-bottom-sheet-overlay" id="auth-otp-sheet-overlay" onclick="closeAuthOtpSheet()"></div>
+                    <div class="auth-bottom-sheet" id="auth-otp-sheet">
+                        <button type="button" class="auth-sheet-close" onclick="closeAuthOtpSheet()">✕</button>
+                        
+                        <h3 class="auth-sheet-title" data-i18n="auth_otp_title">Please enter the verification code</h3>
+                        <p class="auth-sheet-subtitle">
+                            <span data-i18n="auth_otp_sent_to">Verification code has been sent to mobile number</span>
+                            <strong id="auth-otp-target-phone">+91 12345 67890</strong>
+                        </p>
+
+                        <form class="auth-form" onsubmit="handleAuthSubmit(event)">
+                            <!-- Verification code input -->
+                            <div class="auth-otp-input-wrapper">
+                                <input type="text" id="auth-code" required placeholder="Enter verification code" data-i18n-placeholder="auth_code_placeholder" maxlength="6">
+                            </div>
+
+                            <!-- Resend timer text -->
+                            <p class="auth-otp-timer-text" id="auth-otp-timer-text">
+                                Resend verification code (<span id="auth-otp-countdown">59</span>s)
+                            </p>
+                            
+                            <!-- Resend trigger button (hidden by default until countdown finishes) -->
+                            <button type="button" id="auth-otp-resend-btn" onclick="handleSendOTP()" style="display: none; background: none; border: none; color: #1A3EC1; font-weight: 700; font-size: 0.78rem; cursor: pointer; margin: 0 auto 16px; outline: none;" data-i18n="auth_btn_resend_otp">Resend verification code</button>
+
+                            <button type="submit" class="auth-primary-btn" data-i18n="auth_btn_verify">Verify</button>
+                        </form>
+                    </div>
+                </div>

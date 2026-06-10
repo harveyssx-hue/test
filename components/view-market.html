@@ -1,0 +1,167 @@
+<div id="view-market" class="view-tab-content">
+                        
+                        <!-- LEVEL 1: MARKET WATCHLIST -->
+                        <div id="market-list-view">
+                            <!-- Market View Header (Identical squircle layout) -->
+                            <div class="home-header" style="display: flex; align-items: center; padding: 12px 16px 8px; gap: 8px;">
+                                <div class="home-avatar-btn" onclick="switchTab('profile')" style="width: 38px; height: 38px; border-radius: 12px; background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); cursor: pointer; border: 1.5px solid rgba(255, 255, 255, 0.85); overflow: hidden; flex-shrink: 0; transition: var(--transition);">
+                                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#38BDF8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10"></path>
+                                    </svg>
+                                </div>
+                                
+                                <div class="home-search-bar" onclick="openSearchModal()" style="flex: 1; height: 38px; background: #F1F5F9; border-radius: 12px; display: flex; align-items: center; padding: 0 12px; cursor: pointer; transition: var(--transition); border: 1px solid transparent;">
+                                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="var(--text-muted)" stroke-width="2.5" style="margin-right: 8px;"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                                    <span style="font-size: 0.78rem; color: var(--text-muted); font-weight: 500;" data-i18n="home_search_script">Search for a scrip</span>
+                                </div>
+                                
+                                <button class="h-action-btn" onclick="openAdvisoryModal()" style="width: 38px; height: 38px; border-radius: 50%; background: transparent; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); border: none; cursor: pointer; transition: var(--transition); flex-shrink: 0;">
+                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
+                                        <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
+                                        <path d="M21 16v.01"></path>
+                                        <path d="M3 16v.01"></path>
+                                    </svg>
+                                </button>
+                                
+                                <div style="position: relative; flex-shrink: 0;">
+                                    <button class="h-action-btn lang-switch-btn" onclick="toggleLanguageDropdown(event)" style="width: 38px; height: 38px; border-radius: 50%; background: transparent; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); border: none; cursor: pointer; transition: var(--transition);">
+                                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Market Index Cards Slider (Concurrently feeds alongside Home indexes) -->
+                            <div class="home-ticker-slider" style="display: flex; gap: 12px; overflow-x: auto; padding: 4px 16px 12px; margin-bottom: 8px; scrollbar-width: none; -webkit-overflow-scrolling: touch;">
+                                <div class="ticker-card" onclick="switchActiveSymbol('BTCUSDT')" style="flex: 0 0 145px; background: #FFF; border-radius: 20px; padding: 14px 12px 0; box-shadow: var(--shadow); border: 1.5px solid var(--border-light); cursor: pointer; transition: var(--transition); display: flex; flex-direction: column; overflow: hidden; position: relative; height: 110px;">
+                                    <span style="font-size: 0.72rem; font-weight: 800; color: var(--text-primary); text-align: left;">BTCUSDT</span>
+                                    <div style="display: flex; align-items: baseline; justify-content: flex-start; gap: 6px; margin-top: 6px;">
+                                        <span id="m-idx-btc-price" style="font-size: 1.05rem; font-weight: 850; color: var(--green); font-family: 'Outfit';">--</span>
+                                        <span id="m-idx-btc-change-badge" style="font-size: 0.62rem; font-weight: 750; color: var(--green); background: var(--green-light); padding: 1px 5px; border-radius: 6px; font-family: 'Outfit'; display: flex; align-items: center; gap: 1px;">--</span>
+                                    </div>
+                                    <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 35px;">
+                                        <canvas class="sparkline-canvas" id="m-idx-btc-canvas" width="145" height="35" style="width: 100%; height: 100%; display: block;"></canvas>
+                                    </div>
+                                </div>
+                                <div class="ticker-card" onclick="switchActiveSymbol('SOLUSDT')" style="flex: 0 0 145px; background: #FFF; border-radius: 20px; padding: 14px 12px 0; box-shadow: var(--shadow); border: 1.5px solid var(--border-light); cursor: pointer; transition: var(--transition); display: flex; flex-direction: column; overflow: hidden; position: relative; height: 110px;">
+                                    <span style="font-size: 0.72rem; font-weight: 800; color: var(--text-primary); text-align: left;">SOLUSDT</span>
+                                    <div style="display: flex; align-items: baseline; justify-content: flex-start; gap: 6px; margin-top: 6px;">
+                                        <span id="m-idx-sol-price" style="font-size: 1.05rem; font-weight: 850; color: var(--green); font-family: 'Outfit';">--</span>
+                                        <span id="m-idx-sol-change-badge" style="font-size: 0.62rem; font-weight: 750; color: var(--green); background: var(--green-light); padding: 1px 5px; border-radius: 6px; font-family: 'Outfit'; display: flex; align-items: center; gap: 1px;">--</span>
+                                    </div>
+                                    <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 35px;">
+                                        <canvas class="sparkline-canvas" id="m-idx-sol-canvas" width="145" height="35" style="width: 100%; height: 100%; display: block;"></canvas>
+                                    </div>
+                                </div>
+                                <div class="ticker-card" onclick="switchActiveSymbol('ETHUSDT')" style="flex: 0 0 145px; background: #FFF; border-radius: 20px; padding: 14px 12px 0; box-shadow: var(--shadow); border: 1.5px solid var(--border-light); cursor: pointer; transition: var(--transition); display: flex; flex-direction: column; overflow: hidden; position: relative; height: 110px;">
+                                    <span style="font-size: 0.72rem; font-weight: 800; color: var(--text-primary); text-align: left;">ETHUSDT</span>
+                                    <div style="display: flex; align-items: baseline; justify-content: flex-start; gap: 6px; margin-top: 6px;">
+                                        <span id="m-idx-eth-price" style="font-size: 1.05rem; font-weight: 850; color: var(--green); font-family: 'Outfit';">--</span>
+                                        <span id="m-idx-eth-change-badge" style="font-size: 0.62rem; font-weight: 750; color: var(--green); background: var(--green-light); padding: 1px 5px; border-radius: 6px; font-family: 'Outfit'; display: flex; align-items: center; gap: 1px;">--</span>
+                                    </div>
+                                    <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 35px;">
+                                        <canvas class="sparkline-canvas" id="m-idx-eth-canvas" width="145" height="35" style="width: 100%; height: 100%; display: block;"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Plate Slider Tab Bar -->
+                            <div class="market-category-slider" style="display: flex; gap: 24px; overflow-x: auto; padding: 12px 16px; border-bottom: 1.5px solid var(--border-light); margin-bottom: 15px; scrollbar-width: none; -webkit-overflow-scrolling: touch; background: #FFF; align-items: center;">
+                                <button class="market-cat-btn" id="m-cat-watchlist" onclick="switchMarketCategory('watchlist')" style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); padding: 6px 0; border: none; background: transparent; cursor: pointer; white-space: nowrap; position: relative; transition: var(--transition);">
+                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" style="display: inline-block; vertical-align: middle; margin-right: 4px; margin-top: -2px;"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span data-i18n="market_cat_watchlist">Watchlist</span>
+                                </button>
+                                <button class="market-cat-btn active" id="m-cat-sector" onclick="switchMarketCategory('sector')" style="font-size: 0.85rem; font-weight: 800; color: var(--primary); padding: 6px 0; border: none; background: transparent; cursor: pointer; white-space: nowrap; position: relative; transition: var(--transition);" data-i18n="market_cat_sector">
+                                    Industry Sector
+                                </button>
+                                <button class="market-cat-btn" id="m-cat-cap" onclick="switchMarketCategory('cap')" style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); padding: 6px 0; border: none; background: transparent; cursor: pointer; white-space: nowrap; position: relative; transition: var(--transition);" data-i18n="market_cat_cap">
+                                    Market Cap
+                                </button>
+                                <button class="market-cat-btn" id="m-cat-volume" onclick="switchMarketCategory('volume')" style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); padding: 6px 0; border: none; background: transparent; cursor: pointer; white-space: nowrap; position: relative; transition: var(--transition);" data-i18n="market_cat_volume">
+                                    Quote Volume
+                                </button>
+                            </div>
+                            
+                            <div class="market-list-container" id="market-list-container">
+                                <!-- Dynamic coin list rows rendered here -->
+                                <div class="loading-state-mini" data-i18n="loading_market_list">Fetching live market feeds...</div>
+                            </div>
+                        </div>
+
+                        <!-- LEVEL 2: INSTRUMENT DETAILS -->
+                        <div id="market-detail-view" style="display: none;">
+                            <div class="sub-header-sticky">
+                                <div class="market-detail-header-row">
+                                    <button class="back-text-btn" onclick="hideMarketDetail()">
+                                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
+                                        <span data-i18n="market_back_to_market">Back to Market</span>
+                                    </button>
+                                    <div class="detail-coin-title-box">
+                                        <img id="detail-coin-logo" src="" style="width: 20px; height: 20px; border-radius: 50%; object-fit: contain; display: none;" />
+                                        <span id="detail-coin-symbol">--</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Real-time metrics bar -->
+                            <div class="market-price-metrics-card">
+                                <div class="m-price-left">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span class="m-price-val" id="market-last-price">--</span>
+                                        <button id="market-watchlist-btn" onclick="toggleWatchlist()" style="background: none; border: none; font-size: 1.35rem; cursor: pointer; color: var(--text-muted); padding: 2px; outline: none; transition: transform 0.2s; line-height: 1;">&#9734;</button>
+                                    </div>
+                                    <span class="m-change-pct" id="market-price-change">--</span>
+                                </div>
+                                <div class="m-price-right">
+                                    <div class="m-stat">
+                                        <span class="m-lbl" data-i18n="market_h24">24h High</span>
+                                        <span class="m-val" id="market-high">--</span>
+                                    </div>
+                                    <div class="m-stat">
+                                        <span class="m-lbl" data-i18n="market_l24">24h Low</span>
+                                        <span class="m-val" id="market-low">--</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Lightweight Chart Container -->
+                            <div class="chart-outer-container">
+                                <div class="chart-title" data-i18n="market_chart_title">1M Live Trend Candlestick Chart</div>
+                                <div class="kline-chart-element" id="kline-chart"></div>
+                            </div>
+
+                            <!-- Orderbook and Trades Grid Layout -->
+                            <div class="market-data-grid">
+                                <!-- Order Book (Left) -->
+                                <div class="market-depth-panel">
+                                    <div class="panel-header" data-i18n="market_depth_title">Order Book</div>
+                                    <div class="ob-list-container">
+                                        <div class="ob-labels">
+                                            <span data-i18n="market_depth_price">Price</span>
+                                            <span class="text-right" data-i18n="market_depth_qty">Amount</span>
+                                        </div>
+                                        <!-- Asks -->
+                                        <div class="ob-asks-list" id="ob-asks-list"></div>
+                                        <!-- Spread -->
+                                        <div class="ob-spread-bar" id="ob-spread-price">--</div>
+                                        <!-- Bids -->
+                                        <div class="ob-bids-list" id="ob-bids-list"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Trades (Right) -->
+                                <div class="market-trades-panel">
+                                    <div class="panel-header" data-i18n="market_trades_title">Recent Trades</div>
+                                    <div class="trades-container">
+                                        <div class="trades-labels">
+                                            <span data-i18n="market_depth_price">Price</span>
+                                            <span class="text-right" data-i18n="market_trades_time">Time</span>
+                                        </div>
+                                        <div class="trades-list-box" id="trades-ticker-list"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="height: 70px;"></div> <!-- Spacer -->
+                    </div>

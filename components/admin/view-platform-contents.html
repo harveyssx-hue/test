@@ -1,0 +1,146 @@
+﻿             <div class="view-tab-content active" id="view-platform-contents">
+                 <div class="glass-panel filter-panel" style="margin-bottom: 18px; padding: 15px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 15px;">
+                     <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+                         <div style="display: flex; flex-direction: column; gap: 4px;">
+                             <label style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 700;">文档分类 (Category)</label>
+                             <select id="filter-doc-category" onchange="loadPlatformContentsList(1)" style="height: 36px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--border-light); background: #fff; color: var(--text-primary); min-width: 140px; font-size: 0.85rem;">
+                                 <option value="">全部分类 (All)</option>
+                                 <option value="AGREEMENT">协议条款 (AGREEMENT)</option>
+                                 <option value="HELP">帮助中心 (HELP)</option>
+                                 <option value="OPERATION_TIP">操作提示 (OPERATION_TIP)</option>
+                             </select>
+                         </div>
+                         <div style="display: flex; flex-direction: column; gap: 4px;">
+                             <label style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 700;">语言 Tag (Locale)</label>
+                             <select id="filter-doc-lang" onchange="loadPlatformContentsList(1)" style="height: 36px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--border-light); background: #fff; color: var(--text-primary); min-width: 120px; font-size: 0.85rem;">
+                                 <option value="">全部语言 (All)</option>
+                                 <option value="en">English (en)</option>
+                                 <option value="hi">हिन्दी (hi)</option>
+                                 <option value="zh-CN">简体中文 (zh-CN)</option>
+                             </select>
+                         </div>
+                         <div style="display: flex; flex-direction: column; gap: 4px;">
+                             <label style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 700;">关键词搜索 (Keyword)</label>
+                             <div style="position: relative;">
+                                 <input type="text" id="search-doc-keyword" placeholder="标题 / 业务编码 / 摘要" style="height: 36px; padding: 0 10px 0 30px; border-radius: 6px; border: 1px solid var(--border-light); background: #fff; color: var(--text-primary); width: 220px; font-size: 0.85rem;">
+                                 <span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 0.82rem; color: var(--text-secondary);">🔍</span>
+                             </div>
+                         </div>
+                         <button class="action-btn-search" onclick="loadPlatformContentsList(1)" style="align-self: flex-end; height: 36px; padding: 0 15px; border-radius: 6px; background: var(--primary); color: #fff; border: none; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                             查询
+                         </button>
+                     </div>
+                     <button class="action-btn-search" onclick="openPlatformContentsDrawer()" style="align-self: flex-end; height: 36px; padding: 0 15px; border-radius: 6px; background: #10B981; color: #fff; border: none; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                         ➕ 新建文档
+                     </button>
+                 </div>
+
+                 <div class="glass-panel data-panel" style="padding: 18px;">
+                     <div class="table-container" style="border: 1px solid var(--border-light); border-radius: 10px; overflow: auto; background: rgba(255, 255, 255, 0.2);">
+                         <table style="min-width: 900px; border-collapse: collapse; text-align: left;">
+                             <thead>
+                                 <tr style="border-bottom: 1.5px solid var(--border-light); background: rgba(255,255,255,0.4);">
+                                     <th style="width: 80px; font-weight: 700;">ID</th>
+                                     <th style="width: 140px; font-weight: 700;">业务编码 (Code)</th>
+                                     <th style="width: 120px; font-weight: 700;">分类 (Category)</th>
+                                     <th style="width: 100px; font-weight: 700;">语言 (Lang)</th>
+                                     <th style="width: 180px; font-weight: 700;">标题 (Title)</th>
+                                     <th style="width: 80px; font-weight: 700;">排序 (Order)</th>
+                                     <th style="width: 80px; font-weight: 700;">状态 (Status)</th>
+                                     <th style="width: 160px; font-weight: 700;">最后更新</th>
+                                     <th style="font-weight: 700; text-align: center;">操作</th>
+                                 </tr>
+                             </thead>
+                             <tbody id="platform-contents-table-body">
+                                 <tr>
+                                     <td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">🔄 正在读取 platform docs 列表...</td>
+                                 </tr>
+                             </tbody>
+                         </table>
+                     </div>
+
+                     <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: var(--text-secondary);">
+                         <div>
+                             共 <span id="doc-total-count" style="color: var(--primary); font-weight: bold;">0</span> 条记录，
+                             当前第 <span id="doc-current-page" style="color: var(--primary); font-weight: bold;">1</span> / <span id="doc-total-pages" style="color: var(--primary); font-weight: bold;">1</span> 页
+                         </div>
+                         <div style="display: flex; gap: 8px;">
+                             <button class="action-btn-search" id="btn-doc-prev" onclick="changePlatformContentsPage(-1)" style="height: 32px; padding: 0 12px; border-radius: 4px; background: rgba(0,0,0,0.05); border: 1px solid var(--border-light); font-size: 0.8rem; cursor: pointer; color: var(--text-primary);">上一页</button>
+                             <button class="action-btn-search" id="btn-doc-next" onclick="changePlatformContentsPage(1)" style="height: 32px; padding: 0 12px; border-radius: 4px; background: rgba(0,0,0,0.05); border: 1px solid var(--border-light); font-size: 0.8rem; cursor: pointer; color: var(--text-primary);">下一页</button>
+                         </div>
+                     </div>
+                 </div>
+             </div>
+
+             <!-- SECTION 10: SYSTEM TENANT SETTINGS (系统租户设置) -->
+    <div class="drawer-overlay" id="platform-contents-overlay" onclick="closePlatformContentsDrawer()"></div>
+    <div class="drawer-sheet" id="platform-contents-drawer" style="width: 95%; max-width: 720px; overflow-y: auto;">
+        <button class="drawer-close-btn" onclick="closePlatformContentsDrawer()">✕</button>
+        <div class="drawer-header-audit" style="margin-bottom: 24px; border-bottom: 1px solid #F1F5F9; padding-bottom: 16px;">
+            <h2 id="platform-contents-drawer-title" style="font-size: 1.35rem; display: flex; align-items: center; gap: 8px; color: var(--text-primary);">📝 新建平台文档</h2>
+            <p style="font-size: 0.78rem; color: #64748B; margin-top: 6px; font-weight: 500;">创建或编辑平台协议条款、新手学院（HELP）及运营操作提示内容页</p>
+        </div>
+        
+        <form id="platform-contents-form" onsubmit="savePlatformContentSubmit(event)" style="display: flex; flex-direction: column; gap: 15px;">
+            <input type="hidden" id="edit-doc-id">
+            
+            <div class="form-grid-2">
+                <div class="auth-input-group">
+                    <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 700; margin-bottom: 6px; display: block;">文档分类 (Category) *</label>
+                    <select id="edit-doc-category" required style="width: 100%; height: 38px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--border-light); background: #fff;">
+                        <option value="AGREEMENT">协议条款 (AGREEMENT)</option>
+                        <option value="HELP">帮助中心 (HELP)</option>
+                        <option value="OPERATION_TIP">操作提示 (OPERATION_TIP)</option>
+                    </select>
+                </div>
+                <div class="auth-input-group">
+                    <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 700; margin-bottom: 6px; display: block;">业务编码 (Code) *</label>
+                    <input type="text" id="edit-doc-code" required placeholder="如: copytrade-agreement" style="width: 100%; height: 38px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--border-light); background: #fff;">
+                </div>
+            </div>
+            
+            <div class="form-grid-2">
+                <div class="auth-input-group">
+                    <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 700; margin-bottom: 6px; display: block;">语言代码 (Lang) *</label>
+                    <select id="edit-doc-lang" required style="width: 100%; height: 38px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--border-light); background: #fff;">
+                        <option value="en">English (en)</option>
+                        <option value="hi">हिन्दी (hi)</option>
+                        <option value="zh-CN">简体中文 (zh-CN)</option>
+                    </select>
+                </div>
+                <div class="auth-input-group">
+                    <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 700; margin-bottom: 6px; display: block;">排序值 (Order Index) *</label>
+                    <input type="number" id="edit-doc-orderIndex" required value="1" style="width: 100%; height: 38px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--border-light); background: #fff;">
+                </div>
+            </div>
+            
+            <div class="auth-input-group">
+                <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 700; margin-bottom: 6px; display: block;">文档标题 (Title) *</label>
+                <input type="text" id="edit-doc-title" required placeholder="文档标题" style="width: 100%; height: 38px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--border-light); background: #fff;">
+            </div>
+            
+            <div class="auth-input-group">
+                <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 700; margin-bottom: 6px; display: block;">文档摘要 (Summary)</label>
+                <textarea id="edit-doc-summary" placeholder="简要描述文档场景" style="width: 100%; height: 60px; padding: 10px; border-radius: 6px; border: 1px solid var(--border-light); background: #fff; resize: vertical;"></textarea>
+            </div>
+            
+            <div class="auth-input-group">
+                <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 700; margin-bottom: 6px; display: block;">启用状态 (Status)</label>
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; margin-top: 5px;">
+                    <input type="checkbox" id="edit-doc-enabled" checked style="width: 16px; height: 16px;"> 启用当前内容页
+                </label>
+            </div>
+            
+            <div class="auth-input-group">
+                <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 700; margin-bottom: 6px; display: block;">正文内容 (Content - Markdown / Plain Text) *</label>
+                <textarea id="edit-doc-content" required placeholder="# 文档标题&#10;&#10;输入文档详细Markdown正文内容..." style="width: 100%; height: 260px; padding: 10px; border-radius: 6px; border: 1px solid var(--border-light); background: #fff; resize: vertical; font-family: monospace; font-size: 0.85rem; line-height: 1.5;"></textarea>
+            </div>
+            
+            <div class="drawer-footer-actions" style="margin-top: 20px; display: flex; gap: 12px;">
+                <button type="button" class="action-btn" onclick="closePlatformContentsDrawer()" style="flex: 1; padding: 10px; border-radius: 6px; border: 1px solid var(--border-light); background: #fff; color: var(--text-primary); cursor: pointer; font-weight: 600;">取消</button>
+                <button type="submit" class="action-btn" style="flex: 1; padding: 10px; border-radius: 6px; border: none; background: var(--primary); color: #fff; cursor: pointer; font-weight: 600;">保存</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- TRADING INSTRUMENTS EDIT SLIDE DRAWER -->

@@ -1,0 +1,158 @@
+            <div class="view-tab-content active" id="view-users">
+                <div class="glass-panel data-panel" style="padding: 18px;">
+                    <!-- Unified Advanced Query and Filter Panel -->
+                    <div style="border-bottom: 1.5px solid var(--border-light); padding-bottom: 15px; margin-bottom: 15px;">
+                        <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap; justify-content: space-between;">
+                            <!-- Filter Inputs Left -->
+                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1;">
+                                <div class="data-panel-title" style="font-size: 1.0rem; color: var(--primary); display: flex; align-items: center; gap: 6px; margin-right: 10px; font-weight: bold;">👥 用户管理</div>
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">搜索关键字</span>
+                                    <input type="text" id="user-search-input" placeholder="UID/手机号/邮箱/昵称..." oninput="window.adminPages.users.current=1; loadUsersList()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 6px; width: 180px;">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">KYC 状态</span>
+                                    <select class="filter-select" id="filter-users-kyc" onchange="window.adminPages.users.current=1; loadUsersList()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 4px; width: 110px;">
+                                        <option value="ALL">全部</option>
+                                        <option value="APPROVED">已通过 (APPROVED)</option>
+                                        <option value="PENDING">审核中 (PENDING)</option>
+                                        <option value="REJECTED">已拒绝 (REJECTED)</option>
+                                    </select>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">账号状态</span>
+                                    <select class="filter-select" id="filter-users-status" onchange="window.adminPages.users.current=1; loadUsersList()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 4px; width: 110px;">
+                                        <option value="ALL">全部</option>
+                                        <option value="ENABLED">正常 (ENABLED)</option>
+                                        <option value="FROZEN">已冻结 (FROZEN)</option>
+                                        <option value="BLOCKED">已封禁 (BLOCKED)</option>
+                                    </select>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">风控层级</span>
+                                    <select class="filter-select" id="filter-users-risk-level" onchange="window.adminPages.users.current=1; loadUsersList()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 4px; width: 120px;">
+                                        <option value="ALL">全部</option>
+                                    </select>
+                                </div>
+                                <button class="action-btn" onclick="loadUsersList()" style="background: #5B51F9; color: #FFF; font-size: 0.72rem; padding: 4px 10px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 28px;">查询</button>
+                                <button class="action-btn" onclick="resetUsersFilters()" style="background: #E2E8F0; color: #475569; font-size: 0.72rem; padding: 4px 10px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 28px;">重置</button>
+                                <button class="action-btn" id="batch-group-btn" onclick="openBatchGroupModal()" style="background: #10B981; color: #FFF; font-size: 0.72rem; padding: 4px 10px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 28px;">批量分组</button>
+                            </div>
+                            
+                            <!-- Pagination Controls Right -->
+                            <div style="display: flex; gap: 6px; align-items: center; background: rgba(255, 255, 255, 0.05); padding: 2px 8px; border-radius: 6px; border: 1.5px solid var(--border-light);">
+                                <select class="filter-select" id="users-size-select" onchange="changeAdminPageSize('users', this.value)" style="height: 24px; font-size: 0.7rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 2px; width: 85px; background: transparent; color: var(--text-primary); font-weight: 600; cursor: pointer; outline: none; margin-right: 5px;">
+                                    <option value="5">5 条/页</option>
+                                    <option value="10" selected>10 条/页</option>
+                                    <option value="20">20 条/页</option>
+                                    <option value="50">50 条/页</option>
+                                </select>
+                                <button class="action-btn" onclick="changeAdminPage('users', -1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">上一页</button>
+                                <span id="users-page-indicator" style="font-size: 0.72rem; font-weight: 600; color: var(--text-primary); margin: 0 4px; white-space: nowrap;">第 1 / 1 页 (共 0 条)</span>
+                                <button class="action-btn" onclick="changeAdminPage('users', 1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">下一页</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px; text-align: center;"><input type="checkbox" id="user-select-all" onclick="toggleSelectAllUsers(this.checked)" style="cursor: pointer;"></th>
+                                    <th>交易员 UID</th>
+                                    <th>注册手机号</th>
+                                    <th>电子邮箱</th>
+                                    <th>昵称</th>
+                                    <th>合规状态</th>
+                                    <th>风控层级</th>
+                                    <th>用户余额</th>
+                                    <th>注册时间</th>
+                                    <th class="sticky-right" style="text-align: center;">管理操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body">
+                                <!-- Loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 5: DEPOSIT AUDIT CENTER (充值审核) -->
+    <!-- VIEW: USER REFERRALS TREE MODAL -->
+    <div id="user-referrals-modal" class="overlay" style="display: none; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(15px); background: rgba(0,0,0,0.6);">
+        <div class="glass-panel" style="max-width: 820px; width: 90%; padding: 25px; border-radius: 16px; background: rgba(26, 27, 38, 0.95); border: 1.5px solid rgba(255,255,255,0.15); color: #FFFFFF; position: relative; max-height: 85vh; overflow-y: auto;">
+            <button class="drawer-close-btn" onclick="closeUserReferralsModal()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: rgba(255,255,255,0.7); font-size: 1.5rem; cursor: pointer;">✕</button>
+            <div class="modal-header-admin" style="margin-bottom: 20px; border-bottom: 1.5px solid rgba(255,255,255,0.1); padding-bottom: 12px; text-align: left;">
+                <h2 style="font-size: 1.35rem; display: flex; align-items: center; gap: 8px; color: #FFFFFF; margin: 0;">🌳 <span id="ref-user-name-title">用户</span> 的下级邀请用户树</h2>
+                <p style="font-size: 0.78rem; color: rgba(255,255,255,0.6); margin-top: 6px; font-weight: 500; margin-bottom: 0;">实时查询该用户邀请的下级用户裂变网络（最多支持 3 层查询深度），直观还原平台多级推荐关系</p>
+            </div>
+            
+            <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 8px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                <div style="font-size: 0.75rem; color: rgba(255,255,255,0.8);">
+                    <span>当前查询深度：</span>
+                    <strong style="color: #38BDF8;">Level 3</strong>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button class="action-btn" onclick="refreshUserReferralsTree()" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 4px 10px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 28px;">🔄 刷新数据</button>
+                </div>
+            </div>
+            
+            <div id="user-referrals-tree-body" style="max-height: 50vh; overflow-y: auto; padding-right: 5px; display: flex; flex-direction: column; gap: 10px;">
+                <!-- Loaded dynamically -->
+            </div>
+        </div>
+    </div>
+    <!-- VIEW: UPDATE USER REFERRAL MODAL -->
+    <div id="update-referral-modal" class="overlay" style="display: none; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(15px); background: rgba(0,0,0,0.6);">
+        <div class="glass-panel" style="max-width: 420px; width: 90%; padding: 25px; border-radius: 16px; background: rgba(26, 27, 38, 0.95); border: 1.5px solid rgba(255,255,255,0.15); color: #FFFFFF; position: relative; text-align: left;">
+            <button class="drawer-close-btn" onclick="closeUpdateReferralModal()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: rgba(255,255,255,0.7); font-size: 1.5rem; cursor: pointer;">✕</button>
+            <div class="modal-header-admin" style="margin-bottom: 20px; border-bottom: 1.5px solid rgba(255,255,255,0.15); padding-bottom: 12px;">
+                <h2 style="font-size: 1.25rem; display: flex; align-items: center; gap: 8px; color: #FFFFFF; margin: 0;">🔗 变更绑定推荐人</h2>
+                <p style="font-size: 0.78rem; color: rgba(255,255,255,0.6); margin-top: 6px; font-weight: 500; margin-bottom: 0;">正在为用户 <strong id="update-ref-target-name" style="color: #38BDF8;">--</strong> 强制更新推荐人关联关系</p>
+            </div>
+            
+            <div class="auth-input-group" style="margin-bottom: 15px; display: flex; flex-direction: column; gap: 6px;">
+                <label style="font-size: 0.75rem; color: rgba(255,255,255,0.8);">目标推荐人用户 ID (referralUserId)</label>
+                <input type="text" id="update-ref-input-id" required placeholder="请输入新推荐人的主键 ID" style="width: 100%; height: 38px; border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); color: #FFF; padding: 0 12px; box-sizing: border-box; outline: none;">
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 25px;">
+                <button type="button" class="action-btn" style="flex: 1; background: rgba(255,255,255,0.08); color: #FFFFFF; height: 36px; border: 1.5px solid rgba(255,255,255,0.2); cursor: pointer; border-radius: 6px;" onclick="closeUpdateReferralModal()">取消</button>
+                <button type="button" class="action-btn" style="flex: 1; background: var(--primary); color: #FFF; height: 36px; border: none; cursor: pointer; border-radius: 6px; font-weight: 600;" onclick="submitUpdateReferralUser()">确认强行更正</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIEW: SINGLE/BATCH USER GROUPING MODAL -->
+    <div id="user-group-modal" class="overlay" style="display: none; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(15px); background: rgba(0,0,0,0.6);">
+        <div class="glass-panel" style="max-width: 450px; width: 90%; padding: 25px; border-radius: 16px; background: rgba(26, 27, 38, 0.95); border: 1.5px solid rgba(255,255,255,0.15); color: #FFFFFF; position: relative; text-align: left;">
+            <button class="drawer-close-btn" onclick="closeUserGroupModal()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: rgba(255,255,255,0.7); font-size: 1.5rem; cursor: pointer;">✕</button>
+            <div class="modal-header-admin" style="margin-bottom: 20px; border-bottom: 1.5px solid rgba(255,255,255,0.15); padding-bottom: 12px;">
+                <h2 style="font-size: 1.25rem; display: flex; align-items: center; gap: 8px; color: #FFFFFF; margin: 0;" id="user-group-modal-title">🏷️ 用户分组设置 (风控层级)</h2>
+                <p style="font-size: 0.78rem; color: rgba(255,255,255,0.6); margin-top: 6px; font-weight: 500; margin-bottom: 0;" id="user-group-modal-desc">正在为选择的交易员设置所属的风控层级分组</p>
+            </div>
+            
+            <input type="hidden" id="group-target-user-id">
+            
+            <!-- Manual UID / Phone Input for Batch Mode -->
+            <div id="group-manual-input-container" class="auth-input-group" style="margin-bottom: 15px; display: flex; flex-direction: column; gap: 6px;">
+                <label style="font-size: 0.75rem; color: rgba(255,255,255,0.8); font-weight: 600;">手动输入交易员 UID 或手机号 (每行一个，或以逗号/空格分隔)</label>
+                <textarea id="group-manual-inputs" placeholder="例如：
+52912228
++9191376153113" style="width: 100%; height: 90px; border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); color: #FFF; padding: 8px 12px; box-sizing: border-box; outline: none; font-family: monospace; font-size: 0.75rem; resize: none;"></textarea>
+            </div>
+            
+            <div class="auth-input-group" style="margin-bottom: 15px; display: flex; flex-direction: column; gap: 6px;">
+                <label style="font-size: 0.75rem; color: rgba(255,255,255,0.8); font-weight: 600;">选择目标风控层级 (分组)</label>
+                <select id="group-select-level-id" style="width: 100%; height: 38px; border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.2); background: rgba(26, 27, 38, 0.95); color: #FFF; padding: 0 12px; box-sizing: border-box; outline: none; cursor: pointer; font-size: 0.8rem;">
+                    <option value="">-- 请选择风控层级 (无分组) --</option>
+                </select>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 25px;">
+                <button type="button" class="action-btn" style="flex: 1; background: rgba(255,255,255,0.08); color: #FFFFFF; height: 36px; border: 1.5px solid rgba(255,255,255,0.2); cursor: pointer; border-radius: 6px; font-weight: 600;" onclick="closeUserGroupModal()">取消</button>
+                <button type="button" class="action-btn" style="flex: 1; background: var(--primary); color: #FFF; height: 36px; border: none; cursor: pointer; border-radius: 6px; font-weight: 600;" onclick="submitUserGrouping()">确认保存分组</button>
+            </div>
+        </div>
+    </div>
+

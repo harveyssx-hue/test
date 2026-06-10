@@ -1,0 +1,29 @@
+<div id="view-follow" class="view-tab-content">
+                        <div class="sub-header-sticky">
+                            <div class="strategy-header-row">
+                                <button class="back-text-btn" onclick="switchTab('home')">
+                                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
+                                    <span data-i18n="follow_title">AI Quant Strategies</span>
+                                </button>
+                                <button class="filter-header-btn" onclick="showToast(t('follow_toast_sort_adapted'))">
+                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 3H2l8 9v6l4 2v-8z"/></svg>
+                                </button>
+                            </div>
+                            <!-- Segmented risk filters -->
+                            <div class="segmented-tags-scroll">
+                                <button class="seg-tag active" onclick="filterStrategyList('ALL', this)" data-i18n="filter_all">All</button>
+                                <button class="seg-tag" onclick="filterStrategyList('STABLE', this)" data-i18n="filter_stable">Stable</button>
+                                <button class="seg-tag" onclick="filterStrategyList('HIGH', this)" data-i18n="filter_high">High Yield</button>
+                                <button class="seg-tag" onclick="filterStrategyList('SHORT', this)" data-i18n="filter_short">Short Term</button>
+                            </div>
+                        </div>
+
+                        <!-- Strategy Card List -->
+                        <div class="strategy-list-box" id="strategy-list-box">
+                            <!-- Loaded via app.js -->
+                            <div class="loading-state-mini" data-i18n="loading_strategies">Fetching servers quant strategies...</div>
+                        </div>
+
+                        <div style="height: 70px;"></div>
+
+                    </div>

@@ -1,0 +1,122 @@
+﻿<div id="view-deposit" class="view-tab-content">
+                        <div class="sub-header-sticky">
+                            <div class="strategy-header-row">
+                                <button class="back-text-btn" onclick="closeDepositModal()">
+                                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
+                                    <span data-i18n="deposit_channel_title">Deposit Channel</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div style="padding: 10px 4px 15px;">
+                            <div class="modal-header" style="margin-bottom: 15px; padding-left: 5px;">
+                                <h2 style="font-size: 1.4rem; font-weight: 800; color: var(--text-primary);" data-i18n="deposit_title">Fiat/Crypto Compliance Deposit</h2>
+                                <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;" data-i18n="deposit_desc">Support fiat and USDT multichain, AML audit compliance</p>
+                            </div>
+                            
+                            <form class="auth-form" onsubmit="handleDepositFormSubmit(event)">
+                                <div class="auth-input-group">
+                                    <label data-i18n="deposit_amount_lbl">Deposit Amount (USDT / equivalent)</label>
+                                    <input type="number" id="deposit-amount" min="10" step="any" required placeholder="Min deposit 10 USDT or equivalent" data-i18n-placeholder="deposit_amount_placeholder" oninput="calculateDepositConversion()">
+                                    <div id="deposit-exchange-rate-tip" style="font-size: 0.72rem; color: var(--text-secondary); margin-top: 5px; font-weight: 500;">
+                                        Please select deposit channel to view exchange rate and expected credits
+                                    </div>
+                                </div>
+                                
+                                <div class="auth-input-group">
+                                    <label data-i18n="deposit_channel_lbl">Select Channel (Crypto/Fiat Network)</label>
+                                    <div class="payment-channels-list" id="deposit-channels-container" style="display: flex; flex-direction: column; gap: 10px; margin-top: 5px;">
+                                        <div style="text-align: center; padding: 20px; color: var(--text-secondary); font-size: 0.85rem;">
+                                            🔄 Fetching available deposit networks...
+                                        </div>
+                                    </div>
+                                    <input type="hidden" id="selected-payment-method-asset-id" value="">
+                                </div>
+
+                                <!-- Channel Details Card -->
+                                <div class="channel-details-card" id="deposit-channel-details" style="display: none; background: rgba(91,81,249,0.04); border: 1px solid rgba(91,81,249,0.12); padding: 15px; border-radius: 12px; margin-bottom: 15px;">
+                                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                                        <img id="channel-logo" src="" style="width: 28px; height: 28px; border-radius: 6px; object-fit: contain;">
+                                        <div>
+                                            <div id="channel-name" style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary);">USDT-TRC20</div>
+                                            <div id="channel-desc" style="font-size: 0.75rem; color: var(--text-secondary);" data-i18n="deposit_channel_default">TRON Network</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Crypto Details Container -->
+                                    <div id="deposit-crypto-details">
+                                        <div class="auth-input-group" style="margin-bottom: 10px;">
+                                            <label data-i18n="deposit_receiving_addr_lbl">Receiving Wallet Address (USDT Only)</label>
+                                            <div style="display: flex; gap: 8px;">
+                                                <input type="text" id="channel-receiving-address" readonly style="flex: 1; background: #FFF; font-family: monospace; font-size: 0.8rem;" value="Fetching...">
+                                                <button type="button" class="auth-btn" style="padding: 0 15px; width: auto; font-size: 0.8rem;" onclick="copyDepositAddress()" data-i18n="copy_btn">Copy</button>
+                                            </div>
+                                        </div>
+                                        <div style="font-size: 0.72rem; color: #EF4444; font-weight: 600; line-height: 1.4;">
+                                            ⚠️ Warning: Make sure the transfer network matches perfectly! Sending assets to an unsupported network or non-USDT address will result in permanent loss of funds.
+                                        </div>
+                                    </div>
+
+                                    <!-- Fiat Details Container -->
+                                    <div id="deposit-fiat-details" style="display: none; flex-direction: column; gap: 10px;">
+                                        <div class="auth-input-group" style="margin-bottom: 5px;">
+                                            <label data-i18n="deposit_bank_name">Recipient Bank Name</label>
+                                            <div style="display: flex; gap: 8px;">
+                                                <input type="text" id="fiat-bank-name" readonly style="flex: 1; background: #FFF; font-size: 0.82rem; font-weight: 600;" value="">
+                                                <button type="button" class="auth-btn" style="padding: 0 15px; width: auto; font-size: 0.8rem;" onclick="copyFiatValue('fiat-bank-name', 'Bank Name')" data-i18n="copy_btn">Copy</button>
+                                            </div>
+                                        </div>
+                                        <div class="auth-input-group" style="margin-bottom: 5px;">
+                                            <label data-i18n="deposit_beneficiary_name">Recipient Account Name (Beneficiary)</label>
+                                            <div style="display: flex; gap: 8px;">
+                                                <input type="text" id="fiat-account-name" readonly style="flex: 1; background: #FFF; font-size: 0.82rem; font-weight: 600;" value="">
+                                                <button type="button" class="auth-btn" style="padding: 0 15px; width: auto; font-size: 0.8rem;" onclick="copyFiatValue('fiat-account-name', 'Beneficiary')" data-i18n="copy_btn">Copy</button>
+                                            </div>
+                                        </div>
+                                        <div class="auth-input-group" style="margin-bottom: 5px;">
+                                            <label data-i18n="deposit_account_number">Recipient Account Number</label>
+                                            <div style="display: flex; gap: 8px;">
+                                                <input type="text" id="fiat-account-number" readonly style="flex: 1; background: #FFF; font-family: monospace; font-size: 0.85rem; font-weight: 600;" value="">
+                                                <button type="button" class="auth-btn" style="padding: 0 15px; width: auto; font-size: 0.8rem;" onclick="copyFiatValue('fiat-account-number', 'Account Number')" data-i18n="copy_btn">Copy</button>
+                                            </div>
+                                        </div>
+                                        <div class="auth-input-group" style="margin-bottom: 5px;" id="fiat-swift-box">
+                                            <label data-i18n="deposit_swift_code">SWIFT Code</label>
+                                            <div style="display: flex; gap: 8px;">
+                                                <input type="text" id="fiat-swift-code" readonly style="flex: 1; background: #FFF; font-family: monospace; font-size: 0.82rem;" value="">
+                                                <button type="button" class="auth-btn" style="padding: 0 15px; width: auto; font-size: 0.8rem;" onclick="copyFiatValue('fiat-swift-code', 'SWIFT')" data-i18n="copy_btn">Copy</button>
+                                            </div>
+                                        </div>
+                                        <div style="font-size: 0.72rem; color: var(--primary); font-weight: 600; line-height: 1.4; background: rgba(91,81,249,0.06); padding: 8px; border-radius: 6px;">
+                                            ℹ Notice: Fiat deposits will be converted into equivalent USDT at real-time bank settlement rates. Please add the remittance tracking code in your transfer notes to speed up auditing.
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="auth-input-group">
+                                    <label data-i18n="deposit_upload_lbl">Upload Payment Proof Screenshot</label>
+                                    <div class="upload-container" id="deposit-upload-box" style="border: 2px dashed rgba(91,81,249,0.25); border-radius: 12px; padding: 22px 15px; text-align: center; cursor: pointer; background: rgba(91,81,249,0.02); transition: all 0.2s;" onclick="triggerDepositUpload()">
+                                        <div id="upload-placeholder-content">
+                                            <div style="font-size: 1.8rem; margin-bottom: 8px;">📸</div>
+                                            <div style="font-weight: 700; font-size: 0.85rem; color: var(--primary);" data-i18n="deposit_upload_btn">Click to select or upload proof screenshot</div>
+                                            <div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 4px;" data-i18n="deposit_upload_desc">Supports PNG, JPG, JPEG formats</div>
+                                        </div>
+                                        <div id="upload-preview-container" style="display: none; flex-direction: column; align-items: center; gap: 8px;">
+                                            <img id="upload-preview-img" src="" style="max-height: 120px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); object-fit: contain;">
+                                            <span style="font-size: 0.72rem; color: #10B981; font-weight: 600;">✓ Proof screenshot ready, click to re-select</span>
+                                        </div>
+                                        <input type="file" id="deposit-proof-file" accept="image/*" style="display: none;" onchange="handleDepositFileSelect(event)">
+                                    </div>
+                                    <input type="hidden" id="deposit-proof-url" value="">
+                                </div>
+
+                                <div class="auth-input-group" style="margin-bottom: 15px;">
+                                    <label data-i18n="deposit_remit_lbl">AML Tracking Code (remittanceCode)</label>
+                                    <input type="text" id="deposit-remittance-code" required placeholder="Enter AML Tracking Code / Ref / UTR / Tx ID" data-i18n-placeholder="deposit_remit_placeholder" style="font-family: monospace; font-weight: 600;">
+                                </div>
+
+                                <button type="submit" class="auth-btn" id="deposit-submit-btn" style="margin-bottom: 30px;" data-i18n="deposit_submit">Confirm Payment & Submit Request</button>
+                            </form>
+                        </div>
+                        <div style="height: 70px;"></div>
+                    </div>

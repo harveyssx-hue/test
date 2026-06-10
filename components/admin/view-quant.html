@@ -1,0 +1,146 @@
+﻿            <div class="view-tab-content active" id="view-quant">
+                <div class="glass-panel data-panel" style="padding: 18px;">
+                    <!-- Advanced Query and Filter Panel (精简化顶部检索与分页) -->
+                    <div style="border-bottom: 1.5px solid var(--border-light); padding-bottom: 15px; margin-bottom: 15px;">
+                        <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap; justify-content: space-between;">
+                            <!-- Filter Inputs Left -->
+                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1;">
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">跟单用户 UID</span>
+                                    <input type="text" id="filter-quant-uid" placeholder="输入跟单用户UID" oninput="window.adminPages.quant.current=1; loadQuantMonitor()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 6px; width: 120px;">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">订单号</span>
+                                    <input type="text" id="filter-quant-orderNo" placeholder="输入订单号" oninput="window.adminPages.quant.current=1; loadQuantMonitor()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 6px; width: 150px;">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">状态</span>
+                                    <select id="filter-quant-status" onchange="window.adminPages.quant.current=1; loadQuantMonitor()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 4px; width: 140px;">
+                                        <option value="ALL">所有状态</option>
+                                        <option value="PENDING">未审核 (PENDING)</option>
+                                        <option value="ACTIVE">运行中 (ACTIVE)</option>
+                                        <option value="COMPLETED">已结算 (COMPLETED)</option>
+                                    </select>
+                                </div>
+                                <button class="action-btn" onclick="loadQuantMonitor()" style="background: #5B51F9; color: #FFF; font-size: 0.72rem; padding: 4px 10px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 28px;">查询</button>
+                                <button class="action-btn" onclick="resetQuantFilters()" style="background: #E2E8F0; color: #475569; font-size: 0.72rem; padding: 4px 10px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 28px;">重置</button>
+                                <button class="action-btn" onclick="submitBatchOrderReview()" style="background: #1D4ED8; color: #FFF; font-size: 0.72rem; padding: 4px 10px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 28px;">批量通过</button>
+                                <button class="action-btn" onclick="submitAllOrderReview()" style="background: #15803D; color: #FFF; font-size: 0.72rem; padding: 4px 10px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 28px;">一键审核</button>
+                                <button class="action-btn" onclick="showToast('✓ 导出跟单流水报表成功！', false)" style="background: #0D9488; color: #FFF; font-size: 0.72rem; padding: 4px 10px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 28px;">导出</button>
+                            </div>
+                            
+                            <!-- Pagination Controls Right -->
+                            <div style="display: flex; gap: 6px; align-items: center; background: rgba(255, 255, 255, 0.05); padding: 2px 8px; border-radius: 6px; border: 1.5px solid var(--border-light);">
+                                <select class="filter-select" id="quant-size-select" onchange="changeAdminPageSize('quant', this.value)" style="height: 24px; font-size: 0.7rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 2px; width: 85px; background: transparent; color: var(--text-primary); font-weight: 600; cursor: pointer; outline: none; margin-right: 5px;">
+                                    <option value="5">5 条/页</option>
+                                    <option value="10" selected>10 条/页</option>
+                                    <option value="20">20 条/页</option>
+                                    <option value="50">50 条/页</option>
+                                </select>
+                                <button class="action-btn" onclick="changeAdminPage('quant', -1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">上一页</button>
+                                <span id="quant-page-indicator" style="font-size: 0.72rem; font-weight: 600; color: var(--text-primary); margin: 0 4px; white-space: nowrap;">第 1 / 1 页 (共 0 条)</span>
+                                <button class="action-btn" onclick="changeAdminPage('quant', 1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">下一页</button>
+                            </div>
+                        </div>
+                        <div style="margin-top: 8px; font-size: 0.7rem; color: #DC2626; font-weight: 700;">说明: 购买总额 = 本金 + 券金额</div>
+                    </div>
+                    
+                    <!-- Table Container with the new 13 columns structure -->
+                    <div class="table-container compact-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 45px; text-align: center;">
+                                        <input type="checkbox" id="select-all-pending-orders-checkbox" onchange="toggleSelectAllPendingOrders(this)">
+                                    </th>
+                                    <th>交易日期/场次</th>
+                                    <th>会员账号/UID</th>
+                                    <th>跟单类型</th>
+                                    <th>购买总额 (USDT)</th>
+                                    <th>本金金额 (USDT)</th>
+                                    <th>券金额 (USDT)</th>
+                                    <th>仓位比例</th>
+                                    <th>周期(天)</th>
+                                    <th>订单号</th>
+                                    <th>导师/佣金比例</th>
+                                    <th style="text-align: center;">当前状态</th>
+                                    <th style="text-align: center;">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="quant-monitor-table-body">
+                                <!-- Loaded dynamically -->
+                            </tbody>
+                            <tfoot>
+                                <tr style="background: rgba(91, 81, 249, 0.05); font-weight: bold; border-top: 1.5px solid var(--border-light);">
+                                    <td colspan="4" style="text-align: left; padding: 12px 15px; color: var(--text-primary);">统计 (Summary)</td>
+                                    <td id="quant-total-buy-amount" style="font-weight: 700; color: var(--primary);">0.00 USDT</td>
+                                    <td id="quant-total-principal-amount" style="font-weight: 700; color: var(--green);">0.00 USDT</td>
+                                    <td id="quant-total-coupon-amount" style="font-weight: 700; color: var(--text-secondary);">0.00 USDT</td>
+                                    <td colspan="6"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 10: FOLLOW ORDERS SETTLEMENT (跟单结算) -->
+    <!-- VIEW: QUANT CONTROL MODAL (Phase 19 Integration) -->
+    <div id="quant-control-modal" class="overlay" style="display: none; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(15px); background: rgba(0,0,0,0.6);">
+        <div class="glass-panel modal-content-payment" style="max-width: 480px; padding: 30px;">
+            <button class="drawer-close-btn" onclick="closeQuantControlModal()" style="top: 24px; right: 24px; font-size: 1.2rem;">✕</button>
+            <div class="modal-header-admin" style="margin-bottom: 20px; border-bottom: 1px solid #F1F5F9; padding-bottom: 12px;">
+                <h2 style="font-size: 1.35rem; display: flex; align-items: center; gap: 8px; color: var(--text-primary);">📈 AI 量化手动操盘终端</h2>
+                <p style="font-size: 0.78rem; color: #64748B; margin-top: 6px; font-weight: 500;">手动指定该笔量化订单的买入/卖出价格与数量，执行物理盈亏清结算</p>
+            </div>
+            
+            <form class="auth-form" onsubmit="submitQuantControl(event)">
+                <input type="hidden" id="qctrl-order-id">
+                
+                <div class="auth-input-group">
+                    <label>操作类型 (Action)</label>
+                    <select id="qctrl-action" required class="payment-add-select" onchange="toggleQctrlActionFields()">
+                        <option value="buy">📈 执行买入 (BUY)</option>
+                        <option value="sell">📉 执行卖出 (SELL)</option>
+                    </select>
+                </div>
+                
+                <div class="auth-input-group">
+                    <label>交易品种 (Instrument ID)</label>
+                    <select id="qctrl-instrument" required class="payment-add-select">
+                        <option value="1126151490264633456">BTC/USDT (1126151490264633456)</option>
+                        <option value="1126151490264633457">ETH/USDT (1126151490264633457)</option>
+                        <option value="1126151490264633458">SOL/USDT (1126151490264633458)</option>
+                    </select>
+                </div>
+
+                <div class="form-grid-2">
+                    <div class="auth-input-group">
+                        <label id="qctrl-price-label">买入价格 (Price)</label>
+                        <input type="number" step="any" min="0.000001" id="qctrl-price" required placeholder="如: 68500.00" oninput="recalculateQctrlQuantity()">
+                    </div>
+                    <div class="auth-input-group">
+                        <label id="qctrl-qty-label">交易数量 (Quantity)</label>
+                        <input type="number" step="any" min="0.000001" id="qctrl-qty" required placeholder="输入或自动计算数量" style="height: 38px; font-size: 0.85rem; border-radius: 6px; border: 1.5px solid var(--border); padding: 0 12px; background: transparent; color: var(--text-primary);">
+                    </div>
+                </div>
+
+                <!-- Advanced settings section (rates override) -->
+                <details style="margin-top: 5px; font-size: 0.8rem; color: var(--text-secondary);">
+                    <summary style="cursor: pointer; font-weight: 600; color: var(--primary);">⚙️ 高级费率覆盖 (可选)</summary>
+                    <div class="form-grid-2" style="gap: 12px; padding: 10px 0;">
+                        <div class="auth-input-group">
+                            <label style="font-size: 0.7rem;">算力费率覆盖 (如 0.03)</label>
+                            <input type="number" step="0.0001" min="0" max="1" id="qctrl-rate-computing" placeholder="默认">
+                        </div>
+                        <div class="auth-input-group">
+                            <label style="font-size: 0.7rem;">经纪费率覆盖 (如 0.05)</label>
+                            <input type="number" step="0.0001" min="0" max="1" id="qctrl-rate-brokerage" placeholder="默认">
+                        </div>
+                    </div>
+                </details>
+                
+                <button type="submit" class="admin-auth-btn" style="margin-top: 15px; height: 46px; border-radius: 10px; font-weight: 700; background: var(--primary);" id="qctrl-submit-btn">发送物理操盘撮合指令</button>
+            </form>
+        </div>
+    </div>

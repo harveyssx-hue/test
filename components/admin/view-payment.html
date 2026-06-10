@@ -1,0 +1,150 @@
+﻿            <div class="view-tab-content active" id="view-payment">
+                <div class="glass-panel data-panel" style="padding: 18px;">
+                    <div style="border-bottom: 1.5px solid var(--border-light); padding-bottom: 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <div class="data-panel-title" style="font-size: 1.1rem; color: var(--primary); display: flex; align-items: center; gap: 6px;">💳 平台支付与出入金通道管理</div>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <!-- Pagination Controls Right -->
+                            <div style="display: flex; gap: 6px; align-items: center; background: rgba(255, 255, 255, 0.05); padding: 2px 8px; border-radius: 6px; border: 1.5px solid var(--border-light);">
+                                <button class="action-btn" onclick="changeAdminPage('payment', -1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">上一页</button>
+                                <span id="payment-page-indicator" style="font-size: 0.72rem; font-weight: 600; color: var(--text-primary); margin: 0 4px; white-space: nowrap;">第 1 / 1 页 (共 0 条)</span>
+                                <button class="action-btn" onclick="changeAdminPage('payment', 1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">下一页</button>
+                            </div>
+                            <button class="action-btn btn-approve" onclick="openPaymentAddModal()" style="padding: 6px 14px; font-size: 0.85rem; border-radius: 6px; cursor: pointer; font-weight: 600; background: #5B51F9; border: none; color: #FFF;">+ 新增支付通道</button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>通道 ID</th>
+                                    <th>通道名称 (英文)</th>
+                                    <th>资产类型</th>
+                                    <th>业务类型</th>
+                                    <th>通道类别</th>
+                                    <th>接口动作</th>
+                                    <th>排序权重</th>
+                                    <th>状态</th>
+                                    <th>操作选项</th>
+                                </tr>
+                            </thead>
+                            <tbody id="payment-table-body">
+                                <!-- Loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 8: PLATFORM EXCHANGE RATES MANAGEMENT (汇率管理) -->
+    <!-- RECEIVING CONFIG DRAWER SHEET -->
+    <div class="drawer-overlay" id="receiving-overlay" onclick="closeReceivingDrawer()"></div>
+    <div class="drawer-sheet" id="receiving-drawer" style="width: 95%; max-width: 560px;">
+        <button class="drawer-close-btn" onclick="closeReceivingDrawer()">✕</button>
+        <div class="drawer-header-audit" style="margin-bottom: 24px; border-bottom: 1px solid #F1F5F9; padding-bottom: 16px;">
+            <h2 style="font-size: 1.35rem; display: flex; align-items: center; gap: 8px; color: var(--text-primary);">⚙️ 收款目标账户配置</h2>
+            <p style="font-size: 0.78rem; color: #64748B; margin-top: 6px; font-weight: 500;">为当前通道配置或更新底层的区块链收款钱包地址或法币银行卡号</p>
+        </div>
+        
+        <div class="audit-field-grid" style="display: flex; flex-direction: column; gap: 20px;">
+            <div style="background: rgba(91, 81, 249, 0.04); border: 1px solid rgba(91, 81, 249, 0.08); border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 6px;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.82rem; color: #475569;">
+                    <span>当前编辑通道:</span>
+                    <strong id="rec-channel-name" style="color: var(--primary);">--</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.82rem; color: #475569;">
+                    <span>资产类别:</span>
+                    <strong id="rec-channel-class" style="color: #0F172A; font-family: monospace;">--</strong>
+                </div>
+            </div>
+            
+            <!-- Hidden state values -->
+            <input type="hidden" id="rec-channel-id">
+            <input type="hidden" id="rec-binding-id">
+            <input type="hidden" id="rec-target-id">
+            <input type="hidden" id="rec-asset-id">
+            
+            <!-- Loader status -->
+            <div id="rec-loader" style="text-align: center; color: var(--text-secondary); padding: 40px 0; font-size: 0.85rem;">
+                🔄 正在安全调取收款目标配置数据...
+            </div>
+            
+            <!-- Unbound configuration notice -->
+            <div id="rec-unbound-box" style="display: none; background: rgba(239, 68, 68, 0.04); border: 1px dashed rgba(239, 68, 68, 0.2); border-radius: 12px; padding: 20px; text-align: center;">
+                <span style="font-size: 1.5rem;">📭</span>
+                <h4 style="font-size: 0.9rem; font-weight: 700; color: #EF4444; margin-top: 8px;">未绑定具体的收款目标账户</h4>
+                <p style="font-size: 0.78rem; color: #64748B; margin-top: 4px; line-height: 1.4;">当前通道在数据库中尚未关联任何具体的钱包地址或银行接收卡号，用户端将无法展示对应的收款步骤。</p>
+                <button class="action-btn btn-approve" onclick="createNewTargetAndBind()" style="margin-top: 15px; padding: 6px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; font-family: inherit;">+ 立即创建并绑定收款账户</button>
+            </div>
+            
+            <!-- Dynamic bound target details form -->
+            <div id="rec-form-box" style="display: none; display: flex; flex-direction: column; gap: 15px;">
+                <!-- Crypto Target fields -->
+                <div id="rec-crypto-fields" style="display: flex; flex-direction: column; gap: 15px;">
+                    <div class="auth-input-group">
+                        <label>区块链收款网络 (Network)</label>
+                        <input type="text" id="rec-crypto-network" class="payment-add-input" placeholder="例如: TRC20" required>
+                    </div>
+                    <div class="auth-input-group">
+                        <label>收款钱包地址 (Address)</label>
+                        <input type="text" id="rec-crypto-address" class="payment-add-input" placeholder="例如: TA9x7J2mN7kExample..." required>
+                    </div>
+                    <div class="auth-input-group">
+                        <label>地址备注标签/Memo (可选)</label>
+                        <input type="text" id="rec-crypto-memo" class="payment-add-input" placeholder="如 XRP 的 Tag 等">
+                    </div>
+                </div>
+                
+                <!-- Fiat Target fields -->
+                <div id="rec-fiat-fields" style="display: flex; flex-direction: column; gap: 15px;">
+                    <div class="auth-input-group">
+                        <label>收款银行名称 (BankName)</label>
+                        <input type="text" id="rec-fiat-bank" class="payment-add-input" placeholder="例如: JPMorgan Chase Bank" required>
+                    </div>
+                    <div class="auth-input-group">
+                        <label>收款账户名称 (AccountName)</label>
+                        <input type="text" id="rec-fiat-name" class="payment-add-input" placeholder="例如: MATP Treasury LLC" required>
+                    </div>
+                    <div class="auth-input-group">
+                        <label>收单银行卡号/账号 (AccountNumber)</label>
+                        <input type="text" id="rec-fiat-number" class="payment-add-input" placeholder="例如: 000188998877" required>
+                    </div>
+                    <div class="auth-input-group">
+                        <label>SWIFT 国际结算代码 (SwiftCode)</label>
+                        <input type="text" id="rec-fiat-swift" class="payment-add-input" placeholder="例如: CHASUS33">
+                    </div>
+                    <div class="auth-input-group">
+                        <label>IBAN 国际卡号 (Iban, 可选)</label>
+                        <input type="text" id="rec-fiat-iban" class="payment-add-input" placeholder="如 US00CHAS000188998877">
+                    </div>
+                </div>
+                
+                <div class="drawer-footer-actions" style="margin-top: 20px; display: flex; gap: 12px;">
+                    <button class="action-btn-large btn-reject-solid" onclick="unbindAndDeleteReceivingTarget()" style="flex: 1; border-radius: 10px; cursor: pointer; font-family: inherit;">✕ 解绑并永久删除</button>
+                    <button class="action-btn-large btn-approve-solid" onclick="saveReceivingTargetChanges()" style="flex: 1.5; border-radius: 10px; cursor: pointer; font-family: inherit;">✓ 确认保存修改</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW PAYMENT CHANNEL ADD MODAL -->
+    <div class="overlay" id="payment-add-modal">
+        <div class="glass-panel modal-content-payment">
+            <button class="drawer-close-btn" onclick="closePaymentAddModal()" style="top: 24px; right: 24px; font-size: 1.2rem;">✕</button>
+            <div class="modal-header-admin" style="margin-bottom: 24px; border-bottom: 1px solid #F1F5F9; padding-bottom: 16px;">
+                <h2 style="font-size: 1.35rem; display: flex; align-items: center; gap: 8px; color: var(--text-primary);">💳 新增平台支付通道</h2>
+                <p style="font-size: 0.78rem; color: #64748B; margin-top: 6px; font-weight: 500;">配置并发布全站可用的充值（支持法币/多链）与提现支付接口通道</p>
+            </div>
+            
+            <form class="auth-form" onsubmit="submitNewPaymentChannel(event)">
+                <div class="payment-form-grid">
+                    <div class="auth-input-group">
+                        <label>通道名称</label>
+                        <input type="text" id="payment-add-name" required placeholder="例如: USDT-TRC20 快速充值">
+                    </div>
+                    
+                    <div class="auth-input-group">
+                        <label>排序权重 (数字越小越靠前)</label>
+                        <input type="number" id="payment-add-orderIndex" required placeholder="例如: 1" value="1">
+                    </div>
+                    
+                    <div class="auth-input-group">

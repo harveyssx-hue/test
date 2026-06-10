@@ -1,0 +1,145 @@
+﻿<div class="overlay" id="payment-account-modal">
+                    <!-- Header -->
+                    <div class="agreement-header" style="display: flex; align-items: center; padding: 16px 20px; border-bottom: 1px solid #F1F5F9; background: #FFFFFF; position: sticky; top: 0; z-index: 10;">
+                        <button type="button" onclick="closePaymentAccountModal()" style="border: none; background: none; padding: 4px; cursor: pointer; display: flex; align-items: center; color: #0F172A; outline: none;">
+                            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="15 18 9 12 15 6"></polyline>
+                            </svg>
+                        </button>
+                        <h2 data-i18n="payment_modal_title" style="margin: 0 0 0 12px; font-size: 1.15rem; font-weight: 700; color: #0F172A; font-family: 'Inter', sans-serif;">Set payment account</h2>
+                    </div>
+                    
+                    <!-- Body (Scrollable) -->
+                    <div style="flex: 1; overflow-y: auto; padding: 20px; box-sizing: border-box;">
+                        
+                        <!-- Section 1: Personal Information -->
+                        <div data-i18n="payment_personal_info" style="font-size: 0.75rem; color: #64748B; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; padding-left: 4px;">Personal Information</div>
+                        <div class="payment-account-card" style="margin-bottom: 20px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <span data-i18n="payment_lbl_name" style="color: #64748B; font-size: 0.85rem;">Name</span>
+                                <span id="payment-user-nickname" style="font-weight: 600; color: #0F172A; font-size: 0.85rem;">Guest</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span data-i18n="payment_lbl_phone" style="color: #64748B; font-size: 0.85rem;">Phone</span>
+                                <span id="payment-user-phone" style="font-weight: 600; color: #0F172A; font-size: 0.85rem;">--</span>
+                            </div>
+                        </div>
+
+                        <!-- Section 2: Account binding information -->
+                        <div data-i18n="payment_binding_info" style="font-size: 0.75rem; color: #64748B; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; padding-left: 4px;">Account binding information</div>
+                        
+                        <!-- 1. UPI -->
+                        <div class="payment-account-card">
+                            <div id="payment-card-display-upi">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #F1F5F9; padding-bottom: 8px;">
+                                    <span style="font-weight: 700; color: #0F172A; font-size: 0.9rem;">UPI</span>
+                                    <button type="button" onclick="togglePaymentEdit('upi', true)" style="border: none; background: none; color: #1A3EC1; font-weight: 700; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 0; outline: none;">
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                                        <span data-i18n="payment_btn_edit">Edit</span>
+                                    </button>
+                                </div>
+                                <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="color: #64748B; font-size: 0.82rem;">UPI</span>
+                                    <span id="payment-display-upi" data-i18n="payment_not_bound" style="font-weight: 600; color: #0F172A; font-size: 0.85rem;">Not bound</span>
+                                </div>
+                            </div>
+                            <div id="payment-card-edit-upi" style="display: none;">
+                                <div data-i18n="payment_header_edit_upi" style="font-weight: 700; color: #0F172A; font-size: 0.9rem; margin-bottom: 12px; border-bottom: 1px solid #F1F5F9; padding-bottom: 8px;">Edit UPI</div>
+                                <div style="display: flex; flex-direction: column; gap: 10px;">
+                                    <input type="text" id="edit-upi-val" data-i18n-placeholder="payment_placeholder_upi" placeholder="Enter UPI VPA (e.g. jackson@oksbi)" style="width: 100%; height: 38px; border: 1px solid #E2E8F0; border-radius: 8px; padding: 0 12px; box-sizing: border-box; font-size: 0.85rem; outline: none;">
+                                    <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px;">
+                                        <button type="button" onclick="togglePaymentEdit('upi', false)" data-i18n="payment_btn_cancel" style="border: none; background: #F1F5F9; color: #475569; font-weight: 600; font-size: 0.8rem; padding: 6px 12px; border-radius: 6px; cursor: pointer; outline: none;">Cancel</button>
+                                        <button type="button" onclick="savePaymentField('upi')" data-i18n="payment_btn_save" style="border: none; background: #1A3EC1; color: #FFF; font-weight: 600; font-size: 0.8rem; padding: 6px 12px; border-radius: 6px; cursor: pointer; outline: none;">Save</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. Bank Card -->
+                        <div class="payment-account-card">
+                            <div id="payment-card-display-bank">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #F1F5F9; padding-bottom: 8px;">
+                                    <span data-i18n="payment_bank_card" style="font-weight: 700; color: #0F172A; font-size: 0.9rem;">Bank card</span>
+                                    <button type="button" onclick="togglePaymentEdit('bank', true)" style="border: none; background: none; color: #1A3EC1; font-weight: 700; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 0; outline: none;">
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                                        <span data-i18n="payment_btn_edit">Edit</span>
+                                    </button>
+                                </div>
+                                <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 12px 16px; display: flex; flex-direction: column; gap: 10px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span data-i18n="payment_lbl_bank_name" style="color: #64748B; font-size: 0.82rem;">Bank name</span>
+                                        <span id="payment-display-bank-name" data-i18n="payment_not_bound" style="font-weight: 600; color: #0F172A; font-size: 0.85rem;">Not bound</span>
+                                    </div>
+                                    <div style="height: 1px; background: #E2E8F0; opacity: 0.6;"></div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span data-i18n="payment_lbl_bank_account" style="color: #64748B; font-size: 0.82rem;">Bank account</span>
+                                        <span id="payment-display-bank-account" data-i18n="payment_not_bound" style="font-weight: 600; color: #0F172A; font-size: 0.85rem;">Not bound</span>
+                                    </div>
+                                    <div style="height: 1px; background: #E2E8F0; opacity: 0.6;"></div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span data-i18n="payment_lbl_ifsc" style="color: #64748B; font-size: 0.82rem;">IFSC</span>
+                                        <span id="payment-display-bank-ifsc" data-i18n="payment_not_bound" style="font-weight: 600; color: #0F172A; font-size: 0.85rem;">Not bound</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="payment-card-edit-bank" style="display: none;">
+                                <div data-i18n="payment_header_edit_bank" style="font-weight: 700; color: #0F172A; font-size: 0.9rem; margin-bottom: 12px; border-bottom: 1px solid #F1F5F9; padding-bottom: 8px;">Edit Bank Card</div>
+                                <div style="display: flex; flex-direction: column; gap: 10px;">
+                                    <input type="text" id="edit-bank-name" data-i18n-placeholder="payment_placeholder_bank_name" placeholder="Bank Name (e.g. DBS Bank)" style="width: 100%; height: 38px; border: 1px solid #E2E8F0; border-radius: 8px; padding: 0 12px; box-sizing: border-box; font-size: 0.85rem; outline: none;">
+                                    <input type="text" id="edit-bank-account" data-i18n-placeholder="payment_placeholder_bank_account" placeholder="Bank Account Number" style="width: 100%; height: 38px; border: 1px solid #E2E8F0; border-radius: 8px; padding: 0 12px; box-sizing: border-box; font-size: 0.85rem; outline: none;">
+                                    <input type="text" id="edit-bank-ifsc" data-i18n-placeholder="payment_placeholder_ifsc" placeholder="IFSC Code (e.g. HDFC0001234)" style="width: 100%; height: 38px; border: 1px solid #E2E8F0; border-radius: 8px; padding: 0 12px; box-sizing: border-box; font-size: 0.85rem; outline: none;">
+                                    <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px;">
+                                        <button type="button" onclick="togglePaymentEdit('bank', false)" data-i18n="payment_btn_cancel" style="border: none; background: #F1F5F9; color: #475569; font-weight: 600; font-size: 0.8rem; padding: 6px 12px; border-radius: 6px; cursor: pointer; outline: none;">Cancel</button>
+                                        <button type="button" onclick="savePaymentField('bank')" data-i18n="payment_btn_save" style="border: none; background: #1A3EC1; color: #FFF; font-weight: 600; font-size: 0.8rem; padding: 6px 12px; border-radius: 6px; cursor: pointer; outline: none;">Save</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Crypto Account -->
+                        <div class="payment-account-card" style="margin-bottom: 24px;">
+                            <div id="payment-card-display-crypto">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #F1F5F9; padding-bottom: 8px;">
+                                    <span data-i18n="payment_crypto_account" style="font-weight: 700; color: #0F172A; font-size: 0.9rem;">Crypto Account</span>
+                                    <button type="button" onclick="togglePaymentEdit('crypto', true)" style="border: none; background: none; color: #1A3EC1; font-weight: 700; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 0; outline: none;">
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                                        <span data-i18n="payment_btn_edit">Edit</span>
+                                    </button>
+                                </div>
+                                <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 12px 16px; display: flex; flex-direction: column; gap: 10px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span data-i18n="payment_lbl_network" style="color: #64748B; font-size: 0.82rem;">Network</span>
+                                        <span style="font-weight: 600; color: #0F172A; font-size: 0.85rem;">USDT (TRC20)</span>
+                                    </div>
+                                    <div style="height: 1px; background: #E2E8F0; opacity: 0.6;"></div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span data-i18n="payment_lbl_address" style="color: #64748B; font-size: 0.82rem;">Address</span>
+                                        <span id="payment-display-crypto-address" data-i18n="payment_not_bound" style="font-weight: 600; color: #0F172A; font-size: 0.85rem; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Not bound</span>
+                                    </div>
+                                    <div style="height: 1px; background: #E2E8F0; opacity: 0.6;"></div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span data-i18n="payment_lbl_memo" style="color: #64748B; font-size: 0.82rem;">Memo</span>
+                                        <span id="payment-display-crypto-memo" style="font-weight: 600; color: #0F172A; font-size: 0.85rem;">123456</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="payment-card-edit-crypto" style="display: none;">
+                                <div data-i18n="payment_header_edit_crypto" style="font-weight: 700; color: #0F172A; font-size: 0.9rem; margin-bottom: 12px; border-bottom: 1px solid #F1F5F9; padding-bottom: 8px;">Edit Crypto Account</div>
+                                <div style="display: flex; flex-direction: column; gap: 10px;">
+                                    <input type="text" id="edit-crypto-address" data-i18n-placeholder="payment_placeholder_crypto" placeholder="Enter TRC20 Wallet Address" style="width: 100%; height: 38px; border: 1px solid #E2E8F0; border-radius: 8px; padding: 0 12px; box-sizing: border-box; font-size: 0.85rem; outline: none;">
+                                    <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px;">
+                                        <button type="button" onclick="togglePaymentEdit('crypto', false)" data-i18n="payment_btn_cancel" style="border: none; background: #F1F5F9; color: #475569; font-weight: 600; font-size: 0.8rem; padding: 6px 12px; border-radius: 6px; cursor: pointer; outline: none;">Cancel</button>
+                                        <button type="button" onclick="savePaymentField('crypto')" data-i18n="payment_btn_save" style="border: none; background: #1A3EC1; color: #FFF; font-weight: 600; font-size: 0.8rem; padding: 6px 12px; border-radius: 6px; cursor: pointer; outline: none;">Save</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Hint -->
+                        <div style="display: flex; align-items: center; gap: 8px; color: #64748B; font-size: 0.72rem; padding: 0 4px; font-weight: 500;">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                            <span data-i18n="payment_hint_safe">Please keep your payment account details safe and correct.</span>
+                        </div>
+                        
+                    </div>
+                </div>

@@ -1,0 +1,85 @@
+            <div class="view-tab-content active" id="view-daily-report">
+                <div class="glass-panel data-panel" style="padding: 18px;">
+                    <!-- Filter Row with Date range and action buttons -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid var(--border-light); padding-bottom: 15px; margin-bottom: 15px; flex-wrap: wrap; gap: 15px;">
+                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">日期</span>
+                                <input type="date" id="report-start-date" style="height: 30px; font-size: 0.75rem; border-radius: 6px; border: 1px solid var(--border); padding: 0 8px; background: transparent; color: var(--text-primary);">
+                                <span style="font-size: 0.75rem; color: var(--text-muted);">-</span>
+                                <input type="date" id="report-end-date" style="height: 30px; font-size: 0.75rem; border-radius: 6px; border: 1px solid var(--border); padding: 0 8px; background: transparent; color: var(--text-primary);">
+                            </div>
+                            <button class="action-btn" onclick="loadDailyReport()" style="background: var(--primary); color: #FFF; font-size: 0.75rem; padding: 6px 14px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; height: 30px;">查询</button>
+                            <button class="action-btn" onclick="exportDailyReport()" style="background: #0D9488; color: #FFF; font-size: 0.75rem; padding: 6px 14px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; height: 30px;">导出</button>
+                        </div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted); text-align: right; line-height: 1.4;">
+                            注：1)报表数据每5分钟统计一次；2)报表数据不含试玩会员数据。
+                        </div>
+                    </div>
+
+                    <!-- Main Report Grid Container -->
+                    <div class="table-container compact-table" style="overflow-x: auto; max-width: 100%;">
+                        <table style="min-width: 1650px; border-collapse: collapse;">
+                            <thead>
+                                <tr style="border-bottom: 1.5px solid var(--border-light);">
+                                    <th rowspan="2" style="text-align: center; vertical-align: middle; min-width: 110px;">日期</th>
+                                    <th rowspan="2" style="text-align: right; vertical-align: middle;">总余额</th>
+                                    <th rowspan="2" style="text-align: right; vertical-align: middle;">冻结</th>
+                                    <th rowspan="2" style="text-align: right; vertical-align: middle;">理财余额</th>
+                                    <th rowspan="2" style="text-align: right; vertical-align: middle;">可提金额</th>
+                                    <th rowspan="2" style="text-align: center; vertical-align: middle;">注册人数</th>
+                                    <th rowspan="2" style="text-align: center; vertical-align: middle;">活跃人数</th>
+                                    <th colspan="2" style="text-align: center;">首充</th>
+                                    <th colspan="2" style="text-align: center;">首提</th>
+                                    <th colspan="3" style="text-align: center;">充值</th>
+                                    <th colspan="3" style="text-align: center;">提现</th>
+                                </tr>
+                                <tr style="border-bottom: 1.5px solid var(--border-light);">
+                                    <!-- 首充 -->
+                                    <th style="text-align: right;">金额</th>
+                                    <th style="text-align: center;">人数</th>
+                                    <!-- 首提 -->
+                                    <th style="text-align: right;">金额</th>
+                                    <th style="text-align: center;">人数</th>
+                                    <!-- 充值 -->
+                                    <th style="text-align: right;">金额</th>
+                                    <th style="text-align: center;">人数</th>
+                                    <th style="text-align: center;">笔数</th>
+                                    <!-- 提现 -->
+                                    <th style="text-align: right;">金额</th>
+                                    <th style="text-align: center;">人数</th>
+                                    <th style="text-align: center;">笔数</th>
+                                </tr>
+                            </thead>
+                            <tbody id="daily-report-table-body">
+                                <!-- Loaded dynamically via JS -->
+                            </tbody>
+                            <tfoot>
+                                <tr style="background: rgba(91, 81, 249, 0.05); font-weight: bold; border-top: 1.5px solid var(--border-light);" id="daily-report-summary-row">
+                                    <!-- Will be calculated and rendered dynamically -->
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <!-- Pagination / Footer info -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; flex-wrap: wrap; gap: 15px; border-top: 1.5px solid var(--border-light); padding-top: 15px;">
+                        <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-secondary);" id="daily-report-total-count">
+                            共 1 页 共 0 条
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center; background: rgba(255, 255, 255, 0.05); padding: 4px 10px; border-radius: 6px; border: 1.5px solid var(--border-light);">
+                            <select class="filter-select" id="daily-report-size" onchange="changeDailyReportPageSize(this.value)" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 4px; background: transparent; color: var(--text-primary); font-weight: 600; cursor: pointer; outline: none;">
+                                <option value="10">10 条/页</option>
+                                <option value="20">20 条/页</option>
+                                <option value="30">30 条/页</option>
+                                <option value="50" selected>50 条/页</option>
+                            </select>
+                            <button class="action-btn" onclick="changeDailyReportPage(-1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 4px 10px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 28px;">上一页</button>
+                            <span id="daily-report-page-indicator" style="font-size: 0.72rem; font-weight: 600; color: var(--text-primary); margin: 0 4px; white-space: nowrap;">第 1 / 1 页</span>
+                            <button class="action-btn" onclick="changeDailyReportPage(1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 4px 10px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 28px;">下一页</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 4: USER ACCOUNTS LIST (用户管理) -->

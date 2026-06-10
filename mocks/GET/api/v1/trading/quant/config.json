@@ -1,0 +1,29 @@
+{
+  "minInvestAmount": "90.0",
+  "models": [
+    {
+      "id": "1194952042687242240",
+      "name": "红杉神经网络量化",
+      "description": "红杉神经网络量化基于多层感知机模型进行日内高频调仓套利，适合中低风险偏好。",
+      "typeLabel": "Popular"
+    },
+    {
+      "id": "1194953086448181248",
+      "name": "摩根大通AI网格套利",
+      "description": "摩根大通AI网格套利利用阻力支撑网格算法在波动行情中自动锁利，稳健推荐。",
+      "typeLabel": "Stable Rec"
+    },
+    {
+      "id": "1194953408742694912",
+      "name": "Transformer趋势跟踪",
+      "description": "Transformer趋势跟踪采用自注意力机制识别大周期行情方向，稳定获取中长线复利。",
+      "typeLabel": "Stable AI"
+    },
+    {
+      "id": "1194953853921927168",
+      "name": "XGBoost高频动量对冲",
+      "description": "XGBoost高频动量对冲在极端行情下进行极速多空双向对冲套利，风险较高但收益极佳。",
+      "typeLabel": "High Yield"
+    }
+  ]
+}

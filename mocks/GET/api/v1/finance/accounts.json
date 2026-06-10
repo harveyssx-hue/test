@@ -1,0 +1,11 @@
+{
+  "code": 200,
+  "message": "SUCCESS",
+  "data": [
+    {
+      "id": "1183348576672026624",
+      "accountType": "MAIN",
+      "balance": "10000.00"
+    }
+  ]
+}

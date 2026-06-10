@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/admin-proxy/api/v1/:path*",
+      "destination": "https://matp-admin.qchats.org/api/v1/:path*"
+    },
+    {
+      "source": "/api/v1/:path*",
+      "destination": "https://matp-app.qchats.org/api/v1/:path*"
+    }
+  ]
+}

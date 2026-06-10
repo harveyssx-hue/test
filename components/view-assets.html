@@ -1,0 +1,66 @@
+<div id="view-assets" class="view-tab-content">
+                        <div class="sub-header-sticky">
+                            <div class="strategy-header-row">
+                                <button class="back-text-btn" onclick="switchTab('home')">
+                                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
+                                    <span data-i18n="assets_title">My Follows</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Black elegant total valuation board -->
+                        <div class="assets-total-board" onclick="toggleAssetCurrencyDisplay()" style="cursor: pointer;">
+                            <div class="total-inner-flex">
+                                <div class="inner-col">
+                                    <div style="display: flex; align-items: center; gap: 4px;">
+                                        <span class="inner-lbl" id="asset-total-invest-label" data-i18n="assets_total_invest_lbl">Total Invested (USDT)</span>
+                                        <span style="font-size: 0.65rem; opacity: 0.8; margin-top: -1px;">🔄</span>
+                                    </div>
+                                    <span class="inner-val-large" id="asset-total-invest">0.00</span>
+                                    <span id="asset-total-invest-sub" style="font-size: 0.72rem; color: rgba(255,255,255,0.7); font-weight: 600; margin-top: 1px;">&#x2248; 0.00 INR</span>
+                                </div>
+                                <div class="inner-col text-right" style="display: flex; flex-direction: column; align-items: flex-end;">
+                                    <span class="inner-lbl" id="asset-total-profit-label" data-i18n="assets_total_profit_lbl">Total Profits (USDT)</span>
+                                    <span class="inner-val-profit" id="asset-total-profit">+$0.00</span>
+                                    <span id="asset-total-profit-sub" style="font-size: 0.72rem; color: #34D399; font-weight: 600; margin-top: 1px;">&#x2248; +$0.00 INR</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick transaction buttons in Assets Tab -->
+                        <div class="assets-quick-nav-row">
+                            <button class="assets-nav-btn btn-deposit" onclick="openDepositModal()">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+                                <span data-i18n="assets_deposit_btn">Deposit Funds (Fiat/Crypto)</span>
+                            </button>
+                            <button class="assets-nav-btn btn-withdraw" onclick="openWithdrawModal()">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/></svg>
+                                <span data-i18n="assets_withdraw_btn">Withdraw Funds (UPI/Bank)</span>
+                            </button>
+                        </div>
+
+                        <!-- Status selector tabs with counts -->
+                        <div class="asset-status-tabs">
+                            <div class="status-tab active" onclick="filterAssetOrdersTab('ACTIVE', this)">
+                                <span class="status-count" id="assets-cnt-active">0</span>
+                                <span class="status-label" data-i18n="assets_tab_active">Active</span>
+                            </div>
+                            <div class="status-tab" onclick="filterAssetOrdersTab('HISTORY', this)">
+                                <span class="status-count" id="assets-cnt-history">0</span>
+                                <span class="status-label" data-i18n="assets_tab_history">History</span>
+                            </div>
+                            <div class="status-tab" onclick="filterAssetOrdersTab('STOPPED', this)">
+                                <span class="status-count" id="assets-cnt-stopped">0</span>
+                                <span class="status-label" data-i18n="assets_tab_stopped">Stopped</span>
+                            </div>
+                        </div>
+
+                        <!-- Active Follow strategy instances list -->
+                        <div class="assets-orders-container" id="assets-orders-container">
+                            <!-- Populate dynamically -->
+                            <div class="loading-state-mini" data-i18n="assets_login_warning">Please log in to load your quant order records</div>
+                        </div>
+
+                        <div style="height: 70px;"></div>
+
+                    </div>

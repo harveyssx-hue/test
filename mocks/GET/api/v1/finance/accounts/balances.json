@@ -1,0 +1,42 @@
+{
+  "code": 200,
+  "message": "SUCCESS",
+  "data": [
+    {
+      "assetId": "1183348576672026624",
+      "asset": {
+        "symbol": "USDT",
+        "name": "Tether USD"
+      },
+      "available": "5000.00",
+      "total": "5000.00"
+    },
+    {
+      "assetId": "1126151490264633456",
+      "asset": {
+        "symbol": "INR",
+        "name": "Indian Rupee"
+      },
+      "available": "415000.00",
+      "total": "415000.00"
+    },
+    {
+      "assetId": "1183348576642666496",
+      "asset": {
+        "symbol": "BTC",
+        "name": "Bitcoin"
+      },
+      "available": "0.15",
+      "total": "0.15"
+    },
+    {
+      "assetId": "1183348576630083584",
+      "asset": {
+        "symbol": "ETH",
+        "name": "Ethereum"
+      },
+      "available": "1.20",
+      "total": "1.20"
+    }
+  ]
+}

@@ -1,0 +1,110 @@
+﻿            <div class="view-tab-content active" id="view-strategies">
+                <div class="glass-panel data-panel" style="padding: 18px;">
+                    <div style="border-bottom: 1.5px solid var(--border-light); padding-bottom: 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <div class="data-panel-title" style="font-size: 1.1rem; color: var(--primary); display: flex; align-items: center; gap: 6px;">📈 平台 AI 量化策略管理</div>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <!-- Pagination Controls Right -->
+                            <div style="display: flex; gap: 6px; align-items: center; background: rgba(255, 255, 255, 0.05); padding: 2px 8px; border-radius: 6px; border: 1.5px solid var(--border-light);">
+                                <button class="action-btn" onclick="changeAdminPage('strategies', -1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">上一页</button>
+                                <span id="strategies-page-indicator" style="font-size: 0.72rem; font-weight: 600; color: var(--text-primary); margin: 0 4px; white-space: nowrap;">第 1 / 1 页 (共 0 条)</span>
+                                <button class="action-btn" onclick="changeAdminPage('strategies', 1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">下一页</button>
+                            </div>
+                            <button class="action-btn btn-approve" onclick="openStrategyEditModal(null)" style="padding: 6px 14px; font-size: 0.85rem; border-radius: 6px; cursor: pointer; font-weight: 600; background: #5B51F9; border: none; color: #FFF;">+ 新增策略模板</button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>策略 ID</th>
+                                    <th>技术标识 (Name)</th>
+                                    <th>中文显示名 (displayName)</th>
+                                    <th>中英文类型标签 (typeLabel)</th>
+                                    <th>中英文描述文案 (description)</th>
+                                    <th>排序权重</th>
+                                    <th>最低起投金 (USDT)</th>
+                                    <th>启用状态</th>
+                                    <th>操作选项</th>
+                                </tr>
+                            </thead>
+                            <tbody id="strategies-table-body">
+                                <!-- Loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+             <!-- SECTION 9.5: PLATFORM DOCUMENT MANAGEMENT (平台文档管理) -->
+    <!-- QUANT STRATEGY EDIT MODAL (量化策略管理弹窗) -->
+    <div class="overlay" id="strategy-edit-modal">
+        <div class="glass-panel modal-content-payment" style="max-width: 580px; max-height: 90vh; overflow-y: auto;">
+            <button class="drawer-close-btn" onclick="closeStrategyEditModal()" style="top: 24px; right: 24px; font-size: 1.2rem;">✕</button>
+            <div class="modal-header-admin" style="margin-bottom: 20px; border-bottom: 1px solid #F1F5F9; padding-bottom: 12px;">
+                <h2 style="font-size: 1.35rem; display: flex; align-items: center; gap: 8px; color: var(--text-primary);" id="strategy-modal-title">📈 配置 AI 量化策略</h2>
+                <p style="font-size: 0.78rem; color: #64748B; margin-top: 6px; font-weight: 500;">设定与修改交易端显示的 AI 量化策略模型属性及中英文翻译说明</p>
+            </div>
+            
+            <form class="auth-form" onsubmit="submitStrategyChanges(event)">
+                <input type="hidden" id="strategy-edit-id">
+                
+                <div class="form-grid-2" style="margin-bottom: 12px;">
+                    <div class="auth-input-group">
+                        <label>技术标识名称 (Name)</label>
+                        <input type="text" id="strategy-edit-name" required placeholder="如: MLP, LSTM, XGBoost">
+                    </div>
+                    <div class="auth-input-group">
+                        <label>中文显示大名 (displayName)</label>
+                        <input type="text" id="strategy-edit-displayName" required placeholder="如: 多层感知机, 神经网络">
+                    </div>
+                </div>
+
+                <div class="form-grid-2" style="margin-bottom: 12px;">
+                    <div class="auth-input-group">
+                        <label>排序权重 (orderIndex)</label>
+                        <input type="number" id="strategy-edit-orderIndex" required placeholder="如: 1, 2, 3">
+                    </div>
+                    <div class="auth-input-group">
+                        <label>状态</label>
+                        <select id="strategy-edit-enabled" required class="payment-add-select">
+                            <option value="true">启用 (ENABLED)</option>
+                            <option value="false">禁用 (DISABLED)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="auth-input-group" style="margin-bottom: 12px;">
+                    <label>单独最低起投金额 (USDT)</label>
+                    <input type="number" id="strategy-edit-icon" step="any" min="0" placeholder="请输入该策略的单独最低起投资产 (USDT)，留空或设为 0 将默认使用全局起投限制">
+                </div>
+
+                <!-- zh-Hans translation section -->
+                <div style="background: rgba(0,0,0,0.01); border: 1px solid rgba(0,0,0,0.05); padding: 12px; border-radius: 8px; margin-bottom: 12px;">
+                    <div style="font-weight: 700; font-size: 0.8rem; color: #5B51F9; margin-bottom: 8px;">🇨🇳 中文翻译配置 (Locale: zh-Hans)</div>
+                    <input type="hidden" id="strategy-trans-id-zh">
+                    <div class="auth-input-group" style="margin-bottom: 8px;">
+                        <label>中文类型标签 (typeLabel)</label>
+                        <input type="text" id="strategy-trans-typeLabel-zh" required placeholder="如: 神经网络, 稳健推荐, 高收益">
+                    </div>
+                    <div class="auth-input-group">
+                        <label>中文描述文案 (description)</label>
+                        <textarea id="strategy-trans-description-zh" required placeholder="请简短描述该策略的运行机制和优势..." style="height: 50px; resize: none;"></textarea>
+                    </div>
+                </div>
+
+                <!-- en translation section -->
+                <div style="background: rgba(0,0,0,0.01); border: 1px solid rgba(0,0,0,0.05); padding: 12px; border-radius: 8px; margin-bottom: 12px;">
+                    <div style="font-weight: 700; font-size: 0.8rem; color: #5B51F9; margin-bottom: 8px;">🇺🇸 英文翻译配置 (Locale: en)</div>
+                    <input type="hidden" id="strategy-trans-id-en">
+                    <div class="auth-input-group" style="margin-bottom: 8px;">
+                        <label>英文类型标签 (typeLabel)</label>
+                        <input type="text" id="strategy-trans-typeLabel-en" required placeholder="如: Neural Network, High Yield">
+                    </div>
+                    <div class="auth-input-group">
+                        <label>英文描述文案 (description)</label>
+                        <textarea id="strategy-trans-description-en" required placeholder="English description of the strategy..." style="height: 50px; resize: none;"></textarea>
+                    </div>
+                </div>
+                
+                <button type="submit" class="admin-auth-btn" style="margin-top: 8px; height: 46px; border-radius: 10px; font-weight: 700; letter-spacing: 0.5px;" id="strategy-modal-submit-btn">确认并保存策略模板</button>
+            </form>

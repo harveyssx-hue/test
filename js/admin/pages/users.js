@@ -1,0 +1,963 @@
+export async function fetchUserUsdtBalance(userId) {
+    try {
+        let accountIds = window.userAccountCache[userId];
+        if (!accountIds) {
+            const acctRes = await apiFetch('GET', `/finance/accounts/${userId}`, null, true);
+            const accounts = acctRes.result || acctRes.data || [];
+            accountIds = accounts.map(a => a.id).filter(id => id);
+            window.userAccountCache[userId] = accountIds;
+        }
+        if (accountIds && accountIds.length > 0) {
+            const balanceMap = {};
+            for (const accountId of accountIds) {
+                const balRes = await apiFetch('GET', `/finance/accounts/${accountId}/balances`, null, true);
+                const balances = balRes.result || balRes.data || [];
+                for (const b of balances) {
+                    const symbol = b.asset?.symbol || (String(b.assetId) === '1183348576672026624' ? 'USDT' : (String(b.assetId) === '1126151490264633456' ? 'INR' : ''));
+                    if (symbol) {
+                        const total = parseFloat(b.total) || 0;
+                        balanceMap[symbol] = (balanceMap[symbol] || 0) + total;
+                    }
+                }
+            }
+            
+            const balanceStrings = [];
+            let hasNonZero = false;
+            const sortedSymbols = Object.keys(balanceMap).sort((a, b) => {
+                if (a === 'USDT') return -1;
+                if (b === 'USDT') return 1;
+                return a.localeCompare(b);
+            });
+            for (const symbol of sortedSymbols) {
+                const total = balanceMap[symbol];
+                if (total > 0) {
+                    balanceStrings.push(`${total.toFixed(2)} ${symbol}`);
+                    hasNonZero = true;
+                }
+            }
+            if (hasNonZero) {
+                return balanceStrings.join('<br>');
+            }
+            
+            if (balanceMap['USDT'] !== undefined) {
+                return '0.00 USDT';
+            } else if (sortedSymbols.length > 0) {
+                return `0.00 ${sortedSymbols[0]}`;
+            }
+        }
+    } catch (e) {
+        console.error(`Failed to fetch balances for user ${userId}:`, e);
+    }
+    return '0.00 USDT';
+}
+
+export async function loadUsersList() {
+    if (!currentAdmin) return;
+    
+    const filterEl = document.getElementById('user-search-input');
+    if (!filterEl) {
+        const users = await window.adminState.getUsers();
+        const statTotalUsers = document.getElementById('stat-total-users');
+        if (statTotalUsers) statTotalUsers.innerText = users.length;
+        return;
+    }
+
+    // Sync size select dropdown with current page size state
+    const usersSizeSelect = document.getElementById('users-size-select');
+    if (usersSizeSelect) {
+        usersSizeSelect.value = window.adminPages.users.size;
+    }
+    
+    // 1. Fetch risk levels dynamically if not cached
+    if (!window.cachedRiskLevels || window.cachedRiskLevels.length === 0) {
+        try {
+            const rlRes = await apiFetch('GET', '/users/risk-levels', null, true);
+            if (rlRes.code === 200) {
+                window.cachedRiskLevels = rlRes.result || rlRes.data || [];
+            }
+        } catch (e) {
+            console.error("Failed to fetch risk levels for users mapping:", e);
+        }
+    }
+    
+    // 2. Populate options for risk level selectors
+    const riskLevels = window.cachedRiskLevels || [];
+    const filterRiskLevelSelect = document.getElementById('filter-users-risk-level');
+    if (filterRiskLevelSelect) {
+        const currentSelected = filterRiskLevelSelect.value;
+        filterRiskLevelSelect.innerHTML = '<option value="ALL">全部</option>';
+        riskLevels.forEach(rl => {
+            if (rl.enabled) {
+                const opt = document.createElement('option');
+                opt.value = rl.id;
+                opt.textContent = `${rl.name} (${rl.code})`;
+                filterRiskLevelSelect.appendChild(opt);
+            }
+        });
+        filterRiskLevelSelect.value = currentSelected || 'ALL';
+    }
+    const groupModalSelect = document.getElementById('group-select-level-id');
+    if (groupModalSelect) {
+        groupModalSelect.innerHTML = '<option value="">-- 请选择风控层级 (无分组) --</option>';
+        riskLevels.forEach(rl => {
+            if (rl.enabled) {
+                const opt = document.createElement('option');
+                opt.value = rl.id;
+                opt.textContent = `${rl.name} (${rl.code})`;
+                groupModalSelect.appendChild(opt);
+            }
+        });
+    }
+
+    const searchVal = filterEl.value.trim().toLowerCase();
+    const kycFilter = document.getElementById('filter-users-kyc')?.value || 'ALL';
+    const statusFilter = document.getElementById('filter-users-status')?.value || 'ALL';
+    const riskLevelFilter = document.getElementById('filter-users-risk-level')?.value || 'ALL';
+    
+    const users = await window.adminState.getUsers(true);
+    if (users) {
+        window.cachedUsersList = users;
+        
+        let kycMap = {};
+        try {
+            if (!window.kycFetchPromise) {
+                window.kycFetchPromise = apiFetch('GET', '/users/kyc', null, true);
+            }
+            const kycRes = await window.kycFetchPromise;
+            if (kycRes.code === 200) {
+                const kycList = kycRes.result || kycRes.data || [];
+                kycList.forEach(a => {
+                    kycMap[String(a.userId)] = a.status;
+                });
+            }
+        } catch (e) {
+            console.error('Failed to pre-fetch KYC list for users list mapping:', e);
+        }
+        
+        users.forEach(u => {
+            u.kycStatus = kycMap[String(u.id)] || 'NOT_VERIFIED';
+        });
+        
+        // Dynamically update total user count on screen!
+        const statTotalUsers = document.getElementById('stat-total-users');
+        if (statTotalUsers) statTotalUsers.innerText = users.length;
+        
+        let filteredUsers = users;
+        if (searchVal !== '') {
+            filteredUsers = filteredUsers.filter(u => 
+                String(u.uid).includes(searchVal) || 
+                (u.username && u.username.toLowerCase().includes(searchVal)) || 
+                (u.email && u.email.toLowerCase().includes(searchVal)) ||
+                (u.nickname && u.nickname.toLowerCase().includes(searchVal))
+            );
+        }
+        if (kycFilter !== 'ALL') {
+            filteredUsers = filteredUsers.filter(u => u.kycStatus === kycFilter);
+        }
+        if (statusFilter !== 'ALL') {
+            filteredUsers = filteredUsers.filter(u => {
+                const s = u.status || 'ENABLED';
+                return s === statusFilter;
+            });
+        }
+        if (riskLevelFilter !== 'ALL') {
+            filteredUsers = filteredUsers.filter(u => {
+                return String(u.riskLevelId || '') === String(riskLevelFilter);
+            });
+        }
+        
+        const bodyEl = document.getElementById('users-table-body');
+        if (filteredUsers.length === 0) {
+            bodyEl.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 30px 0;">未搜索到符合条件的交易员用户</td></tr>`;
+            
+            // Update pagination indicator
+            const indicator = document.getElementById(`users-page-indicator`);
+            if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
+            return;
+        }
+        
+        // Paginate the list
+        const paginatedUsers = paginateList(filteredUsers, 'users');
+        
+        window.selectedUserIds = window.selectedUserIds || {};
+        
+        bodyEl.innerHTML = paginatedUsers.map(u => {
+            const date = u.createdAt ? new Date(parseInt(u.createdAt)).toLocaleDateString() : '--';
+            
+            const kycBadgeType = u.kycStatus === 'APPROVED' ? 'APPROVED' : (u.kycStatus === 'PENDING' ? 'PENDING' : 'REJECTED');
+            const statusBadgeType = u.status === 'ENABLED' || !u.status ? 'APPROVED' : (u.status === 'FROZEN' ? 'PENDING' : 'REJECTED');
+            
+            const matchedLevel = (window.cachedRiskLevels || []).find(x => String(x.id) === String(u.riskLevelId || ''));
+            const riskLevelText = matchedLevel 
+                ? `<span style="font-weight: 600; color: #38BDF8;">${matchedLevel.name}</span>`
+                : `<span style="color: var(--text-secondary);">未分组</span>`;
+                
+            const isChecked = window.selectedUserIds[u.id] ? 'checked' : '';
+            
+            return `
+                <tr>
+                    <td style="text-align: center;">
+                        <input type="checkbox" class="user-select-checkbox" value="${u.id}" ${isChecked} onchange="updateBatchActionBtnState()" style="cursor: pointer;">
+                    </td>
+                    <td>${u.uid || '--'}</td>
+                    <td>${u.username || '--'}</td>
+                    <td>${u.email || '--'}</td>
+                    <td>${u.nickname}</td>
+                    <td>
+                        <span class="badge badge-${kycBadgeType}" style="margin-bottom: 4px; display: inline-flex;">
+                            <span class="badge-status-dot"></span>
+                            KYC: ${u.kycStatus}
+                        </span>
+                        <br>
+                        <span class="badge badge-${statusBadgeType}" style="display: inline-flex;">
+                            <span class="badge-status-dot"></span>
+                            账号: ${u.status || 'ENABLED'}
+                        </span>
+                    </td>
+                    <td>${riskLevelText}</td>
+                    <td style="font-weight: 600;" id="user-balance-${u.id}">读取中...</td>
+                    <td style="color: var(--text-muted);">${date}</td>
+                    <td class="sticky-right" style="text-align: center;">
+                        <div class="action-dropdown-container">
+                            <button class="action-btn btn-approve" onclick="toggleUserActionDropdown(event, '${u.id}')" style="padding: 4px 10px; font-size: 0.72rem; font-weight: 600; background: var(--primary); color: white; border: none; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; height: 26px;">
+                                操作 ▾
+                            </button>
+                            <div class="action-dropdown-menu" id="dropdown-menu-${u.id}">
+                                ${u.status === 'BLOCKED' || u.status === 'FROZEN' 
+                                    ? `<a class="dropdown-item" onclick="toggleUserStatus('${u.id}', 'ENABLED')">✓ 启用账号</a>`
+                                    : `
+                                        <a class="dropdown-item" onclick="toggleUserStatus('${u.id}', 'FROZEN')">❄️ 冻结账号</a>
+                                        <a class="dropdown-item" onclick="toggleUserStatus('${u.id}', 'BLOCKED')">✕ 封禁账号</a>
+                                      `
+                                }
+                                <a class="dropdown-item" onclick="showUserReferralsTree('${u.id}', '${u.nickname || u.uid}')">🌳 邀请树</a>
+                                <a class="dropdown-item" onclick="openUpdateReferralModal('${u.id}', '${u.nickname || u.uid}')">🔗 变更推荐人</a>
+                                <a class="dropdown-item" onclick="openSingleGroupModal('${u.id}', '${u.nickname || u.uid}')">🏷️ 分组设置</a>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        // Asynchronously load the balances for each user on the current page
+        paginatedUsers.forEach(async (u) => {
+            const balance = await fetchUserUsdtBalance(u.id);
+            const el = document.getElementById(`user-balance-${u.id}`);
+            if (el) {
+                el.innerHTML = balance;
+            }
+        });
+        
+        // Sync checkboxes and batch button count
+        updateBatchActionBtnState();
+    } else {
+        showToast('获取用户列表失败！', true);
+    }
+}
+
+
+export // --- USER BLOCKING & ACTIVATION CONTROLLERS (Phase 20 Integration) ---
+async function toggleUserStatus(userId, newStatus) {
+    let actionStr = '启用';
+    if (newStatus === 'BLOCKED') actionStr = '封禁';
+    if (newStatus === 'FROZEN') actionStr = '冻结';
+    
+    if (newStatus === 'BLOCKED' && !confirm('⚠️ 您确定要永久封禁该交易员账户吗？封禁后该用户将无法登录并被强行中断所有跟单！')) {
+        return;
+    }
+    if (newStatus === 'FROZEN' && !confirm('❄️ 您确定要暂时冻结该交易员账户吗？冻结后该用户将无法进行任何量化跟单交易！')) {
+        return;
+    }
+    if (newStatus === 'ENABLED' && !confirm('✓ 您确定要恢复并启用该交易员账户吗？')) {
+        return;
+    }
+    
+    showToast(`正在对交易员执行${actionStr}操作...`, false);
+    
+    try {
+        const res = await apiFetch('POST', `/users/${userId}/update-status`, {
+            status: newStatus
+        }, true);
+        
+        if (res.code === 200) {
+            showToast(`✓ 交易员账户已成功${actionStr}！`, false);
+            loadUsersList(); // 自动热刷新列表
+        } else {
+            showToast(res.errorMessage || `执行${actionStr}失败！`, true);
+        }
+    } catch (e) {
+        console.error(e);
+        showToast('执行账户状态更新网络异常！', true);
+    }
+}
+window.toggleUserStatus = toggleUserStatus;
+
+
+export function resetUsersFilters() {
+    const kw = document.getElementById('user-search-input');
+    const kyc = document.getElementById('filter-users-kyc');
+    const status = document.getElementById('filter-users-status');
+    if (kw) kw.value = '';
+    if (kyc) kyc.value = 'ALL';
+    if (status) status.value = 'ALL';
+    window.adminPages.users.current = 1;
+    loadUsersList();
+    showToast('✓ 用户管理检索条件已重置', false);
+}
+window.resetUsersFilters = resetUsersFilters;
+
+// ==========================================
+// 🌳 用户邀请关系树管理模块 (User Referral Tree Module)
+
+window.currentReferralUserId = null;
+window.currentReferralUserNickname = '';
+
+function renderReferralNode(node, level = 0) {
+    const statusMap = {
+        'ENABLED': { label: '正常 (ENABLED)', type: 'APPROVED' },
+        'FROZEN': { label: '已冻结 (FROZEN)', type: 'PENDING' },
+        'BLOCKED': { label: '已封禁 (BLOCKED)', type: 'REJECTED' }
+    };
+    const statusInfo = statusMap[node.status] || { label: node.status || 'ENABLED', type: 'APPROVED' };
+    const dateStr = node.createdAt ? new Date(parseInt(node.createdAt)).toLocaleString() : '--';
+    
+    let childrenHtml = '';
+    if (node.children && node.children.length > 0) {
+        childrenHtml = `
+            <div class="tree-children-container" style="border-left: 2px dashed rgba(255,255,255,0.15); margin-left: 20px; padding-left: 15px; margin-top: 10px; display: flex; flex-direction: column; gap: 10px;">
+                ${node.children.map(child => renderReferralNode(child, level + 1)).join('')}
+            </div>
+        `;
+    }
+    
+    return `
+        <div class="tree-node" style="background: rgba(255, 255, 255, 0.04); border: 1.5px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 12px 15px; color: #FFFFFF; margin-top: 5px; text-align: left;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.15rem;">👤</span>
+                    <div>
+                        <div style="font-weight: bold; font-size: 0.85rem; display: flex; align-items: center; gap: 8px;">
+                            <span>${node.nickname || '未设定昵称'}</span>
+                            <span style="color: var(--primary); font-size: 0.72rem; font-weight: normal; background: rgba(91,81,249,0.15); padding: 2px 6px; border-radius: 4px;">UID: ${node.uid}</span>
+                        </div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">
+                            <span>邀请码: <strong style="color: var(--text-primary);">${node.referralCode || '--'}</strong></span>
+                            <span style="margin: 0 6px;">|</span>
+                            <span>注册时间: ${dateStr}</span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <span class="badge badge-${statusInfo.type}" style="display: inline-flex; align-items: center; gap: 4px;">
+                        <span class="badge-status-dot"></span>
+                        ${statusInfo.label}
+                    </span>
+                </div>
+            </div>
+            ${childrenHtml}
+        </div>
+    `;
+}
+
+async function showUserReferralsTree(userId, nickname) {
+    window.currentReferralUserId = userId;
+    window.currentReferralUserNickname = nickname;
+    
+    const titleEl = document.getElementById('ref-user-name-title');
+    if (titleEl) titleEl.innerText = nickname;
+    
+    const bodyEl = document.getElementById('user-referrals-tree-body');
+    if (bodyEl) {
+        bodyEl.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 40px 0;">⏳ 正在安全检索下级裂变树，请稍候...</div>`;
+    }
+    
+    const modal = document.getElementById('user-referrals-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.add('active');
+    }
+    
+    try {
+        const res = await apiFetch('GET', `/users/${userId}/referrals/tree?depth=3`, null, true);
+        if (res.code === 200) {
+            const nodes = res.result || res.data || [];
+            if (!bodyEl) return;
+            
+            if (nodes.length === 0) {
+                bodyEl.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 40px 0;">🌳 该用户暂无邀请下级记录</div>`;
+            } else {
+                bodyEl.innerHTML = `<div style="display: flex; flex-direction: column; gap: 12px;">${nodes.map(node => renderReferralNode(node)).join('')}</div>`;
+            }
+        } else {
+            showToast(res.errorMessage || '获取邀请树数据被后端拒绝！', true);
+            if (bodyEl) {
+                bodyEl.innerHTML = `<div style="text-align: center; color: #EF4444; padding: 40px 0;">❌ 获取邀请树失败：${res.errorMessage || '未知错误'}</div>`;
+            }
+        }
+    } catch (e) {
+        console.error(e);
+        showToast('获取下级邀请关系树网络异常！', true);
+        if (bodyEl) {
+            bodyEl.innerHTML = `<div style="text-align: center; color: #EF4444; padding: 40px 0;">❌ 获取邀请树发送网络请求异常</div>`;
+        }
+    }
+}
+window.showUserReferralsTree = showUserReferralsTree;
+
+function closeUserReferralsModal() {
+    const modal = document.getElementById('user-referrals-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('active');
+    }
+    window.currentReferralUserId = null;
+    window.currentReferralUserNickname = '';
+}
+window.closeUserReferralsModal = closeUserReferralsModal;
+
+function refreshUserReferralsTree() {
+    if (window.currentReferralUserId) {
+        showUserReferralsTree(window.currentReferralUserId, window.currentReferralUserNickname);
+        showToast('✓ 邀请树数据已成功刷新！', false);
+    }
+}
+window.refreshUserReferralsTree = refreshUserReferralsTree;
+
+
+
+
+
+
+
+// --- ADMIN UPDATE USER REFERRAL BINDING ACTIONS ---
+function openUpdateReferralModal(userId, nickname) {
+    window.activeUpdateRefUserId = userId;
+    const targetNameEl = document.getElementById('update-ref-target-name');
+    const inputEl = document.getElementById('update-ref-input-id');
+    const modal = document.getElementById('update-referral-modal');
+    if (targetNameEl) {
+        targetNameEl.textContent = nickname + " (ID: " + userId + ")";
+    }
+    if (inputEl) {
+        inputEl.value = '';
+    }
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.add('active');
+    }
+}
+window.openUpdateReferralModal = openUpdateReferralModal;
+
+function closeUpdateReferralModal() {
+    const modal = document.getElementById('update-referral-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('active');
+    }
+    window.activeUpdateRefUserId = null;
+}
+window.closeUpdateReferralModal = closeUpdateReferralModal;
+
+async function submitUpdateReferralUser() {
+    const inputEl = document.getElementById('update-ref-input-id');
+    if (!inputEl || !inputEl.value.trim()) {
+        showToast('请输入推荐人用户 ID！', true);
+        return;
+    }
+    const referralUserId = inputEl.value.trim();
+    
+    showToast('正在强行更正推荐人关系...', false);
+    try {
+        const rawBodyStr = '{"referralUserId":' + referralUserId + '}';
+        const res = await apiFetchWithRawBody('POST', '/users/' + window.activeUpdateRefUserId + '/update-referral-user', rawBodyStr, true);
+        if (res.code === 200) {
+            showToast('✓ 推荐人关系已成功强制变更！', false);
+            closeUpdateReferralModal();
+            if (typeof loadUsersList === 'function') {
+                loadUsersList();
+            }
+        } else {
+            showToast(res.errorMessage || '变更推荐人关系失败！', true);
+        }
+    } catch (e) {
+        console.error(e);
+        showToast('网络连接失败或接口异常！', true);
+    }
+}
+window.submitUpdateReferralUser = submitUpdateReferralUser;
+
+// ==========================================
+// 🛡️ 用户风控层级管理模块 (User Risk Levels Management)
+
+export async function loadRiskLevelsList() {
+    const tableBody = document.getElementById('risk-levels-table-body');
+    if (!tableBody) return;
+    
+    tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">🔄 正在安全调取用户风控层级列表...</td></tr>';
+    
+    try {
+        const res = await apiFetch('GET', '/users/risk-levels', null, true);
+        if (res.code === 200) {
+            const list = res.result || res.data || [];
+            
+            // Sort by Snowflake ID descending
+            list.sort((a, b) => {
+                const aId = BigInt(a.id || 0);
+                const bId = BigInt(b.id || 0);
+                return aId > bId ? -1 : (aId < bId ? 1 : 0);
+            });
+            
+            window.cachedRiskLevels = list;
+            const paginated = paginateList(list, 'riskLevels');
+            
+            if (paginated.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">📭 暂无匹配的用户风控层级记录</td></tr>';
+                return;
+            }
+            
+            tableBody.innerHTML = paginated.map(item => {
+                const enabledChecked = item.enabled ? 'checked' : '';
+                const needAuditText = item.needAudit ? '<span style="color: var(--red); font-weight: bold;">⚠️ 需要审核</span>' : '<span style="color: var(--green); font-weight: bold;">✓ 免审核</span>';
+                
+                return `
+                    <tr style="border-bottom: 1.5px solid var(--border-light);">
+                        <td style="font-family: monospace; font-size: 0.8rem;">${item.id}</td>
+                        <td style="font-weight: bold; color: var(--text-primary);">${item.name}</td>
+                        <td><code style="background: rgba(0,0,0,0.04); padding: 2px 6px; border-radius: 4px; font-family: monospace; font-weight: 600;">${item.code}</code></td>
+                        <td style="font-weight: 600; color: var(--text-primary);">${parseFloat(item.depositLimit || 0).toFixed(2)} USDT</td>
+                        <td style="font-weight: 600; color: var(--text-primary);">${parseFloat(item.withdrawLimit || 0).toFixed(2)} USDT</td>
+                        <td>${needAuditText}</td>
+                        <td>${item.remark || item.memo || '-'}</td>
+                        <td>
+                            <label class="switch">
+                                <input type="checkbox" ${enabledChecked} onchange="toggleRiskLevelEnabled('${item.id}', this.checked)">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </td>
+                        <td style="text-align: center;">
+                            <div style="display: flex; gap: 8px; justify-content: center;">
+                                <button class="action-btn btn-approve" onclick="openRiskLevelModal('${item.id}')" style="padding: 4px 10px; font-size: 0.78rem; border-radius: 4px;">编辑</button>
+                                <button class="action-btn btn-reject" onclick="deleteRiskLevel('${item.id}')" style="padding: 4px 10px; font-size: 0.78rem; border-radius: 4px; background: rgba(239,68,68,0.1); color: #EF4444; border: 1px solid rgba(239,68,68,0.2);">删除</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        } else {
+            showToast(res.errorMessage || '获取风控层级列表失败！', true);
+            tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: #EF4444; padding: 40px 0;">❌ 获取失败: ${res.errorMessage || '未知接口错误'}</td></tr>`;
+        }
+    } catch (e) {
+        console.error(e);
+        showToast('获取风控层级列表网络异常！', true);
+        tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #EF4444; padding: 40px 0;">❌ 网络请求错误，请重试！</td></tr>';
+    }
+}
+window.loadRiskLevelsList = loadRiskLevelsList;
+
+export async function toggleRiskLevelEnabled(id, checked) {
+    showToast(checked ? '正在启用风控层级...' : '正在禁用风控层级...', false);
+    try {
+        const res = await apiFetch('POST', `/users/risk-levels/${id}/set-enabled`, { enabled: checked }, true);
+        if (res.code === 200) {
+            showToast(`✓ 风控层级已成功${checked ? '启用' : '禁用'}！`);
+            if (window.cachedRiskLevels) {
+                const matched = window.cachedRiskLevels.find(x => String(x.id) === String(id));
+                if (matched) matched.enabled = checked;
+            }
+        } else {
+            showToast(res.errorMessage || '修改风控层级状态失败', true);
+            loadRiskLevelsList();
+        }
+    } catch (e) {
+        console.error(e);
+        showToast('修改风控层级状态网络异常', true);
+        loadRiskLevelsList();
+    }
+}
+window.toggleRiskLevelEnabled = toggleRiskLevelEnabled;
+
+export function openRiskLevelModal(id = null) {
+    const titleEl = document.getElementById('risk-level-modal-title');
+    const editIdEl = document.getElementById('risk-level-edit-id');
+    const nameEl = document.getElementById('risk-level-name');
+    const codeEl = document.getElementById('risk-level-code');
+    const depositLimitEl = document.getElementById('risk-level-depositLimit');
+    const withdrawLimitEl = document.getElementById('risk-level-withdrawLimit');
+    const needAuditEl = document.getElementById('risk-level-needAudit');
+    const remarkEl = document.getElementById('risk-level-remark');
+    
+    if (!titleEl || !editIdEl) return;
+    
+    if (id) {
+        titleEl.innerText = '🛡️ 编辑风控层级';
+        editIdEl.value = id;
+        
+        const matched = (window.cachedRiskLevels || []).find(x => String(x.id) === String(id));
+        if (matched) {
+            nameEl.value = matched.name || '';
+            codeEl.value = matched.code || '';
+            depositLimitEl.value = matched.depositLimit !== undefined ? matched.depositLimit : '';
+            withdrawLimitEl.value = matched.withdrawLimit !== undefined ? matched.withdrawLimit : '';
+            needAuditEl.value = matched.needAudit ? 'true' : 'false';
+            remarkEl.value = matched.remark || matched.memo || '';
+        }
+    } else {
+        titleEl.innerText = '🛡️ 新增风控层级';
+        editIdEl.value = '';
+        nameEl.value = '';
+        codeEl.value = '';
+        depositLimitEl.value = '0';
+        withdrawLimitEl.value = '0';
+        needAuditEl.value = 'true';
+        remarkEl.value = '';
+    }
+    
+    const modal = document.getElementById('risk-level-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.add('active');
+    }
+}
+window.openRiskLevelModal = openRiskLevelModal;
+
+export function closeRiskLevelModal() {
+    const modal = document.getElementById('risk-level-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('active');
+    }
+}
+window.closeRiskLevelModal = closeRiskLevelModal;
+
+export async function submitRiskLevelForm(event) {
+    if (event) event.preventDefault();
+    
+    const id = document.getElementById('risk-level-edit-id').value;
+    const name = document.getElementById('risk-level-name').value.trim();
+    const code = document.getElementById('risk-level-code').value.trim().toUpperCase();
+    const depositLimit = parseFloat(document.getElementById('risk-level-depositLimit').value) || 0;
+    const withdrawLimit = parseFloat(document.getElementById('risk-level-withdrawLimit').value) || 0;
+    const needAudit = document.getElementById('risk-level-needAudit').value === 'true';
+    const remark = document.getElementById('risk-level-remark').value.trim();
+    
+    if (!name || !code) {
+        showToast('层级名称和标识代码是必填字段！', true);
+        return;
+    }
+    
+    showToast('正在提交风控层级配置...', false);
+    
+    const payload = {
+        name,
+        code,
+        depositLimit,
+        withdrawLimit,
+        needAudit,
+        remark,
+        enabled: true
+    };
+    
+    try {
+        let res;
+        if (id) {
+            payload.id = parseInt(id);
+            res = await apiFetch('PUT', `/users/risk-levels/${id}`, payload, true);
+        } else {
+            res = await apiFetch('POST', '/users/risk-levels', payload, true);
+        }
+        
+        if (res.code === 200) {
+            showToast('✓ 风控层级配置已成功保存！');
+            closeRiskLevelModal();
+            loadRiskLevelsList();
+        } else {
+            showToast(res.errorMessage || '保存风控层级配置失败！', true);
+        }
+    } catch (e) {
+        console.error(e);
+        showToast('保存风控层级网络异常！', true);
+    }
+}
+window.submitRiskLevelForm = submitRiskLevelForm;
+
+export async function deleteRiskLevel(id) {
+    if (!confirm('⚠️ 警告：确定要彻底删除该风控层级吗？删除后绑定此层级的通道及用户控制可能受影响，此操作不可逆！')) {
+        return;
+    }
+    
+    showToast('正在删除风控层级...', false);
+    try {
+        const res = await apiFetch('POST', `/users/risk-levels/${id}/delete`, {}, true);
+        if (res.code === 200) {
+            showToast('✓ 风控层级已成功删除！');
+            loadRiskLevelsList();
+        } else {
+            showToast(res.errorMessage || '删除风控层级失败！', true);
+        }
+    } catch (e) {
+        console.error(e);
+        showToast('删除风控层级网络异常！', true);
+    }
+}
+window.deleteRiskLevel = deleteRiskLevel;
+
+// ==========================================
+// 🏷️ 用户分组及批量分组管理模块 (User Grouping & Batch Grouping Module)
+
+window.selectedUserIds = window.selectedUserIds || {};
+
+export function toggleSelectAllUsers(checked) {
+    const checkboxes = document.querySelectorAll('.user-select-checkbox');
+    checkboxes.forEach(cb => {
+        cb.checked = checked;
+        if (checked) {
+            window.selectedUserIds[cb.value] = true;
+        } else {
+            delete window.selectedUserIds[cb.value];
+        }
+    });
+    updateBatchActionBtnState();
+}
+window.toggleSelectAllUsers = toggleSelectAllUsers;
+
+export function updateBatchActionBtnState() {
+    const checkboxes = document.querySelectorAll('.user-select-checkbox');
+    checkboxes.forEach(cb => {
+        if (cb.checked) {
+            window.selectedUserIds[cb.value] = true;
+        } else {
+            delete window.selectedUserIds[cb.value];
+        }
+    });
+    
+    const selectedCount = Object.keys(window.selectedUserIds).length;
+    const btn = document.getElementById('batch-group-btn');
+    if (btn) {
+        if (selectedCount > 0) {
+            btn.innerText = `批量分组 (已选 ${selectedCount} 人)`;
+        } else {
+            btn.innerText = '批量分组';
+        }
+    }
+    
+    const selectAllCb = document.getElementById('user-select-all');
+    if (selectAllCb) {
+        const allChecked = checkboxes.length > 0 && Array.from(checkboxes).every(cb => cb.checked);
+        selectAllCb.checked = allChecked;
+    }
+}
+window.updateBatchActionBtnState = updateBatchActionBtnState;
+
+export function openSingleGroupModal(userId, name) {
+    const titleEl = document.getElementById('user-group-modal-title');
+    const descEl = document.getElementById('user-group-modal-desc');
+    const targetIdEl = document.getElementById('group-target-user-id');
+    const manualContainer = document.getElementById('group-manual-input-container');
+    const selectEl = document.getElementById('group-select-level-id');
+    
+    if (titleEl) titleEl.innerText = '🏷️ 用户分组设置 (风控层级)';
+    if (descEl) descEl.innerHTML = `正在为用户 <strong style="color: #38BDF8;">${name}</strong> 设置风控层级分组`;
+    if (targetIdEl) targetIdEl.value = userId;
+    if (manualContainer) manualContainer.style.display = 'none';
+    
+    const users = window.cachedUsersList || [];
+    const user = users.find(x => String(x.id) === String(userId));
+    if (selectEl) {
+        selectEl.value = user && user.riskLevelId ? user.riskLevelId : '';
+    }
+    
+    const modal = document.getElementById('user-group-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.add('active');
+    }
+}
+window.openSingleGroupModal = openSingleGroupModal;
+
+export function openBatchGroupModal() {
+    const titleEl = document.getElementById('user-group-modal-title');
+    const descEl = document.getElementById('user-group-modal-desc');
+    const targetIdEl = document.getElementById('group-target-user-id');
+    const manualContainer = document.getElementById('group-manual-input-container');
+    const selectEl = document.getElementById('group-select-level-id');
+    const manualInputsEl = document.getElementById('group-manual-inputs');
+    
+    const selectedCount = Object.keys(window.selectedUserIds).length;
+    
+    if (titleEl) titleEl.innerText = '🏷️ 批量用户分组设置';
+    if (descEl) descEl.innerHTML = `已在列表中勾选 <strong style="color: #38BDF8;">${selectedCount}</strong> 名交易员。您也可以在下方手动输入更多用户的 UID 或手机号进行批量分组。`;
+    if (targetIdEl) targetIdEl.value = 'BATCH';
+    if (manualContainer) manualContainer.style.display = 'flex';
+    if (manualInputsEl) manualInputsEl.value = '';
+    if (selectEl) selectEl.value = '';
+    
+    const modal = document.getElementById('user-group-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.add('active');
+    }
+}
+window.openBatchGroupModal = openBatchGroupModal;
+
+export function closeUserGroupModal() {
+    const modal = document.getElementById('user-group-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('active');
+    }
+}
+window.closeUserGroupModal = closeUserGroupModal;
+
+export async function submitUserGrouping() {
+    const targetType = document.getElementById('group-target-user-id').value;
+    const selectedLevelId = document.getElementById('group-select-level-id').value;
+    const levelIdPayload = selectedLevelId ? parseInt(selectedLevelId) : null;
+    
+    let finalUserIds = [];
+    
+    if (targetType === 'BATCH') {
+        const checkedIds = Object.keys(window.selectedUserIds);
+        checkedIds.forEach(id => finalUserIds.push(id));
+        
+        const manualInput = document.getElementById('group-manual-inputs')?.value || '';
+        const rawInputs = manualInput.split(/[\n,，\s]+/).map(x => x.trim()).filter(x => x);
+        
+        if (rawInputs.length > 0) {
+            const allUsers = await window.adminState.getUsers();
+            for (const input of rawInputs) {
+                const matchedUser = allUsers.find(u => {
+                    if (/^\+?\d+$/.test(input)) {
+                        return String(u.uid) === input || 
+                               String(u.phone).includes(input) || 
+                               String(u.username) === input;
+                    } else {
+                        return String(u.username).toLowerCase() === input.toLowerCase() || 
+                               String(u.email).toLowerCase() === input.toLowerCase() ||
+                               String(u.nickname).toLowerCase() === input.toLowerCase();
+                    }
+                });
+                
+                if (!matchedUser) {
+                    showToast(`❌ 无法识别的手动输入交易员: ${input}`, true);
+                    return;
+                }
+                finalUserIds.push(matchedUser.id);
+            }
+        }
+        
+        finalUserIds = Array.from(new Set(finalUserIds));
+        
+        if (finalUserIds.length === 0) {
+            showToast('请至少选择或输入一名交易员进行分组！', true);
+            return;
+        }
+        
+        showToast(`正在批量更新 ${finalUserIds.length} 名用户的风控分组...`, false);
+        try {
+            const res = await apiFetch('POST', '/users/batch/update-status', {
+                userIds: finalUserIds,
+                ids: finalUserIds,
+                riskLevelId: levelIdPayload
+            }, true);
+            
+            if (res.code === 200) {
+                showToast('✓ 批量分组设置已成功保存！');
+                closeUserGroupModal();
+                window.selectedUserIds = {};
+                const selectAllCb = document.getElementById('user-select-all');
+                if (selectAllCb) selectAllCb.checked = false;
+                updateBatchActionBtnState();
+                
+                // Clear state cache to force reload
+                window.adminState.clearUsersCache();
+                loadUsersList();
+            } else {
+                showToast(res.errorMessage || '批量分组设置失败！', true);
+            }
+        } catch (e) {
+            console.error(e);
+            showToast('批量分组网络异常！', true);
+        }
+        
+    } else {
+        const userId = targetType;
+        showToast('正在更新交易员风控分组...', false);
+        try {
+            const allUsers = await window.adminState.getUsers();
+            const user = allUsers.find(x => String(x.id) === String(userId));
+            const currentStatus = user ? user.status : 'ENABLED';
+            
+            const res = await apiFetch('POST', `/users/${userId}/update-status`, {
+                status: currentStatus,
+                riskLevelId: levelIdPayload
+            }, true);
+            
+            if (res.code === 200) {
+                showToast('✓ 交易员风控分组已成功保存！');
+                closeUserGroupModal();
+                
+                // Clear state cache to force reload
+                window.adminState.clearUsersCache();
+                loadUsersList();
+            } else {
+                showToast(res.errorMessage || '保存交易员分组失败！', true);
+            }
+        } catch (e) {
+            console.error(e);
+            showToast('保存交易员分组网络异常！', true);
+        }
+    }
+}
+window.submitUserGrouping = submitUserGrouping;
+
+// ==========================================
+// ▾ 下拉菜单操作控制器 (Action Dropdown Controllers)
+
+export function toggleUserActionDropdown(event, userId) {
+    event.stopPropagation();
+    const menu = document.getElementById(`dropdown-menu-${userId}`);
+    if (!menu) return;
+    const isShown = menu.style.display === 'block';
+    closeAllUserActionDropdowns();
+    if (!isShown) {
+        menu.style.display = 'block';
+        const td = menu.closest('td.sticky-right');
+        if (td) {
+            td.classList.add('dropdown-open');
+        }
+        const tr = menu.closest('tr');
+        if (tr) {
+            tr.classList.add('dropdown-open');
+        }
+    }
+}
+window.toggleUserActionDropdown = toggleUserActionDropdown;
+
+export function closeAllUserActionDropdowns() {
+    const menus = document.querySelectorAll('.action-dropdown-menu');
+    menus.forEach(m => {
+        m.style.display = 'none';
+    });
+    const activeTds = document.querySelectorAll('td.sticky-right.dropdown-open');
+    activeTds.forEach(td => {
+        td.classList.remove('dropdown-open');
+    });
+    const activeTrs = document.querySelectorAll('tr.dropdown-open');
+    activeTrs.forEach(tr => {
+        tr.classList.remove('dropdown-open');
+    });
+}
+window.closeAllUserActionDropdowns = closeAllUserActionDropdowns;
+
+if (!window.userDropdownListenerAdded) {
+    document.addEventListener('click', (event) => {
+        if (!event.target.closest('.action-dropdown-container')) {
+            if (typeof window.closeAllUserActionDropdowns === 'function') {
+                window.closeAllUserActionDropdowns();
+            }
+        }
+    });
+    window.userDropdownListenerAdded = true;
+}

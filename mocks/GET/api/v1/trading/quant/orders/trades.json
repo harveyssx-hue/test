@@ -1,0 +1,13 @@
+{
+  "code": 200,
+  "message": "SUCCESS",
+  "data": [
+    {
+      "id": "99901",
+      "tradeType": "BUY",
+      "price": "65000.00",
+      "qty": "0.015",
+      "createdAt": 1780947527625
+    }
+  ]
+}

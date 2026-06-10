@@ -1,0 +1,132 @@
+            <div class="view-tab-content active" id="view-manual-funding">
+                <div class="glass-panel data-panel" style="padding: 18px;">
+                    <!-- Unified Filter Panel -->
+                    <div style="border-bottom: 1.5px solid var(--border-light); padding-bottom: 15px; margin-bottom: 15px;">
+                        <!-- Row 1: Header (Title & Primary Action) -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                            <div class="data-panel-title" style="font-size: 1.0rem; color: var(--primary); display: flex; align-items: center; gap: 6px; font-weight: bold; margin: 0;">💰 后台存提管理</div>
+                            <button class="action-btn btn-approve" onclick="openManualFundingModal()" style="background: #10B981; color: #FFF; font-size: 0.72rem; padding: 4px 12px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 28px;">+ 发起手工存提申请</button>
+                        </div>
+                        
+                        <!-- Row 2: Filters & Pagination -->
+                        <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap; justify-content: space-between; border-top: 1.5px solid rgba(255,255,255,0.05); padding-top: 15px;">
+                            <!-- Filter Inputs Left -->
+                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1;">
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">用户 UID</span>
+                                    <input type="text" id="filter-manual-uid" placeholder="输入用户UID" oninput="window.adminPages.manualFunding.current=1; loadManualFundingList()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 6px; width: 120px;">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">选择科目</span>
+                                    <select class="filter-select" id="filter-manual-subject" onchange="window.adminPages.manualFunding.current=1; loadManualFundingList()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 4px; width: 130px;">
+                                        <option value="ALL">全部科目</option>
+                                    </select>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">方向</span>
+                                    <select class="filter-select" id="filter-manual-type" onchange="window.adminPages.manualFunding.current=1; loadManualFundingList()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 4px; width: 100px;">
+                                        <option value="ALL">全部方向</option>
+                                        <option value="DEPOSIT">充值 (DEPOSIT)</option>
+                                        <option value="WITHDRAW">扣款 (WITHDRAW)</option>
+                                    </select>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">状态</span>
+                                    <select class="filter-select" id="filter-manual-status" onchange="window.adminPages.manualFunding.current=1; loadManualFundingList()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 4px; width: 120px;">
+                                        <option value="ALL">全部状态</option>
+                                        <option value="PENDING">待审核 (PENDING)</option>
+                                        <option value="APPROVED">已通过 (APPROVED)</option>
+                                        <option value="REJECTED">已拒绝 (REJECTED)</option>
+                                    </select>
+                                </div>
+                                <button class="action-btn" onclick="loadManualFundingList()" style="background: #5B51F9; color: #FFF; font-size: 0.72rem; padding: 4px 10px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 28px;">查询</button>
+                                <button class="action-btn" onclick="resetManualFundingFilters()" style="background: #E2E8F0; color: #475569; font-size: 0.72rem; padding: 4px 10px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 28px;">重置</button>
+                            </div>
+                            
+                            <!-- Pagination Controls Right -->
+                            <div style="display: flex; gap: 6px; align-items: center; background: rgba(255, 255, 255, 0.05); padding: 2px 8px; border-radius: 6px; border: 1.5px solid var(--border-light);">
+                                <select class="filter-select" id="manualFunding-size-select" onchange="changeAdminPageSize('manualFunding', this.value)" style="height: 24px; font-size: 0.7rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 2px; width: 85px; background: transparent; color: var(--text-primary); font-weight: 600; cursor: pointer; outline: none; margin-right: 5px;">
+                                    <option value="5">5 条/页</option>
+                                    <option value="10" selected>10 条/页</option>
+                                    <option value="20">20 条/页</option>
+                                    <option value="50">50 条/页</option>
+                                </select>
+                                <button class="action-btn" onclick="changeAdminPage('manualFunding', -1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">上一页</button>
+                                <span id="manualFunding-page-indicator" style="font-size: 0.72rem; font-weight: 600; color: var(--text-primary); margin: 0 4px; white-space: nowrap;">第 1 / 1 页 (共 0 条)</span>
+                                <button class="action-btn" onclick="changeAdminPage('manualFunding', 1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">下一页</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>单据 ID</th>
+                                    <th>交易员账号 (UID)</th>
+                                    <th>存提类型</th>
+                                    <th>调整金额 (USDT)</th>
+                                    <th>会计科目</th>
+                                    <th>备注说明</th>
+                                    <th>单据状态</th>
+                                    <th>审计链路</th>
+                                    <th>申请时间</th>
+                                    <th>操作选项</th>
+                                </tr>
+                            </thead>
+                            <tbody id="manual-funding-table-body">
+                                <!-- Loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 12: MANUAL FUNDING SUBJECTS (存提科目管理) -->
+    <!-- VIEW: MANUAL FUNDING CREATION MODAL -->
+    <div class="overlay" id="manual-funding-add-modal">
+        <div class="glass-panel modal-content-payment" style="max-width: 500px; padding: 30px;">
+            <button class="drawer-close-btn" onclick="closeManualFundingModal()" style="top: 24px; right: 24px; font-size: 1.2rem; color: var(--text-secondary); background: transparent; border: none; cursor: pointer;">✕</button>
+            <div class="modal-header-admin" style="margin-bottom: 24px; border-bottom: 1px solid #F1F5F9; padding-bottom: 16px;">
+                <h2 style="font-size: 1.35rem; display: flex; align-items: center; gap: 8px; color: var(--text-primary); margin: 0;">💰 发起手工资金调整</h2>
+                <p style="font-size: 0.78rem; color: #64748B; margin-top: 6px; font-weight: 500; margin-bottom: 0;">人工干预并发起交易员钱包的余额充值 (DEPOSIT) 或资金扣减 (WITHDRAW) 申请</p>
+            </div>
+            
+            <form class="auth-form" onsubmit="submitManualFundingOrder(event)">
+                <div class="auth-input-group" style="margin-bottom: 15px;">
+                    <label>输入目标交易员手机号码或UID (User Phone/UID)</label>
+                    <input type="text" id="manual-fund-add-user" required placeholder="请输入交易员手机号码或UID" class="payment-add-input">
+                </div>
+                
+                <div class="form-grid-2" style="margin-bottom: 15px;">
+                    <div class="auth-input-group">
+                        <label>资金流向 (Type)</label>
+                        <select id="manual-fund-add-type" required class="payment-add-select" onchange="filterSubjectsByScope()">
+                            <option value="DEPOSIT">充值入金 (DEPOSIT)</option>
+                            <option value="WITHDRAW">扣款出金 (WITHDRAW)</option>
+                        </select>
+                    </div>
+                    <div class="auth-input-group">
+                        <label>会计科目 (Accounting Subject)</label>
+                        <select id="manual-fund-add-subject" required class="payment-add-select">
+                            <option value="">-- 请选择科目 --</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="auth-input-group" style="margin-bottom: 15px;">
+                    <label>调整金额 (Amount in USDT)</label>
+                    <input type="number" step="0.0001" min="0.0001" id="manual-fund-add-amount" required placeholder="输入调整的额度，必须大于0">
+                </div>
+                
+                <div class="auth-input-group" style="width: 100%; margin-bottom: 20px;">
+                    <label>存提原因备注 (Remark)</label>
+                    <textarea id="manual-fund-add-remark" required placeholder="请详细说明此次手工资金调整的理由与批示背景" style="height: 70px; resize: none; box-sizing: border-box;"></textarea>
+                </div>
+                
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" class="action-btn" style="flex: 1; background: rgba(0,0,0,0.05); color: var(--text-primary); height: 42px; border: 1.5px solid var(--border-light); cursor: pointer; border-radius: 8px;" onclick="closeManualFundingModal()">取消</button>
+                    <button type="submit" class="action-btn" style="flex: 1.5; background: var(--primary); color: #FFF; height: 42px; border: none; cursor: pointer; border-radius: 8px; font-weight: bold;">提交申请进入审计流</button>
+                </div>
+            </form>
+        </div>
+    </div>

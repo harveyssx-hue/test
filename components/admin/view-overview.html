@@ -1,0 +1,72 @@
+﻿            <div class="view-tab-content active" id="view-overview">
+                <!-- Statistic metrics row -->
+                <div class="metrics-grid">
+                    <div class="glass-panel metric-card">
+                        <div class="metric-label">
+                            全站注册交易员
+                            <span class="m-icon-purple">👥</span>
+                        </div>
+                        <span class="metric-value" id="stat-total-users">0</span>
+                        <div class="metric-footer">
+                            <span class="percent up">↑ +12.4%</span> 比上周同期
+                        </div>
+                    </div>
+                    <div class="glass-panel metric-card m-green">
+                        <div class="metric-label">
+                            全站总锁仓托管资金
+                            <span class="m-icon-green">💰</span>
+                        </div>
+                        <span class="metric-value" id="stat-total-valuation">$0.00</span>
+                        <div class="metric-footer">
+                            <span class="percent up">↑ +4.2%</span> 较昨日存入
+                        </div>
+                    </div>
+                    <div class="glass-panel metric-card m-amber">
+                        <div class="metric-label">
+                            待审核 KYC 申请
+                            <span class="m-icon-orange">🛡️</span>
+                        </div>
+                        <span class="metric-value" id="stat-pending-kyc">0</span>
+                        <div class="metric-footer" style="color: #EA580C; font-weight: 600;">
+                            ⚠️ 需要加急处理申请
+                        </div>
+                    </div>
+                    <div class="glass-panel metric-card m-red">
+                        <div class="metric-label">
+                            运行中 AI 量化策略
+                            <span class="m-icon-blue">🤖</span>
+                        </div>
+                        <span class="metric-value" id="stat-active-quant">0</span>
+                        <div class="metric-footer">
+                            实时策略交易总并发数
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent ledger audit trails logs -->
+                <div class="glass-panel data-panel" style="min-height: 380px;">
+                    <div class="data-panel-header">
+                        <div class="data-panel-title">🛡️ 实时合规流水与业务审计日志 (Ledger Events)</div>
+                    </div>
+                    <div class="table-container">
+                        <table style="font-size: 0.82rem;">
+                            <thead>
+                                <tr>
+                                    <th>事件类型</th>
+                                    <th>触发模块</th>
+                                    <th>相关对象</th>
+                                    <th>事件内容摘要</th>
+                                    <th>发生时间</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stat-event-logs">
+                                <tr>
+                                    <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 50px 0;">
+                                        暂无最新业务推送事件（当交易端用户下单、赎回或后台审核时，此处将实时展示推送的 WebSocket 审计流）
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>

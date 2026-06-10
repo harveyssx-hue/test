@@ -1,0 +1,19 @@
+{
+  "code": 200,
+  "message": "SUCCESS",
+  "data": [
+    {
+      "id": "123456",
+      "orderNo": "QO202606080001",
+      "algorithmModelId": "1194952042687242240",
+      "algorithmModel": {
+        "name": "红杉神经网络量化"
+      },
+      "investAmount": "1000.00",
+      "actualProfit": "125.50",
+      "status": "ACTIVE",
+      "stopLossRate": "0.1",
+      "createdAt": 1780947527625
+    }
+  ]
+}

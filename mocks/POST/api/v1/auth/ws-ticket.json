@@ -1,0 +1,7 @@
+{
+  "code": 200,
+  "message": "SUCCESS",
+  "data": {
+    "ticket": "mock_ws_ticket_token_123456"
+  }
+}

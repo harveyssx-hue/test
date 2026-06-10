@@ -1,0 +1,42 @@
+[
+  {
+    "id": "1",
+    "symbol": "btcusdt",
+    "name": "Bitcoin",
+    "logo": "",
+    "ticker": {
+      "closePrice": "65000.00",
+      "priceChangePercent": "1.25"
+    }
+  },
+  {
+    "id": "2",
+    "symbol": "ethusdt",
+    "name": "Ethereum",
+    "logo": "",
+    "ticker": {
+      "closePrice": "3250.00",
+      "priceChangePercent": "-0.45"
+    }
+  },
+  {
+    "id": "3",
+    "symbol": "solusdt",
+    "name": "Solana",
+    "logo": "",
+    "ticker": {
+      "closePrice": "145.20",
+      "priceChangePercent": "4.82"
+    }
+  },
+  {
+    "id": "4",
+    "symbol": "xrpusdt",
+    "name": "Ripple",
+    "logo": "",
+    "ticker": {
+      "closePrice": "0.5200",
+      "priceChangePercent": "-1.15"
+    }
+  }
+]

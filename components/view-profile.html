@@ -1,0 +1,249 @@
+﻿<div id="view-profile" class="view-tab-content">
+                        <!-- Premium profile header section -->
+                        <div class="profile-top-header-section">
+                            <div class="profile-header-left">
+                                <div class="profile-avatar-wrap" onclick="if(!currentUser) openAuthModal()">
+                                    <div class="profile-avatar-circle" id="profile-avatar">
+                                        <span class="avatar-letter" id="profile-avatar-letter">?</span>
+                                    </div>
+                                    <div class="profile-avatar-edit-badge">
+                                        <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                                    </div>
+                                </div>
+                                <div class="profile-info-meta-wrap">
+                                    <div class="profile-nickname-row">
+                                        <h2 id="profile-nickname" data-i18n="profile_nickname_guest">Guest (Not logged in)</h2>
+                                        <!-- Verified badge (checkmark inside circle) -->
+                                        <span id="profile-verified-badge" class="profile-verified-star-badge" style="display: none;">
+                                            <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                                        </span>
+                                        <span class="vip-tag" id="profile-vip-tag" style="display: none;">VIP 1</span>
+                                    </div>
+                                    <div class="profile-uid-row" id="profile-uid-container" style="display: none;">
+                                        <span>UID: <span id="profile-uid-text">--</span></span>
+                                        <button class="profile-uid-copy-btn" onclick="copyProfileUid(event)" title="Copy UID">
+                                            <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="profile-header-right">
+                                <button class="profile-headset-btn" onclick="showToast(t('toast_online_support_prep'), false)">
+                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                    <span class="headset-badge-24">24</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Premium Violet-Blue Gradient Assets Card -->
+                        <div class="profile-assets-card">
+                            <!-- Background decorative glass spheres -->
+                            <div class="glass-sphere sphere-1"></div>
+                            <div class="glass-sphere sphere-2"></div>
+                            
+                            <!-- Card Content -->
+                            <div class="assets-card-content">
+                                <div class="assets-card-section">
+                                    <div class="card-label-row">
+                                        <div style="display: flex; align-items: center; gap: 4px;">
+                                            <span data-i18n="profile_total_assets_lbl" id="profile-total-label">Total assets</span>
+                                            <button class="card-eye-btn" onclick="toggleAssetVisibility(event)">
+                                                <svg id="eye-icon-total" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                            </button>
+                                        </div>
+                                        <button class="card-reload-btn" onclick="toggleAssetCurrencyDisplay()">
+                                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                                        </button>
+                                    </div>
+                                    <div class="card-val-row" style="margin-top: 2px;">
+                                        <span class="card-currency-symbol" id="card-total-symbol">&#x20B9;</span>
+                                        <span class="card-amount-val" id="profile-total-valuation">0.00</span>
+                                    </div>
+                                    <div style="font-size: 0.65rem; color: rgba(255,255,255,0.7); margin-top: 1px; font-weight: 600;" id="profile-total-valuation-sub">&#x2248; 0.00 USDT</div>
+                                </div>
+                                
+                                <div class="assets-card-section" style="margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.12); padding-top: 12px;">
+                                    <div class="card-label-row">
+                                        <div style="display: flex; align-items: center; gap: 4px;">
+                                            <span data-i18n="profile_avail_trade_lbl" id="profile-avail-label">Available to trade</span>
+                                            <button class="card-eye-btn" onclick="toggleAssetVisibility(event)">
+                                                <svg id="eye-icon-avail" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-val-row" style="margin-top: 2px;">
+                                        <span class="card-currency-symbol" id="card-avail-symbol">&#x20B9;</span>
+                                        <span class="card-amount-val" id="profile-available-valuation">0.00</span>
+                                    </div>
+                                    <div style="font-size: 0.65rem; color: rgba(255,255,255,0.7); margin-top: 1px; font-weight: 600;" id="profile-available-valuation-sub">&#x2248; 0.00 USDT</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick transaction buttons row -->
+                        <div class="profile-quick-actions-bar">
+                            <button class="profile-action-btn" onclick="openDepositModal()">
+                                <span data-i18n="profile_deposit">Add funds</span>
+                            </button>
+                            
+                            <button class="profile-action-qr-btn" onclick="openDepositModal()" title="Quick QR Payment">
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M7 7h.01M17 7h.01M17 17h.01M7 17h.01"/></svg>
+                            </button>
+                            
+                            <button class="profile-action-btn" onclick="openWithdrawModal()">
+                                <span data-i18n="profile_withdraw">Withdraw funds</span>
+                            </button>
+                        </div>
+
+                        <!-- Success invited friends capsule banner -->
+                        <div class="profile-invite-friends-banner" onclick="openInviteModal()">
+                            <div class="invite-banner-left">
+                                <span data-i18n="profile_success_invited_friends" style="font-weight: 700; color: #1E293B;">Success invited friends</span>
+                            </div>
+                            <div class="invite-banner-right">
+                                <div class="overlap-avatars">
+                                    <div class="bubble-avatar" style="background-color: #5B51F9;">A</div>
+                                    <div class="bubble-avatar" style="background-color: #10B981;">B</div>
+                                    <div class="bubble-avatar" style="background-color: #F59E0B;">C</div>
+                                    <div class="bubble-avatar" style="background-color: #EF4444;">D</div>
+                                    <div class="bubble-avatar" style="background-color: #EC4899;">E</div>
+                                </div>
+                                <span id="profile-invite-count-badge" class="invite-count-badge">+0</span>
+                            </div>
+                        </div>
+
+                        <!-- Menu Card Group 1 -->
+                        <div class="profile-menu-card">
+                            <div class="p-menu-row" onclick="openKycModal()">
+                                <div class="row-left">
+                                    <span class="row-text" data-i18n="profile_menu_kyc">Identity verification</span>
+                                </div>
+                                <div class="row-right">
+                                    <span id="profile-kyc-text" class="menu-status-text text-unverified" data-i18n="profile_kyc_unverified">(Unverified)</span>
+                                    <span id="profile-kyc-check-icon" class="kyc-check-circle gray-check">
+                                        <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                                    </span>
+                                    <span class="row-arrow">›</span>
+                                </div>
+                            </div>
+                            
+                            <div class="p-menu-row" onclick="showToast(t('toast_account_security_status'), false)">
+                                <div class="row-left">
+                                    <span class="row-text" data-i18n="profile_menu_security">Account security</span>
+                                </div>
+                                <div class="row-right">
+                                    <span class="row-arrow">›</span>
+                                </div>
+                            </div>
+                            
+                            <div class="p-menu-row" onclick="checkAndOpenPaymentAccount()">
+                                <div class="row-left">
+                                    <span class="row-text" data-i18n="profile_menu_payment">Payment account</span>
+                                </div>
+                                <div class="row-right">
+                                    <span class="row-arrow">›</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Menu Card Group 2 -->
+                        <div class="profile-menu-card" style="margin-top: 14px;">
+                            <div class="p-menu-row" onclick="openTxRecordsModal()">
+                                <div class="row-left">
+                                    <span class="row-text" data-i18n="profile_menu_recharge_record">Recharge record</span>
+                                </div>
+                                <div class="row-right">
+                                    <span class="row-arrow">›</span>
+                                </div>
+                            </div>
+                            
+                            <div class="p-menu-row" onclick="openTxRecordsModal()">
+                                <div class="row-left">
+                                    <span class="row-text" data-i18n="profile_menu_withdraw_record">Withdrawal record</span>
+                                </div>
+                                <div class="row-right">
+                                    <span class="row-arrow">›</span>
+                                </div>
+                            </div>
+
+                            <div class="p-menu-row" onclick="openFundDetailsModal()">
+                                <div class="row-left">
+                                    <span class="row-text" data-i18n="profile_menu_ledgers">Ledgers</span>
+                                </div>
+                                <div class="row-right">
+                                    <span class="row-arrow">›</span>
+                                </div>
+                            </div>
+
+                            <div class="p-menu-row" onclick="openInviteModal()">
+                                <div class="row-left">
+                                    <span class="row-text" data-i18n="profile_menu_invite">Invite Friends</span>
+                                </div>
+                                <div class="row-right">
+                                    <span class="row-arrow">›</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Menu Card Group 3 -->
+                        <div class="profile-menu-card" style="margin-top: 14px;">
+                            <div class="p-menu-row" onclick="toggleLanguageDropdown(event)" style="position: relative;">
+                                <div class="row-left">
+                                    <span class="row-text" data-i18n="profile_menu_lang">Language</span>
+                                </div>
+                                <div class="row-right">
+                                    <span style="font-size: 0.72rem; color: #94A3B8; font-weight: 600;" id="profile-lang-current-label">English</span>
+                                    <span class="row-arrow">›</span>
+                                </div>
+                                <!-- Floating dropdown selector -->
+                                <div class="lang-dropdown" id="profile-lang-dropdown-menu" style="right: 14px; top: 44px; z-index: 999;">
+                                    <div class="lang-option" onclick="changeAppLanguage('en', event)">🇺🇸 English</div>
+                                    <div class="lang-option" onclick="changeAppLanguage('hi', event)">🇮🇳 हिन्दी (Hindi)</div>
+                                </div>
+                            </div>
+
+                            <div class="p-menu-row" onclick="showToast(t('toast_network_line_optimal'), false)">
+                                <div class="row-left">
+                                    <span class="row-text" data-i18n="profile_menu_network">Network line set</span>
+                                </div>
+                                <div class="row-right">
+                                    <span class="row-arrow">›</span>
+                                </div>
+                            </div>
+
+                            <div class="p-menu-row" onclick="showToast(t('toast_software_version_latest'), false)">
+                                <div class="row-left">
+                                    <span class="row-text" data-i18n="profile_menu_update">Software update</span>
+                                </div>
+                                <div class="row-right">
+                                    <span class="row-arrow">›</span>
+                                </div>
+                            </div>
+
+                            <div class="p-menu-row" onclick="openAppDownloadModal()">
+                                <div class="row-left">
+                                    <span class="row-text" data-i18n="profile_menu_download">Download APP</span>
+                                </div>
+                                <div class="row-right">
+                                    <span class="row-arrow">›</span>
+                                </div>
+                            </div>
+
+                            <div class="p-menu-row" onclick="openAcademyModal()">
+                                <div class="row-left">
+                                    <span class="row-text" data-i18n="profile_menu_more">More</span>
+                                </div>
+                                <div class="row-right">
+                                    <span class="row-arrow">›</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sign out row (only shows if logged in) -->
+                        <div class="profile-logout-btn-wrap" id="profile-logout-box" style="display: none; margin-top: 22px; padding: 0 4px;">
+                            <button class="profile-logout-premium-btn" onclick="handleLogout()" data-i18n="profile_logout_btn">Logout</button>
+                        </div>
+                        
+                        <div style="height: 70px;"></div>
+                    </div>

@@ -1,0 +1,64 @@
+<div id="view-invite" class="view-tab-content" style="background: linear-gradient(180deg, #FFF9F2 0%, #FFAA44 45%, #F43F5E 100%) !important; min-height: calc(100vh - 65px); display: flex; flex-direction: column; overflow-y: auto;">
+    <!-- Header -->
+    <div class="invite-header" style="display: flex; align-items: center; padding: 16px 20px; position: sticky; top: 0; z-index: 100; background: transparent;">
+        <button class="back-btn" onclick="switchTab('profile')" style="background: none; border: none; outline: none; cursor: pointer; display: flex; align-items: center; color: #000000; padding: 0; margin-right: 16px;">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+        </button>
+        <span style="font-size: 1.25rem; font-weight: 800; color: #000000; font-family: 'Inter', sans-serif;" data-i18n="invite_title">Invite Friends</span>
+    </div>
+
+    <!-- Scrollable content wrapper -->
+    <div style="flex: 1; padding: 0 20px 24px; display: flex; flex-direction: column; box-sizing: border-box;">
+        
+        <!-- Large Headline -->
+        <div style="margin-top: 15px; margin-bottom: 25px; text-align: left;">
+            <h1 style="font-size: 1.85rem; font-weight: 900; line-height: 1.25; margin: 0; color: #E11D48; font-family: 'Inter', sans-serif;">
+                Recommend friends,<br><span style="color: #1A3EC1;">easily earn rewards.</span>
+            </h1>
+            <p style="font-size: 0.95rem; color: #FFFFFF; margin: 8px 0 0 0; font-weight: 600;">
+                They trade, you earn rewards.
+            </p>
+        </div>
+        
+        <!-- Bullet Points Descriptions -->
+        <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 30px; text-align: left;">
+            <!-- Bullet 1 -->
+            <div style="display: flex; gap: 12px; align-items: flex-start; color: #FFFFFF; font-size: 0.82rem; line-height: 1.45; font-weight: 500;">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #1A3EC1; flex-shrink: 0; margin-top: 1px;">
+                    <circle cx="18" cy="5" r="3" fill="#FFC529" stroke="#1A3EC1" stroke-width="2"/>
+                    <circle cx="6" cy="12" r="3" fill="#1A3EC1" stroke="#1A3EC1" stroke-width="2"/>
+                    <circle cx="18" cy="19" r="3" fill="#FFC529" stroke="#1A3EC1" stroke-width="2"/>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" stroke="#1A3EC1" stroke-width="2.5"/>
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" stroke="#1A3EC1" stroke-width="2.5"/>
+                </svg>
+                <span data-i18n="invite_desc_1">Share your referral link with as many friends as possible. Please make sure your friends register through your link.</span>
+            </div>
+            <!-- Bullet 2 -->
+            <div style="display: flex; gap: 12px; align-items: flex-start; color: #FFFFFF; font-size: 0.82rem; line-height: 1.45; font-weight: 500;">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="#1A3EC1" style="flex-shrink: 0; margin-top: 1px;">
+                    <path d="M18 10c0-2-1.5-3.5-3.5-3.5h-1c-.3 0-.5-.2-.5-.5V5c0-1.1-.9-2-2-2s-2 .9-2 2v1c0 .3-.2.5-.5.5h-1C6.5 6.5 5 8 5 10c0 4.5 2.5 8.5 7 9.5 4.5-1 7-5 7-9.5z"/>
+                    <path d="M12 8v6M13.5 9.5H11a1.5 1.5 0 0 0 0 3h2a1.5 1.5 0 0 1 0 3H10" stroke="#FFF" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span data-i18n="invite_desc_2">Each eligible friend can receive rewards worth up to ₹17,000.</span>
+            </div>
+        </div>
+
+        
+        <!-- Action Buttons -->
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: auto;">
+            <!-- Invite Button (yellow gradient) -->
+            <button class="invite-primary-btn" id="btn-copy-invite-code" style="width: 100%; height: 48px; border: none; outline: none; border-radius: 24px; background: linear-gradient(180deg, #FFC529 0%, #FFA019 100%); color: #102A83; font-weight: 700; font-size: 1rem; cursor: pointer; box-shadow: 0 4px 12px rgba(255, 160, 25, 0.25); transition: all 0.2s; display: flex; align-items: center; justify-content: center; letter-spacing: 0.5px;" data-i18n="invite_btn_invite_now">
+                Invite
+            </button>
+            <!-- View Subordinates Button (white solid) -->
+            <button class="invite-secondary-btn" onclick="switchTab('subordinates')" style="width: 100%; height: 48px; border: none; outline: none; border-radius: 24px; background: #FFFFFF; color: #102A83; font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(225, 29, 72, 0.1); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); letter-spacing: 0.5px;" data-i18n="invite_btn_subordinates">
+                View Subordinates
+            </button>
+        </div>
+        
+    </div>
+    <!-- Bottom Spacer for nav bar overlay -->
+    <div style="height: 70px;"></div>
+</div>

@@ -1,0 +1,14 @@
+{
+  "code": 200,
+  "message": "SUCCESS",
+  "data": {
+    "id": 112233445566,
+    "uid": "11223344",
+    "username": "tester",
+    "nickname": "TestUser",
+    "phone": "+8613800000000",
+    "email": "test@example.com",
+    "kycStatus": "VERIFIED",
+    "referralCode": "AI88888"
+  }
+}

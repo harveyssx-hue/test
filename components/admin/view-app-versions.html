@@ -1,0 +1,123 @@
+            <div class="view-tab-content active" id="view-app-versions">
+                <div class="glass-panel data-panel" style="padding: 18px;">
+                    <!-- Unified Filter Panel -->
+                    <div style="border-bottom: 1.5px solid var(--border-light); padding-bottom: 15px; margin-bottom: 15px;">
+                        <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap; justify-content: space-between;">
+                            <!-- Header and Add Button Left -->
+                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1;">
+                                <div class="data-panel-title" style="font-size: 1.0rem; color: var(--primary); display: flex; align-items: center; gap: 6px; margin-right: 10px; font-weight: bold;">📱 APP 版本更新管理</div>
+                                <button class="action-btn btn-approve" onclick="openAppVersionDrawer()" style="background: #5B51F9; color: #FFF; font-size: 0.72rem; padding: 4px 12px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 28px;">+ 新增 APP 版本</button>
+                                
+                                <!-- Platform Filter -->
+                                <select id="versions-platform-filter" onchange="loadAppVersionsList()" class="filter-select" style="height: 28px; font-size: 0.75rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 5px; background: transparent; color: var(--text-secondary); outline: none; cursor: pointer;">
+                                    <option value="">所有平台 (All)</option>
+                                    <option value="iOS">iOS</option>
+                                    <option value="Android">Android</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Pagination Controls Right -->
+                            <div style="display: flex; gap: 6px; align-items: center; background: rgba(255, 255, 255, 0.05); padding: 2px 8px; border-radius: 6px; border: 1.5px solid var(--border-light);">
+                                <select class="filter-select" id="versions-size-select" onchange="changeAdminPageSize('versions', this.value)" style="height: 24px; font-size: 0.7rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 2px; width: 85px; background: transparent; color: var(--text-primary); font-weight: 600; cursor: pointer; outline: none; margin-right: 5px;">
+                                    <option value="5">5 条/页</option>
+                                    <option value="10" selected>10 条/页</option>
+                                    <option value="20">20 条/页</option>
+                                </select>
+                                <button class="action-btn" onclick="changeAdminPage('versions', -1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">上一页</button>
+                                <span id="versions-page-indicator" style="font-size: 0.72rem; font-weight: 600; color: var(--text-primary); margin: 0 4px; white-space: nowrap;">第 1 / 1 页 (共 0 条)</span>
+                                <button class="action-btn" onclick="changeAdminPage('versions', 1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">下一页</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>版本 ID</th>
+                                    <th>平台</th>
+                                    <th>渠道</th>
+                                    <th>最新版本号</th>
+                                    <th>最新版本 Code</th>
+                                    <th>最低支持 Code</th>
+                                    <th>强制升级</th>
+                                    <th>安装包下载链接</th>
+                                    <th>更新描述</th>
+                                    <th class="sticky-right" style="text-align: center;">操作选项</th>
+                                </tr>
+                            </thead>
+                            <tbody id="versions-table-body">
+                                <!-- Loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+    <div class="drawer-overlay" id="versions-overlay" onclick="closeAppVersionDrawer()"></div>
+    <div class="drawer-sheet" id="versions-drawer" style="width: 95%; max-width: 540px; overflow-y: auto;">
+        <button class="drawer-close-btn" onclick="closeAppVersionDrawer()">✕</button>
+        <div class="drawer-header-audit" style="margin-bottom: 24px; border-bottom: 1px solid #F1F5F9; padding-bottom: 16px;">
+            <h2 id="versions-drawer-title" style="font-size: 1.35rem; display: flex; align-items: center; gap: 8px; color: var(--text-primary);">📝 新增 APP 版本</h2>
+            <p style="font-size: 0.78rem; color: #64748B; margin-top: 6px; font-weight: 500;">配置客户端的版本更新提示、最低支持版本号以及下载链接</p>
+        </div>
+        
+        <form id="versions-form" onsubmit="saveAppVersionSubmit(event)" style="display: flex; flex-direction: column; gap: 15px;">
+            <input type="hidden" id="edit-version-id">
+            
+            <div class="form-grid-2">
+                <div class="auth-input-group">
+                    <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 700; margin-bottom: 6px; display: block;">平台类型 *</label>
+                    <select id="edit-version-platform" required style="width: 100%; height: 38px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--border-light); background: #fff; color: var(--text-primary); font-weight: 600;">
+                        <option value="iOS">iOS</option>
+                        <option value="Android">Android</option>
+                    </select>
+                </div>
+                <div class="auth-input-group">
+                    <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 700; margin-bottom: 6px; display: block;">推广渠道 (Channel) *</label>
+                    <input type="text" id="edit-version-channel" required value="official" placeholder="如: official" style="width: 100%; height: 38px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--border-light); background: #fff;">
+                </div>
+            </div>
+            
+            <div class="form-grid-2">
+                <div class="auth-input-group">
+                    <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 700; margin-bottom: 6px; display: block;">版本号名称 (Version Name) *</label>
+                    <input type="text" id="edit-version-name" required placeholder="如: 1.2.0" style="width: 100%; height: 38px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--border-light); background: #fff;">
+                </div>
+                <div class="auth-input-group">
+                    <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 700; margin-bottom: 6px; display: block;">版本号编码 (Version Code) *</label>
+                    <input type="number" id="edit-version-code" required placeholder="如: 120" style="width: 100%; height: 38px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--border-light); background: #fff;">
+                </div>
+            </div>
+            
+            <div class="form-grid-2">
+                <div class="auth-input-group">
+                    <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 700; margin-bottom: 6px; display: block;">最低支持编码 (Min Code) *</label>
+                    <input type="number" id="edit-version-min-code" required placeholder="如: 110" style="width: 100%; height: 38px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--border-light); background: #fff;">
+                </div>
+                <div class="auth-input-group">
+                    <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 700; margin-bottom: 6px; display: block;">是否强制升级 *</label>
+                    <select id="edit-version-force" required style="width: 100%; height: 38px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--border-light); background: #fff; color: var(--text-primary); font-weight: 600;">
+                        <option value="false">否</option>
+                        <option value="true">是 (Force Upgrade)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="auth-input-group">
+                <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 700; margin-bottom: 6px; display: block;">下载 URL (Download URL) *</label>
+                <input type="url" id="edit-version-url" required placeholder="https://example.com/app.apk" style="width: 100%; height: 38px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--border-light); background: #fff;">
+            </div>
+            
+            <div class="auth-input-group">
+                <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 700; margin-bottom: 6px; display: block;">更新描述 (Description) *</label>
+                <textarea id="edit-version-desc" required placeholder="描述此次版本更新的具体内容..." style="width: 100%; height: 80px; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-light); background: #fff; font-family: inherit; font-size: 0.85rem; resize: none;"></textarea>
+            </div>
+            
+            <div class="drawer-footer-actions" style="margin-top: 20px; display: flex; gap: 12px; border-top: 1.5px solid var(--border-light); padding-top: 20px;">
+                <button type="button" class="action-btn" onclick="closeAppVersionDrawer()" style="flex: 1; padding: 10px; border-radius: 6px; border: 1px solid var(--border-light); background: #fff; color: var(--text-primary); cursor: pointer; font-weight: 600;">取消</button>
+                <button type="submit" class="action-btn btn-approve" style="flex: 1; padding: 10px; border-radius: 6px; border: none; background: #5B51F9; color: #FFF; cursor: pointer; font-weight: 600;">保存并发布</button>
+            </div>
+        </form>
+    </div>
+
+
