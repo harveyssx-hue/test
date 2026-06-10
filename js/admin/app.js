@@ -245,7 +245,7 @@ export async function switchAdminTab(tab, btnEl) {
         
         // Load sub-controller
         const ctrl = tabConfig[tab].controller;
-        const module = await import(`./pages/${ctrl}.js?v=${Date.now()}`);
+        const module = await import(`./pages/${ctrl}.js`);
         
         // Expose exported methods to window so inline event handlers work
         for (const [key, val] of Object.entries(module)) {

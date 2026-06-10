@@ -1,11 +1,10 @@
 export async function loadDashboardStats() {
     window.kycFetchPromise = null;
     try {
-        const version = Date.now();
         const [kycModule, quantModule, usersModule] = await Promise.all([
-            import(`./kyc.js?v=${version}`),
-            import(`./quant.js?v=${version}`),
-            import(`./users.js?v=${version}`)
+            import(`./kyc.js`),
+            import(`./quant.js`),
+            import(`./users.js`)
         ]);
         
         // Expose to window as well so other clicks can use them
