@@ -108,9 +108,17 @@
                 <input type="url" id="edit-version-url" required placeholder="https://example.com/app.apk" style="width: 100%; height: 38px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--border-light); background: #fff;">
             </div>
             
-            <div class="auth-input-group">
-                <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 700; margin-bottom: 6px; display: block;">更新描述 (Description) *</label>
-                <textarea id="edit-version-desc" required placeholder="描述此次版本更新的具体内容..." style="width: 100%; height: 80px; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-light); background: #fff; font-family: inherit; font-size: 0.85rem; resize: none;"></textarea>
+            <div style="background: rgba(0,0,0,0.01); border: 1px solid rgba(0,0,0,0.05); padding: 12px; border-radius: 8px; margin-bottom: 12px;">
+                <div style="font-weight: 700; font-size: 0.8rem; color: #5B51F9; margin-bottom: 8px;">英文更新描述 (Locale: en) *</div>
+                <div class="auth-input-group">
+                    <textarea id="edit-version-desc-en" required placeholder="English description of this update..." style="width: 100%; height: 60px; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-light); background: #fff; font-family: inherit; font-size: 0.85rem; resize: none;"></textarea>
+                </div>
+            </div>
+            <div style="background: rgba(0,0,0,0.01); border: 1px solid rgba(0,0,0,0.05); padding: 12px; border-radius: 8px; margin-bottom: 12px;">
+                <div style="font-weight: 700; font-size: 0.8rem; color: #5B51F9; margin-bottom: 8px;">印地语更新描述 (Locale: hi) *</div>
+                <div class="auth-input-group">
+                    <textarea id="edit-version-desc-hi" required placeholder="Hindi description of this update (यह अपडेट का विवरण है)..." style="width: 100%; height: 60px; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-light); background: #fff; font-family: inherit; font-size: 0.85rem; resize: none;"></textarea>
+                </div>
             </div>
             
             <div class="drawer-footer-actions" style="margin-top: 20px; display: flex; gap: 12px; border-top: 1.5px solid var(--border-light); padding-top: 20px;">

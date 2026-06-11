@@ -1005,6 +1005,15 @@ async function loadAppVersionsList() {
                     `<span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: rgba(59, 130, 246, 0.1); color: #3B82F6; font-weight: bold;">🍏 iOS</span>` : 
                     `<span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: rgba(16, 185, 129, 0.1); color: #10B981; font-weight: bold;">🤖 Android</span>`;
                 
+                let displayDesc = '--';
+                if (v.descriptions) {
+                    displayDesc = `en: ${v.descriptions.en || ''} | hi: ${v.descriptions.hi || ''}`;
+                    if (v.descriptions.en && !v.descriptions.hi) displayDesc = v.descriptions.en;
+                    if (!v.descriptions.en && v.descriptions.hi) displayDesc = v.descriptions.hi;
+                } else if (v.description) {
+                    displayDesc = v.description;
+                }
+                
                 html += `
                     <tr style="border-bottom: 1.5px solid var(--border-light);">
                         <td style="font-family: monospace; font-size: 0.8rem;">${v.id}</td>
@@ -1017,7 +1026,7 @@ async function loadAppVersionsList() {
                         <td style="font-family: monospace; font-size: 0.75rem; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(v.downloadUrl || '')}">
                             <a href="${escapeHtml(v.downloadUrl || '#')}" target="_blank" style="color: var(--primary); font-weight: 500;">${escapeHtml(v.downloadUrl || '--')}</a>
                         </td>
-                        <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(v.description || '')}">${escapeHtml(v.description || '--')}</td>
+                        <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(displayDesc)}">${escapeHtml(displayDesc)}</td>
                         <td class="sticky-right" style="text-align: center;">
                             <div style="display: flex; gap: 8px; justify-content: center;">
                                 <button class="action-btn btn-approve" onclick="openAppVersionDrawer('${v.id}')" style="padding: 4px 10px; font-size: 0.78rem; border-radius: 4px;">编辑</button>
@@ -1062,13 +1071,25 @@ function openAppVersionDrawer(id = null) {
             document.getElementById('edit-version-min-code').value = v.minimumVersionCode || '';
             document.getElementById('edit-version-force').value = String(v.forceUpgrade === true);
             document.getElementById('edit-version-url').value = v.downloadUrl || '';
-            document.getElementById('edit-version-desc').value = v.description || '';
+            
+            let enDesc = '';
+            let hiDesc = '';
+            if (v.descriptions) {
+                enDesc = v.descriptions.en || '';
+                hiDesc = v.descriptions.hi || '';
+            } else if (v.description) {
+                enDesc = v.description;
+            }
+            document.getElementById('edit-version-desc-en').value = enDesc;
+            document.getElementById('edit-version-desc-hi').value = hiDesc;
         }
     } else {
         title.innerText = '📝 新增 APP 版本';
         document.getElementById('edit-version-platform').value = 'iOS';
         document.getElementById('edit-version-channel').value = 'official';
         document.getElementById('edit-version-force').value = 'false';
+        document.getElementById('edit-version-desc-en').value = '';
+        document.getElementById('edit-version-desc-hi').value = '';
     }
     
     overlay.classList.add('active');
@@ -1095,7 +1116,8 @@ async function saveAppVersionSubmit(event) {
     const minimumVersionCode = parseInt(document.getElementById('edit-version-min-code').value);
     const forceUpgrade = document.getElementById('edit-version-force').value === 'true';
     const downloadUrl = document.getElementById('edit-version-url').value.trim();
-    const description = document.getElementById('edit-version-desc').value.trim();
+    const descriptionEn = document.getElementById('edit-version-desc-en').value.trim();
+    const descriptionHi = document.getElementById('edit-version-desc-hi').value.trim();
     
     const payload = {
         platform,
@@ -1105,7 +1127,11 @@ async function saveAppVersionSubmit(event) {
         minimumVersionCode,
         forceUpgrade,
         downloadUrl,
-        description
+        description: descriptionEn,
+        descriptions: {
+            en: descriptionEn,
+            hi: descriptionHi
+        }
     };
     
     let method = 'POST';

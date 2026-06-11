@@ -204,7 +204,7 @@ async function apiFetch(method, path, body = null, requireAuth = true) {
     const isAdminRequest = window.isAdminPanel === true || window.location.pathname.includes('admin') || realPath.startsWith('/api/v1/admin') || realPath.includes('audit') || realPath.includes('approve') || realPath.includes('reject');
     const isCommonEndpoint = realPath.includes('/common/');
     const isAdminPageContext = window.isAdminPanel === true || window.location.pathname.includes('admin');
-    const routeToAdmin = isAdminPageContext || (isAdminRequest && !isCommonEndpoint);
+    const routeToAdmin = (isAdminPageContext || isAdminRequest) && !isCommonEndpoint;
     if (routeToAdmin) {
         baseUrl = CONFIG.ADMIN_API_BASE;
     }
@@ -341,7 +341,7 @@ async function apiFetchRaw(method, path, body = null, requireAuth = true) {
     const isAdminRequest = window.isAdminPanel === true || window.location.pathname.includes('admin') || realPath.startsWith('/api/v1/admin') || realPath.includes('audit') || realPath.includes('approve') || realPath.includes('reject');
     const isCommonEndpoint = realPath.includes('/common/');
     const isAdminPageContext = window.isAdminPanel === true || window.location.pathname.includes('admin');
-    const routeToAdmin = isAdminPageContext || (isAdminRequest && !isCommonEndpoint);
+    const routeToAdmin = (isAdminPageContext || isAdminRequest) && !isCommonEndpoint;
     if (routeToAdmin) {
         baseUrl = CONFIG.ADMIN_API_BASE;
     }
@@ -427,7 +427,7 @@ async function apiFetchWithRawBody(method, path, rawBodyStr, requireAuth = true)
     const isAdminRequest = window.isAdminPanel === true || window.location.pathname.includes('admin') || realPath.startsWith('/api/v1/admin') || realPath.includes('audit') || realPath.includes('approve') || realPath.includes('reject');
     const isCommonEndpoint = realPath.includes('/common/');
     const isAdminPageContext = window.isAdminPanel === true || window.location.pathname.includes('admin');
-    const routeToAdmin = isAdminPageContext || (isAdminRequest && !isCommonEndpoint);
+    const routeToAdmin = (isAdminPageContext || isAdminRequest) && !isCommonEndpoint;
     if (routeToAdmin) {
         baseUrl = CONFIG.ADMIN_API_BASE;
     }
