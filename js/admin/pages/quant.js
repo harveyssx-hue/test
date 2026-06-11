@@ -596,7 +596,7 @@ function handleStrategyFileSelect(event) {
                 
                 showToast('⏳ 正在上传策略图标...', false);
                 try {
-                    const presignedRes = await apiFetch('POST', '/common/upload/presigned', {
+                    const presignedRes = await apiFetch('POST', '/upload/presigned', {
                         contentType: 'image/png',
                         fileName: 'strategy_icon.png',
                         type: 'strategy'
@@ -633,7 +633,7 @@ function handleStrategyFileSelect(event) {
                         throw new Error('上传二进制文件失败');
                     }
                     
-                    const confirmRes = await apiFetch('POST', '/common/upload/confirm', {
+                    const confirmRes = await apiFetch('POST', '/upload/confirm', {
                         path: storagePath
                     }, true);
                     
