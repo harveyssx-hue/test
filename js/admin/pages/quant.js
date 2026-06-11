@@ -825,15 +825,9 @@ async function submitStrategyChanges(event) {
     
     const payload = {
         name: name,
-        displayName: `${displayNameEn} / ${displayNameHi}`,
         orderIndex: orderIndex,
         enabled: enabled,
         icon: iconUrl || minAmount || '', // 优先存放真实的图片URL，降级后备存起投金额
-        minInvestAmount: minAmount || '',
-        minAmount: minAmount || '',
-        yield: yieldVal,
-        winRate: winRateVal,
-        followers: followersVal,
         translations: translations
     };
     

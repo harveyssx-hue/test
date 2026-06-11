@@ -795,7 +795,7 @@ async function loadPlatformContentsList(page = 1) {
                         <td style="font-family: monospace; font-size: 0.8rem;">${doc.id}</td>
                         <td style="font-weight: bold; color: var(--text-primary); font-family: monospace;">${doc.code}</td>
                         <td><span style="font-size: 0.82rem; padding: 2px 6px; border-radius: 4px; background: rgba(91,81,249,0.1); color: var(--primary);">${categoryText}</span></td>
-                        <td style="font-family: monospace;">${doc.lang || '--'}</td>
+                        <td style="font-family: monospace;">${doc.localeTag || doc.lang || '--'}</td>
                         <td style="font-weight: bold;">${escapeHtml(doc.title)}</td>
                         <td>${doc.orderIndex || 0}</td>
                         <td>${statusBadge}</td>
@@ -848,7 +848,7 @@ function openPlatformContentsDrawer(id = null) {
             document.getElementById('edit-doc-id').value = doc.id;
             document.getElementById('edit-doc-category').value = doc.category || 'AGREEMENT';
             document.getElementById('edit-doc-code').value = doc.code || '';
-            document.getElementById('edit-doc-lang').value = doc.lang || 'en';
+            document.getElementById('edit-doc-lang').value = doc.localeTag || doc.lang || 'en';
             document.getElementById('edit-doc-orderIndex').value = doc.orderIndex || 1;
             document.getElementById('edit-doc-title').value = doc.title || '';
             document.getElementById('edit-doc-summary').value = doc.summary || '';
@@ -892,7 +892,7 @@ async function savePlatformContentSubmit(event) {
     const payload = {
         category,
         code,
-        lang,
+        localeTag: lang,
         orderIndex,
         title,
         summary,
