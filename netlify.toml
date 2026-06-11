@@ -1,4 +1,10 @@
 [[redirects]]
+  from = "/upload-gcs/*"
+  to = "https://storage.googleapis.com/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/admin-proxy/api/v1/*"
   to = "https://matp-admin.qchats.org/api/v1/:splat"
   status = 200
@@ -9,3 +15,4 @@
   to = "https://matp-app.qchats.org/api/v1/:splat"
   status = 200
   force = true
+

@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/upload-gcs/:path*",
+      "destination": "https://storage.googleapis.com/:path*"
+    },
+    {
       "source": "/admin-proxy/api/v1/:path*",
       "destination": "https://matp-admin.qchats.org/api/v1/:path*"
     },

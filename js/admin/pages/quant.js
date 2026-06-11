@@ -619,6 +619,10 @@ function handleStrategyFileSelect(event) {
                     const isLocalDev = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
                     if (isLocalDev && !uploadUrl.includes('upload-local')) {
                         finalPutUrl = '/upload-gcs?url=' + encodeURIComponent(uploadUrl);
+                    } else if (!isLocalDev) {
+                        if (uploadUrl.startsWith('https://storage.googleapis.com/')) {
+                            finalPutUrl = uploadUrl.replace('https://storage.googleapis.com/', '/upload-gcs/');
+                        }
                     }
                     
                     const putRes = await fetch(finalPutUrl, {

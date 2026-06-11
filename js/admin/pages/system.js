@@ -1007,9 +1007,19 @@ async function loadAppVersionsList() {
                 
                 let displayDesc = '--';
                 if (v.descriptions) {
-                    displayDesc = `en: ${v.descriptions.en || ''} | hi: ${v.descriptions.hi || ''}`;
-                    if (v.descriptions.en && !v.descriptions.hi) displayDesc = v.descriptions.en;
-                    if (!v.descriptions.en && v.descriptions.hi) displayDesc = v.descriptions.hi;
+                    if (Array.isArray(v.descriptions)) {
+                        const enItem = v.descriptions.find(d => (d.localeTag === 'en' || d.lang === 'en' || d.locale === 'en'));
+                        const hiItem = v.descriptions.find(d => (d.localeTag === 'hi' || d.lang === 'hi' || d.locale === 'hi'));
+                        const enText = enItem ? (enItem.description || enItem.content || '') : '';
+                        const hiText = hiItem ? (hiItem.description || hiItem.content || '') : '';
+                        displayDesc = `en: ${enText} | hi: ${hiText}`;
+                        if (enText && !hiText) displayDesc = enText;
+                        if (!enText && hiText) displayDesc = hiText;
+                    } else {
+                        displayDesc = `en: ${v.descriptions.en || ''} | hi: ${v.descriptions.hi || ''}`;
+                        if (v.descriptions.en && !v.descriptions.hi) displayDesc = v.descriptions.en;
+                        if (!v.descriptions.en && v.descriptions.hi) displayDesc = v.descriptions.hi;
+                    }
                 } else if (v.description) {
                     displayDesc = v.description;
                 }
@@ -1075,8 +1085,15 @@ function openAppVersionDrawer(id = null) {
             let enDesc = '';
             let hiDesc = '';
             if (v.descriptions) {
-                enDesc = v.descriptions.en || '';
-                hiDesc = v.descriptions.hi || '';
+                if (Array.isArray(v.descriptions)) {
+                    const enItem = v.descriptions.find(d => (d.localeTag === 'en' || d.lang === 'en' || d.locale === 'en'));
+                    const hiItem = v.descriptions.find(d => (d.localeTag === 'hi' || d.lang === 'hi' || d.locale === 'hi'));
+                    enDesc = enItem ? (enItem.description || enItem.content || '') : '';
+                    hiDesc = hiItem ? (hiItem.description || hiItem.content || '') : '';
+                } else {
+                    enDesc = v.descriptions.en || '';
+                    hiDesc = v.descriptions.hi || '';
+                }
             } else if (v.description) {
                 enDesc = v.description;
             }
@@ -1119,6 +1136,14 @@ async function saveAppVersionSubmit(event) {
     const descriptionEn = document.getElementById('edit-version-desc-en').value.trim();
     const descriptionHi = document.getElementById('edit-version-desc-hi').value.trim();
     
+    let enabled = true;
+    if (id) {
+        const existing = cachedAppVersionsList.find(x => String(x.id) === String(id));
+        if (existing) {
+            enabled = existing.enabled !== false;
+        }
+    }
+
     const payload = {
         platform,
         channel,
@@ -1127,11 +1152,17 @@ async function saveAppVersionSubmit(event) {
         minimumVersionCode,
         forceUpgrade,
         downloadUrl,
-        description: descriptionEn,
-        descriptions: {
-            en: descriptionEn,
-            hi: descriptionHi
-        }
+        enabled,
+        descriptions: [
+            {
+                localeTag: 'en',
+                content: descriptionEn
+            },
+            {
+                localeTag: 'hi',
+                content: descriptionHi
+            }
+        ]
     };
     
     let method = 'POST';
@@ -1140,7 +1171,6 @@ async function saveAppVersionSubmit(event) {
     if (id) {
         method = 'PUT';
         path = `/app-versions/${id}`;
-        payload.id = parseInt(id);
     }
     
     showToast('正在提交保存 APP 版本配置...', false);
