@@ -1,4 +1,4 @@
-﻿            <div class="view-tab-content active" id="view-payment">
+            <div class="view-tab-content active" id="view-payment">
                 <div class="glass-panel data-panel" style="padding: 18px;">
                     <div style="border-bottom: 1.5px solid var(--border-light); padding-bottom: 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                         <div class="data-panel-title" style="font-size: 1.1rem; color: var(--primary); display: flex; align-items: center; gap: 6px;">💳 平台支付与出入金通道管理</div>
@@ -17,7 +17,8 @@
                             <thead>
                                 <tr>
                                     <th>通道 ID</th>
-                                    <th>通道名称 (英文)</th>
+                                    <th>图标</th>
+                                    <th>通道名称</th>
                                     <th>资产类型</th>
                                     <th>业务类型</th>
                                     <th>通道类别</th>
@@ -72,7 +73,7 @@
             <div id="rec-unbound-box" style="display: none; background: rgba(239, 68, 68, 0.04); border: 1px dashed rgba(239, 68, 68, 0.2); border-radius: 12px; padding: 20px; text-align: center;">
                 <span style="font-size: 1.5rem;">📭</span>
                 <h4 style="font-size: 0.9rem; font-weight: 700; color: #EF4444; margin-top: 8px;">未绑定具体的收款目标账户</h4>
-                <p style="font-size: 0.78rem; color: #64748B; margin-top: 4px; line-height: 1.4;">当前通道在数据库中尚未关联任何具体的钱包地址或银行接收卡号，用户端将无法展示对应的收款步骤。</p>
+                <p style="font-size: 0.78rem; color: #64748B; margin-top: 4px; line-height: 1.4;">当前通道在数据库中尚未关联 any 具体的钱包地址或银行接收卡号，用户端将无法展示对应的收款步骤。</p>
                 <button class="action-btn btn-approve" onclick="createNewTargetAndBind()" style="margin-top: 15px; padding: 6px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; font-family: inherit;">+ 立即创建并绑定收款账户</button>
             </div>
             
@@ -128,23 +129,224 @@
 
     <!-- NEW PAYMENT CHANNEL ADD MODAL -->
     <div class="overlay" id="payment-add-modal">
-        <div class="glass-panel modal-content-payment">
+        <div class="glass-panel modal-content-payment" style="max-height: 85vh; overflow-y: auto; max-width: 580px; width: 90%;">
             <button class="drawer-close-btn" onclick="closePaymentAddModal()" style="top: 24px; right: 24px; font-size: 1.2rem;">✕</button>
             <div class="modal-header-admin" style="margin-bottom: 24px; border-bottom: 1px solid #F1F5F9; padding-bottom: 16px;">
                 <h2 style="font-size: 1.35rem; display: flex; align-items: center; gap: 8px; color: var(--text-primary);">💳 新增平台支付通道</h2>
                 <p style="font-size: 0.78rem; color: #64748B; margin-top: 6px; font-weight: 500;">配置并发布全站可用的充值（支持法币/多链）与提现支付接口通道</p>
             </div>
             
-            <form class="auth-form" onsubmit="submitNewPaymentChannel(event)">
-                <div class="payment-form-grid">
+            <form class="auth-form" onsubmit="submitNewPaymentChannel(event)" style="display: flex; flex-direction: column; gap: 16px;">
+                <div class="auth-input-group">
+                    <label>通道名称</label>
+                    <input type="text" id="payment-add-name" required placeholder="例如: USDT-TRC20 快速充值">
+                </div>
+                
+                <div class="auth-input-group">
+                    <label>排序权重 (数字越小越靠前)</label>
+                    <input type="number" id="payment-add-orderIndex" required placeholder="例如: 1" value="1">
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                     <div class="auth-input-group">
-                        <label>通道名称</label>
-                        <input type="text" id="payment-add-name" required placeholder="例如: USDT-TRC20 快速充值">
+                        <label>资产类型</label>
+                        <select id="payment-add-assetClass">
+                            <option value="CRYPTO">CRYPTO (数字货币)</option>
+                            <option value="FIAT">FIAT (法定货币)</option>
+                        </select>
                     </div>
                     
                     <div class="auth-input-group">
-                        <label>排序权重 (数字越小越靠前)</label>
-                        <input type="number" id="payment-add-orderIndex" required placeholder="例如: 1" value="1">
+                        <label>业务类型</label>
+                        <select id="payment-add-bizType">
+                            <option value="DEPOSIT">DEPOSIT (充值入金)</option>
+                            <option value="WITHDRAW">WITHDRAW (提现出金)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="auth-input-group">
+                        <label>通道分类</label>
+                        <select id="payment-add-channelType">
+                            <option value="PAYMENT_GATEWAY">PAYMENT_GATEWAY (支付网关)</option>
+                            <option value="BANK_TRANSFER">BANK_TRANSFER (银行转账)</option>
+                            <option value="CRYPTO_ON_RAMP">CRYPTO_ON_RAMP (加密货币入场)</option>
+                            <option value="CRYPTO_GATEWAY">CRYPTO_GATEWAY (加密货币网关)</option>
+                            <option value="E_WALLET">E_WALLET (电子钱包)</option>
+                            <option value="INTERNAL">INTERNAL (内部划转)</option>
+                        </select>
                     </div>
                     
                     <div class="auth-input-group">
+                        <label>支付通道类型</label>
+                        <select id="payment-add-paymentMethodType">
+                            <option value="CARD">CARD (银行卡)</option>
+                            <option value="BANK_TRANSFER">BANK_TRANSFER (银行卡转账)</option>
+                            <option value="UPI">UPI (印度UPI)</option>
+                            <option value="ALIPAY">ALIPAY (支付宝)</option>
+                            <option value="WECHAT_PAY">WECHAT_PAY (微信支付)</option>
+                            <option value="APPLE_PAY">APPLE_PAY (Apple Pay)</option>
+                            <option value="PAYPAL">PAYPAL (PayPal)</option>
+                            <option value="CRYPTO_WALLET">CRYPTO_WALLET (加密钱包)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="auth-input-group">
+                        <label>收款目标类型</label>
+                        <select id="payment-add-receivingTargetType">
+                            <option value="CRYPTO">CRYPTO (区块链收款)</option>
+                            <option value="FIAT">FIAT (法币银行收款)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="auth-input-group">
+                        <label>接口后续动作</label>
+                        <select id="payment-add-actionType">
+                            <option value="SHOW_ADDRESS">SHOW_ADDRESS (展示收款地址/卡号)</option>
+                            <option value="SHOW_BANK_ACCOUNT">SHOW_BANK_ACCOUNT (展示银行账户)</option>
+                            <option value="OPEN_REDIRECT">OPEN_REDIRECT (跳转第三方)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="auth-input-group">
+                    <label>通道图标 (Icon URL)</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="payment-add-iconUrl" placeholder="如: https://example.com/icon.png" style="flex: 1;">
+                        <input type="file" id="payment-add-iconFile" onchange="uploadPaymentChannelIcon('payment-add-iconFile', 'payment-add-iconUrl', 'payment-add-iconPreview')" style="display: none;" accept="image/*">
+                        <button type="button" class="action-btn" onclick="document.getElementById('payment-add-iconFile').click()" style="padding: 0 12px; font-size: 0.8rem; background: var(--border-light); border: 1.5px solid var(--border-light); border-radius: 8px; cursor: pointer; white-space: nowrap; font-weight: 600;">上传图片</button>
+                    </div>
+                    <div style="margin-top: 5px; display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 0.72rem; color: var(--text-secondary);">预览:</span>
+                        <img id="payment-add-iconPreview" src="" style="max-height: 24px; max-width: 24px; border-radius: 4px; display: none;" onerror="this.style.display='none'">
+                    </div>
+                </div>
+
+                <div class="auth-input-group">
+                    <label>备注描述</label>
+                    <textarea id="payment-add-memo" placeholder="用于在用户端展示提示文字" style="height: 60px; border-radius: 8px; padding: 8px; border: 1.5px solid var(--border-light); font-family: inherit; resize: none;"></textarea>
+                </div>
+
+                <div class="modal-footer" style="margin-top: 10px; display: flex; gap: 12px; justify-content: flex-end;">
+                    <button type="button" class="action-btn" onclick="closePaymentAddModal()" style="padding: 8px 18px; border-radius: 8px; border: 1.5px solid var(--border-light); background: transparent; cursor: pointer;">取消</button>
+                    <button type="submit" class="action-btn btn-approve" style="padding: 8px 22px; border-radius: 8px; background: #5B51F9; border: none; color: #FFF; font-weight: 600; cursor: pointer;">发布通道</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- EDIT PAYMENT CHANNEL MODAL -->
+    <div class="overlay" id="payment-edit-modal">
+        <div class="glass-panel modal-content-payment" style="max-height: 85vh; overflow-y: auto; max-width: 580px; width: 90%;">
+            <button class="drawer-close-btn" onclick="closePaymentEditModal()" style="top: 24px; right: 24px; font-size: 1.2rem;">✕</button>
+            <div class="modal-header-admin" style="margin-bottom: 24px; border-bottom: 1px solid #F1F5F9; padding-bottom: 16px;">
+                <h2 style="font-size: 1.35rem; display: flex; align-items: center; gap: 8px; color: var(--text-primary);">📝 编辑平台支付通道</h2>
+                <p style="font-size: 0.78rem; color: #64748B; margin-top: 6px; font-weight: 500;">更新并保存当前支付通道的核心配置及前端图标参数</p>
+            </div>
+            
+            <form class="auth-form" onsubmit="submitEditPaymentChannel(event)" style="display: flex; flex-direction: column; gap: 16px;">
+                <input type="hidden" id="payment-edit-id">
+                
+                <div class="auth-input-group">
+                    <label>通道名称</label>
+                    <input type="text" id="payment-edit-name" required placeholder="例如: USDT-TRC20 快速充值">
+                </div>
+                
+                <div class="auth-input-group">
+                    <label>排序权重 (数字越小越靠前)</label>
+                    <input type="number" id="payment-edit-orderIndex" required placeholder="例如: 1">
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="auth-input-group">
+                        <label>资产类型</label>
+                        <select id="payment-edit-assetClass">
+                            <option value="CRYPTO">CRYPTO (数字货币)</option>
+                            <option value="FIAT">FIAT (法定货币)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="auth-input-group">
+                        <label>业务类型</label>
+                        <select id="payment-edit-bizType">
+                            <option value="DEPOSIT">DEPOSIT (充值入金)</option>
+                            <option value="WITHDRAW">WITHDRAW (提现出金)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="auth-input-group">
+                        <label>通道分类</label>
+                        <select id="payment-edit-channelType">
+                            <option value="PAYMENT_GATEWAY">PAYMENT_GATEWAY (支付网关)</option>
+                            <option value="BANK_TRANSFER">BANK_TRANSFER (银行转账)</option>
+                            <option value="CRYPTO_ON_RAMP">CRYPTO_ON_RAMP (加密货币入场)</option>
+                            <option value="CRYPTO_GATEWAY">CRYPTO_GATEWAY (加密货币网关)</option>
+                            <option value="E_WALLET">E_WALLET (电子钱包)</option>
+                            <option value="INTERNAL">INTERNAL (内部划转)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="auth-input-group">
+                        <label>支付通道类型</label>
+                        <select id="payment-edit-paymentMethodType">
+                            <option value="CARD">CARD (银行卡)</option>
+                            <option value="BANK_TRANSFER">BANK_TRANSFER (银行卡转账)</option>
+                            <option value="UPI">UPI (印度UPI)</option>
+                            <option value="ALIPAY">ALIPAY (支付宝)</option>
+                            <option value="WECHAT_PAY">WECHAT_PAY (微信支付)</option>
+                            <option value="APPLE_PAY">APPLE_PAY (Apple Pay)</option>
+                            <option value="PAYPAL">PAYPAL (PayPal)</option>
+                            <option value="CRYPTO_WALLET">CRYPTO_WALLET (加密钱包)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="auth-input-group">
+                        <label>收款目标类型</label>
+                        <select id="payment-edit-receivingTargetType">
+                            <option value="CRYPTO">CRYPTO (区块链收款)</option>
+                            <option value="FIAT">FIAT (法币银行收款)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="auth-input-group">
+                        <label>接口后续动作</label>
+                        <select id="payment-edit-actionType">
+                            <option value="SHOW_ADDRESS">SHOW_ADDRESS (展示收款地址/卡号)</option>
+                            <option value="SHOW_BANK_ACCOUNT">SHOW_BANK_ACCOUNT (展示银行账户)</option>
+                            <option value="OPEN_REDIRECT">OPEN_REDIRECT (跳转第三方)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="auth-input-group">
+                    <label>通道图标 (Icon URL)</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="payment-edit-iconUrl" placeholder="如: https://example.com/icon.png" style="flex: 1;">
+                        <input type="file" id="payment-edit-iconFile" onchange="uploadPaymentChannelIcon('payment-edit-iconFile', 'payment-edit-iconUrl', 'payment-edit-iconPreview')" style="display: none;" accept="image/*">
+                        <button type="button" class="action-btn" onclick="document.getElementById('payment-edit-iconFile').click()" style="padding: 0 12px; font-size: 0.8rem; background: var(--border-light); border: 1.5px solid var(--border-light); border-radius: 8px; cursor: pointer; white-space: nowrap; font-weight: 600;">上传图片</button>
+                    </div>
+                    <div style="margin-top: 5px; display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 0.72rem; color: var(--text-secondary);">预览:</span>
+                        <img id="payment-edit-iconPreview" src="" style="max-height: 24px; max-width: 24px; border-radius: 4px; display: none;" onerror="this.style.display='none'">
+                    </div>
+                </div>
+
+                <div class="auth-input-group">
+                    <label>备注描述</label>
+                    <textarea id="payment-edit-memo" placeholder="用于在用户端展示提示文字" style="height: 60px; border-radius: 8px; padding: 8px; border: 1.5px solid var(--border-light); font-family: inherit; resize: none;"></textarea>
+                </div>
+
+                <div class="modal-footer" style="margin-top: 10px; display: flex; gap: 12px; justify-content: flex-end;">
+                    <button type="button" class="action-btn" onclick="closePaymentEditModal()" style="padding: 8px 18px; border-radius: 8px; border: 1.5px solid var(--border-light); background: transparent; cursor: pointer;">取消</button>
+                    <button type="submit" class="action-btn btn-approve" style="padding: 8px 22px; border-radius: 8px; background: #5B51F9; border: none; color: #FFF; font-weight: 600; cursor: pointer;">保存修改</button>
+                </div>
+            </form>
+        </div>
+    </div>

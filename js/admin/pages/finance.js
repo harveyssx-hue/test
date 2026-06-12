@@ -401,18 +401,21 @@ async function handleWithdrawReview(id, action) {
     }
 }
 
+let cachedPaymentChannels = [];
+
 async function loadPaymentChannels() {
     const tableBody = document.getElementById('payment-table-body');
     if (!tableBody) return;
     
-    tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 50px 0;">🔄 正在拉取平台支付通道列表...</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 50px 0;">🔄 正在拉取平台支付通道列表...</td></tr>`;
     
     try {
         const res = await apiFetch('GET', '/finance/payment-methods', null, true);
         if (res.code === 200) {
             const list = res.result || res.data || [];
+            cachedPaymentChannels = list; // Cache for edit lookup
             if (list.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 50px 0;">🫙 平台暂无已配置的支付通道</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 50px 0;">🫙 平台暂无已配置的支付通道</td></tr>`;
                 const indicator = document.getElementById(`payment-page-indicator`);
                 if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
                 return;
@@ -430,11 +433,18 @@ async function loadPaymentChannels() {
                 
                 const configBtn = `<button class="action-btn btn-view" onclick="openReceivingConfigDrawer('${m.id}', '${m.name.replace(/'/g, "\\'")}', '${m.assetClass}')" style="padding: 4px 8px; font-size: 0.72rem; margin-left: 5px; cursor: pointer; background: rgba(91,81,249,0.08); color: var(--primary);">⚙️ 收款配置</button>`;
                 
+                const editBtn = `<button class="action-btn btn-view" onclick="openPaymentEditModal('${m.id}')" style="padding: 4px 8px; font-size: 0.72rem; margin-left: 5px; cursor: pointer; background: rgba(59, 130, 246, 0.08); color: var(--blue);">📝 编辑</button>`;
+
                 const deleteBtn = `<button class="action-btn btn-reject" onclick="deletePaymentChannel('${m.id}')" style="padding: 4px 8px; font-size: 0.72rem; background: rgba(239, 68, 68, 0.08); color: var(--red); margin-left: 5px; cursor: pointer;">删除</button>`;
                 
+                const iconHtml = m.iconUrl 
+                    ? `<img src="${m.iconUrl}" style="max-height: 24px; max-width: 24px; border-radius: 4px; object-fit: contain;" onerror="this.onerror=null; this.src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';">`
+                    : `<span style="font-size:1.1rem;">💳</span>`;
+
                 return `
                     <tr>
                         <td style="font-family: monospace; font-size: 0.8rem;">${m.id}</td>
+                        <td style="text-align: center; vertical-align: middle;">${iconHtml}</td>
                         <td style="font-weight: 600; color: var(--text-primary);">${m.name || '--'}</td>
                         <td>
                             <span style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: rgba(0,0,0,0.04); font-family: monospace; font-weight: 600;">
@@ -454,6 +464,7 @@ async function loadPaymentChannels() {
                             <div style="display: flex; align-items: center;">
                                 ${actionBtn}
                                 ${configBtn}
+                                ${editBtn}
                                 ${deleteBtn}
                             </div>
                         </td>
@@ -461,11 +472,11 @@ async function loadPaymentChannels() {
                 `;
             }).join('');
         } else {
-            tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--red); padding: 50px 0;">⚠️ 获取支付通道失败：${res.errorMessage || '错误'}</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--red); padding: 50px 0;">⚠️ 获取支付通道失败：${res.errorMessage || '错误'}</td></tr>`;
         }
     } catch (e) {
         console.error('Failed to load payment channels:', e);
-        tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--red); padding: 50px 0;">⚠️ 发生网络异常，无法拉取支付通道列表！</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--red); padding: 50px 0;">⚠️ 发生网络异常，无法拉取支付通道列表！</td></tr>`;
     }
 }
 
@@ -506,6 +517,7 @@ function openPaymentAddModal() {
     document.getElementById('payment-add-name').value = '';
     document.getElementById('payment-add-orderIndex').value = '1';
     document.getElementById('payment-add-memo').value = '';
+    document.getElementById('payment-add-iconUrl').value = '';
     
     // Set default selections
     document.getElementById('payment-add-assetClass').value = 'CRYPTO';
@@ -513,8 +525,16 @@ function openPaymentAddModal() {
     document.getElementById('payment-add-channelType').value = 'PAYMENT_GATEWAY';
     document.getElementById('payment-add-paymentMethodType').value = 'CARD';
     document.getElementById('payment-add-receivingTargetType').value = 'CRYPTO';
-    document.getElementById('payment-add-actionType').value = 'SHOW_CRYPTO_ADDRESS';
+    document.getElementById('payment-add-actionType').value = 'SHOW_ADDRESS';
     
+    const preview = document.getElementById('payment-add-iconPreview');
+    if (preview) {
+        preview.src = '';
+        preview.style.display = 'none';
+    }
+    const fileInput = document.getElementById('payment-add-iconFile');
+    if (fileInput) fileInput.value = '';
+
     document.getElementById('payment-add-modal').classList.add('active');
 }
 
@@ -533,6 +553,7 @@ async function submitNewPaymentChannel(event) {
     const paymentMethodType = document.getElementById('payment-add-paymentMethodType').value;
     const receivingTargetType = document.getElementById('payment-add-receivingTargetType').value;
     const actionType = document.getElementById('payment-add-actionType').value;
+    const iconUrl = document.getElementById('payment-add-iconUrl').value.trim();
     const memo = document.getElementById('payment-add-memo').value.trim();
     
     if (!name) {
@@ -551,6 +572,7 @@ async function submitNewPaymentChannel(event) {
         paymentMethodType: paymentMethodType,
         receivingTargetType: receivingTargetType,
         actionType: actionType,
+        iconUrl: iconUrl,
         memo: memo,
         enabled: true,
         translations: [
@@ -573,6 +595,170 @@ async function submitNewPaymentChannel(event) {
     }
 }
 
+function openPaymentEditModal(channelId) {
+    const m = cachedPaymentChannels.find(item => String(item.id) === String(channelId));
+    if (!m) {
+        showToast('未找到通道配置数据！', true);
+        return;
+    }
+    
+    document.getElementById('payment-edit-id').value = m.id;
+    document.getElementById('payment-edit-name').value = m.name || '';
+    document.getElementById('payment-edit-orderIndex').value = m.orderIndex || 0;
+    document.getElementById('payment-edit-assetClass').value = m.assetClass || 'CRYPTO';
+    document.getElementById('payment-edit-bizType').value = m.bizType || 'DEPOSIT';
+    document.getElementById('payment-edit-channelType').value = m.channelType || 'PAYMENT_GATEWAY';
+    document.getElementById('payment-edit-paymentMethodType').value = m.paymentMethodType || 'CARD';
+    document.getElementById('payment-edit-receivingTargetType').value = m.receivingTargetType || 'CRYPTO';
+    document.getElementById('payment-edit-actionType').value = m.actionType || 'SHOW_ADDRESS';
+    document.getElementById('payment-edit-iconUrl').value = m.iconUrl || '';
+    document.getElementById('payment-edit-memo').value = m.memo || '';
+    
+    // Set preview
+    const preview = document.getElementById('payment-edit-iconPreview');
+    if (preview) {
+        if (m.iconUrl) {
+            preview.src = m.iconUrl;
+            preview.style.display = 'block';
+        } else {
+            preview.src = '';
+            preview.style.display = 'none';
+        }
+    }
+    const fileInput = document.getElementById('payment-edit-iconFile');
+    if (fileInput) fileInput.value = '';
+    
+    document.getElementById('payment-edit-modal').classList.add('active');
+}
+
+function closePaymentEditModal() {
+    document.getElementById('payment-edit-modal').classList.remove('active');
+}
+
+async function submitEditPaymentChannel(event) {
+    event.preventDefault();
+    
+    const id = document.getElementById('payment-edit-id').value;
+    const name = document.getElementById('payment-edit-name').value.trim();
+    const orderIndex = parseInt(document.getElementById('payment-edit-orderIndex').value || '1');
+    const assetClass = document.getElementById('payment-edit-assetClass').value;
+    const bizType = document.getElementById('payment-edit-bizType').value;
+    const channelType = document.getElementById('payment-edit-channelType').value;
+    const paymentMethodType = document.getElementById('payment-edit-paymentMethodType').value;
+    const receivingTargetType = document.getElementById('payment-edit-receivingTargetType').value;
+    const actionType = document.getElementById('payment-edit-actionType').value;
+    const iconUrl = document.getElementById('payment-edit-iconUrl').value.trim();
+    const memo = document.getElementById('payment-edit-memo').value.trim();
+    
+    if (!name) {
+        showToast('通道名称不能为空！', true);
+        return;
+    }
+    
+    showToast('正在保存支付通道配置...', false);
+    
+    const body = {
+        name: name,
+        orderIndex: orderIndex,
+        assetClass: assetClass,
+        bizType: bizType,
+        channelType: channelType,
+        paymentMethodType: paymentMethodType,
+        receivingTargetType: receivingTargetType,
+        actionType: actionType,
+        iconUrl: iconUrl,
+        memo: memo,
+        enabled: true,
+        translations: [
+            { localeTag: 'en', displayName: name, isDefault: true, description: memo },
+            { localeTag: 'zh-Hans', displayName: name, isDefault: false, description: memo }
+        ]
+    };
+    try {
+        const res = await apiFetch('PUT', `/finance/payment-methods/${id}`, body, true);
+        if (res.code === 200) {
+            showToast('✓ 支付通道修改已成功保存！', false);
+            closePaymentEditModal();
+            loadPaymentChannels();
+        } else {
+            showToast(res.errorMessage || '保存支付通道修改失败！', true);
+        }
+    } catch (e) {
+        console.error('Failed to submit edit payment method:', e);
+        showToast('保存通道修改网络异常！', true);
+    }
+}
+
+async function uploadPaymentChannelIcon(fileInputId, urlInputId, previewImgId) {
+    const fileInput = document.getElementById(fileInputId);
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0) return;
+    
+    const file = fileInput.files[0];
+    showToast('⏳ 正在上传通道图标...', false);
+    
+    try {
+        // 1. Get presigned upload URL
+        const presignedRes = await apiFetch('POST', '/upload/presigned', {
+            contentType: file.type || 'image/png',
+            fileName: file.name || 'icon.png',
+            type: 'payment'
+        }, true);
+        
+        if (presignedRes.code !== 200) {
+            throw new Error(presignedRes.errorMessage || '获取上传凭证失败');
+        }
+        
+        const { uploadUrl, downloadUrl, path: storagePath } = presignedRes.result || presignedRes.data || {};
+        if (!uploadUrl || !downloadUrl) {
+            throw new Error('上传凭证解析异常');
+        }
+        
+        // 2. Perform direct upload to storage, routing through GCS proxy on dev
+        let finalPutUrl = uploadUrl;
+        const isLocalDev = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+        if (isLocalDev && !uploadUrl.includes('upload-local')) {
+            finalPutUrl = '/upload-gcs?url=' + encodeURIComponent(uploadUrl);
+        } else if (!isLocalDev) {
+            if (uploadUrl.startsWith('https://storage.googleapis.com/')) {
+                finalPutUrl = uploadUrl.replace('https://storage.googleapis.com/', '/upload-gcs/');
+            }
+        }
+        
+        const putRes = await fetch(finalPutUrl, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': file.type || 'image/png'
+            },
+            body: file
+        });
+        
+        if (!putRes.ok) {
+            throw new Error('文件写入直传存储失败');
+        }
+        
+        // 3. Confirm upload
+        const confirmRes = await apiFetch('POST', '/upload/confirm', {
+            path: storagePath
+        }, true);
+        
+        if (confirmRes.code !== 200) {
+            throw new Error(confirmRes.errorMessage || '确认上传失败');
+        }
+        
+        // 4. Update fields
+        document.getElementById(urlInputId).value = downloadUrl;
+        const preview = document.getElementById(previewImgId);
+        if (preview) {
+            preview.src = downloadUrl;
+            preview.style.display = 'block';
+        }
+        
+        showToast('✓ 图标上传成功！', false);
+    } catch (e) {
+        console.error('Icon upload failed:', e);
+        showToast(`❌ 图标上传失败: ${e.message}`, true);
+    }
+}
 
 export // --- RECEIVING CONFIG DRAWER CONTROLLERS ---
 let currentRecChannelId = null;
@@ -1577,6 +1763,10 @@ window.deletePaymentChannel = deletePaymentChannel;
 window.openPaymentAddModal = openPaymentAddModal;
 window.closePaymentAddModal = closePaymentAddModal;
 window.submitNewPaymentChannel = submitNewPaymentChannel;
+window.openPaymentEditModal = openPaymentEditModal;
+window.closePaymentEditModal = closePaymentEditModal;
+window.submitEditPaymentChannel = submitEditPaymentChannel;
+window.uploadPaymentChannelIcon = uploadPaymentChannelIcon;
 window.openReceivingConfigDrawer = openReceivingConfigDrawer;
 window.closeReceivingDrawer = closeReceivingDrawer;
 window.createNewTargetAndBind = createNewTargetAndBind;
