@@ -230,7 +230,8 @@ export async function switchAdminTab(tab, btnEl) {
     
     try {
         // Fetch view HTML
-        const response = await fetch(`components/admin/view-${tab}.html`);
+        const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+        const response = await fetch(`${basePath}components/admin/view-${tab}.html`);
         if (!response.ok) throw new Error(`Failed to load view components for ${tab}`);
         const html = await response.text();
         

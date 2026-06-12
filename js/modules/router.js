@@ -24,7 +24,8 @@ async function fetchTemplate(filename) {
     if (templateCache[filename]) {
         return templateCache[filename];
     }
-    const response = await fetch(`/components/${filename}?v=${Date.now()}`);
+    const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+    const response = await fetch(`${basePath}components/${filename}?v=${Date.now()}`);
     if (!response.ok) {
         throw new Error(`Failed to load component: ${filename}`);
     }
