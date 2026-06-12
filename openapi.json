@@ -6013,7 +6013,33 @@
         }
       },
       "handlers_common.BootstrapConfigVO": {
-        "type": "object"
+        "type": "object",
+        "properties": {
+          "otpSendInterval": {
+            "type": "integer",
+            "example": 60
+          },
+          "aiMinInvestAmount": {
+            "type": "string",
+            "example": "90"
+          },
+          "aiMaxInvestAmount": {
+            "type": "string",
+            "example": "0"
+          },
+          "withdrawMinAmount": {
+            "type": "string",
+            "example": "100"
+          },
+          "withdrawMaxAmount": {
+            "type": "string",
+            "example": "0"
+          },
+          "phoneRegexPattern": {
+            "type": "string",
+            "example": "^[6-9]\\\\d{9}$"
+          }
+        }
       },
       "handlers_common.ConfirmUploadRequest": {
         "type": "object",

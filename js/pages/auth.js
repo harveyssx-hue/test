@@ -1,7 +1,44 @@
 // User Session Authentication Controller
 import { state } from '../modules/state.js?v=2.2.0';
 
+window.phoneRegexPattern = null;
+let isBootstrapSynced = false;
+
+async function syncBootstrapConfig() {
+    if (isBootstrapSynced) return;
+    try {
+        const res = await apiFetch('GET', '/common/bootstrap-config', null, false);
+        if (res.code === 200 && res.data) {
+            isBootstrapSynced = true;
+            if (res.data.phoneRegexPattern) {
+                window.phoneRegexPattern = res.data.phoneRegexPattern;
+            }
+            if (res.data.withdrawMinAmount) {
+                const parsed = parseFloat(res.data.withdrawMinAmount);
+                if (!isNaN(parsed) && parsed > 0) {
+                    window.withdrawMinLimit = parsed;
+                }
+            }
+            if (res.data.withdrawMaxAmount) {
+                const parsed = parseFloat(res.data.withdrawMaxAmount);
+                if (!isNaN(parsed)) {
+                    window.withdrawMaxLimit = parsed;
+                }
+            }
+            if (res.data.otpSendInterval) {
+                const parsed = parseInt(res.data.otpSendInterval, 10);
+                if (!isNaN(parsed) && parsed > 0) {
+                    window.otpSendInterval = parsed;
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('Failed to sync bootstrap config:', e);
+    }
+}
+
 function checkAuthSession() {
+    syncBootstrapConfig();
     const accessToken = localStorage.getItem('matp_access_token');
     const uid = localStorage.getItem('matp_user_uid');
     const nickname = localStorage.getItem('matp_user_nickname');
@@ -328,6 +365,28 @@ async function handleSendOTP() {
         return;
     }
     
+    // Validate custom phone regex pattern from backend bootstrap config
+    const rawPhone = document.getElementById('auth-phone').value.trim();
+    if (window.phoneRegexPattern) {
+        try {
+            const regex = new RegExp(window.phoneRegexPattern);
+            let testPhone = rawPhone.replace(/[^\d+]/g, '');
+            if (testPhone.startsWith('+91')) {
+                testPhone = testPhone.substring(3);
+            } else if (testPhone.startsWith('91') && testPhone.length > 10) {
+                testPhone = testPhone.substring(2);
+            }
+            
+            if (!regex.test(rawPhone) && !regex.test(testPhone)) {
+                const phoneErr = currentLocale === 'hi' ? 'कृपया एक वैध मोबाइल नंबर दर्ज करें!' : 'Please enter a valid mobile phone number!';
+                showToast(phoneErr, true);
+                return;
+            }
+        } catch (e) {
+            console.error('Invalid regex pattern from backend:', e);
+        }
+    }
+    
     const proceedBtn = document.querySelector('#auth-step-phone .auth-primary-btn');
     const resendBtn = document.getElementById('auth-otp-resend-btn');
     const timerText = document.getElementById('auth-otp-timer-text');
@@ -358,7 +417,9 @@ async function handleSendOTP() {
                 clearInterval(otpCountdownTimer);
             }
             
-            let cd = 59;
+            let cd = (window.otpSendInterval !== null && window.otpSendInterval !== undefined) 
+                ? (window.otpSendInterval - 1) 
+                : 59;
             const countdownEl = document.getElementById('auth-otp-countdown');
             if (countdownEl) {
                 countdownEl.innerText = cd;

@@ -701,16 +701,25 @@ async function openWithdrawModal() {
 }
 
 window.withdrawMinLimit = null;
+window.withdrawMaxLimit = null;
 
 async function syncWithdrawMinLimit() {
     try {
         const res = await apiFetch('GET', '/common/bootstrap-config', null, false);
-        if (res.code === 200 && res.data && res.data.withdrawMinAmount) {
-            const parsed = parseFloat(res.data.withdrawMinAmount);
-            if (!isNaN(parsed) && parsed > 0) {
-                window.withdrawMinLimit = parsed;
-                calculateWithdrawFee();
+        if (res.code === 200 && res.data) {
+            if (res.data.withdrawMinAmount) {
+                const parsed = parseFloat(res.data.withdrawMinAmount);
+                if (!isNaN(parsed) && parsed > 0) {
+                    window.withdrawMinLimit = parsed;
+                }
             }
+            if (res.data.withdrawMaxAmount) {
+                const parsed = parseFloat(res.data.withdrawMaxAmount);
+                if (!isNaN(parsed)) {
+                    window.withdrawMaxLimit = parsed;
+                }
+            }
+            calculateWithdrawFee();
         }
     } catch (e) {
         console.warn('Failed to sync withdraw minimum limit:', e);
@@ -794,7 +803,7 @@ function calculateWithdrawFee() {
         }
         const feeCard = document.getElementById('withdraw-fee-card');
         if (feeCard) {
-            feeCard.style.display = 'none';
+            feeCard.style.display = 'flex';
         }
     }
 }
@@ -1179,6 +1188,10 @@ async function handleWithdrawFormSubmit(event) {
         ? window.withdrawMinLimit 
         : ((window.CONFIG && window.CONFIG.MIN_WITHDRAW_USDT) ? window.CONFIG.MIN_WITHDRAW_USDT : 10);
 
+    const baseMaxLimit = (window.withdrawMaxLimit !== null && window.withdrawMaxLimit !== undefined)
+        ? window.withdrawMaxLimit
+        : 0;
+
     if (activeTab === 'crypto') {
         if (amt > userUsdtBalance) {
             showToast(currentLocale === 'hi' ? '⚠️ निकासी विफल! राशि वर्तमान शेष राशि से अधिक है।' : '⚠️ Withdrawal failed! Amount exceeds current balance.', true);
@@ -1188,15 +1201,24 @@ async function handleWithdrawFormSubmit(event) {
             showToast(currentLocale === 'hi' ? `⚠️ न्यूनतम निकासी ${baseMinLimit} USDT है!` : `⚠️ Min withdrawal amount is ${baseMinLimit} USDT!`, true);
             return;
         }
+        if (baseMaxLimit > 0 && amt > baseMaxLimit) {
+            showToast(currentLocale === 'hi' ? `⚠️ अधिकतम निकासी ${baseMaxLimit} USDT है!` : `⚠️ Max withdrawal amount is ${baseMaxLimit} USDT!`, true);
+            return;
+        }
     } else {
         const userInrBalance = userUsdtBalance * rate;
         const minInr = baseMinLimit * rate;
+        const maxInr = baseMaxLimit * rate;
         if (amt > userInrBalance) {
             showToast(currentLocale === 'hi' ? '⚠️ निकासी विफल! राशि वर्तमान शेष राशि से अधिक है।' : '⚠️ Withdrawal failed! Amount exceeds current balance.', true);
             return;
         }
         if (amt < minInr) {
             showToast(currentLocale === 'hi' ? `⚠️ न्यूनतम निकासी ${Math.ceil(minInr)} INR है!` : `⚠️ Min withdrawal amount is ${Math.ceil(minInr)} INR!`, true);
+            return;
+        }
+        if (maxInr > 0 && amt > maxInr) {
+            showToast(currentLocale === 'hi' ? `⚠️ अधिकतम निकासी ${Math.floor(maxInr)} INR है!` : `⚠️ Max withdrawal amount is ${Math.floor(maxInr)} INR!`, true);
             return;
         }
     }

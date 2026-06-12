@@ -36,10 +36,13 @@ async function loadTenantSettings() {
         // 3. Map keys to form input fields
         const keyMap = {
             'finance.withdraw.untraded_deposit_fee_rate': 'input-untraded-deposit-fee-rate',
+            'finance.withdraw.min_amount': 'input-withdraw-min-amount',
+            'finance.withdraw.max_amount': 'input-withdraw-max-amount',
             'otp.code_validity': 'input-otp-validity',
             'otp.daily_limit': 'input-otp-daily-limit',
             'otp.interval': 'input-otp-interval',
             'otp.max_retries': 'input-otp-max-retries',
+            'commons.phone_regex': 'input-commons-phone-regex',
             'quant.min_invest_amount': 'input-quant-min-invest',
             'quant.max_invest_amount': 'input-quant-max-invest',
             'quant.brokerage.rate': 'input-quant-brokerage-rate',
@@ -141,10 +144,13 @@ async function submitTenantSettings(event) {
 
     const keyMap = {
         'finance.withdraw.untraded_deposit_fee_rate': 'input-untraded-deposit-fee-rate',
+        'finance.withdraw.min_amount': 'input-withdraw-min-amount',
+        'finance.withdraw.max_amount': 'input-withdraw-max-amount',
         'otp.code_validity': 'input-otp-validity',
         'otp.daily_limit': 'input-otp-daily-limit',
         'otp.interval': 'input-otp-interval',
         'otp.max_retries': 'input-otp-max-retries',
+        'commons.phone_regex': 'input-commons-phone-regex',
         'quant.min_invest_amount': 'input-quant-min-invest',
         'quant.max_invest_amount': 'input-quant-max-invest',
         'quant.brokerage.rate': 'input-quant-brokerage-rate',
@@ -180,6 +186,9 @@ async function submitTenantSettings(event) {
                 } else if (key.startsWith('finance.')) {
                     valType = 'DECIMAL';
                     grp = 'finance';
+                } else if (key === 'commons.phone_regex') {
+                    valType = 'STRING';
+                    grp = 'commons';
                 }
 
                 const newObj = {

@@ -399,7 +399,9 @@ function handleKycStatusChangeWS(data) {
     currentUser.kycStatus = data.toStatus;
     localStorage.setItem('matp_user_kyc', data.toStatus);
     
-    syncKycUI(data.toStatus);
+    if (window.syncKycUI) {
+        window.syncKycUI(data.toStatus);
+    }
     
     if (data.toStatus === 'VERIFIED') {
         showToast(currentLocale === 'hi' ? '🎉 बधाई हो! आपका केवाईसी सत्यापन सफलतापूर्वक स्वीकृत हो गया है!' : '🎉 Congratulations! Your KYC verification has been successfully approved!', false);
@@ -408,19 +410,23 @@ function handleKycStatusChangeWS(data) {
 
 // Fixed function binding to window
 function handleAccountChangeWS() {
-    loadUserAssets();
+    if (window.loadUserAssets) {
+        window.loadUserAssets();
+    }
 }
 
 function handleQuantOrderStatusChangeWS(data) {
     if (!data) return;
-    loadQuantOrders();
+    if (window.loadQuantOrders) {
+        window.loadQuantOrders();
+    }
     if (data.toStatus === 'ACTIVE') {
-        showToast(currentLocale === 'hi' ? `🤖 एआई ऑर्डर [${data.orderNo.substring(0, 8)}] तैनात किया गया!` : `🤖 AI Order [${data.orderNo.substring(0, 8)}] deployed successfully!`, false);
+        showToast(currentLocale === 'hi' ? `🤖 एॉर्डर [${data.orderNo.substring(0, 8)}] तैनात किया गया!` : `🤖 AI Order [${data.orderNo.substring(0, 8)}] deployed successfully!`, false);
     } else if (data.toStatus === 'COMPLETED') {
         const profit = parseFloat(data.actualProfit) || 0;
         const icon = profit >= 0 ? (currentLocale === 'hi' ? '📈 लाभ' : '📈 Profit') : (currentLocale === 'hi' ? '📉 हानि' : '📉 Loss');
         const profitStr = profit >= 0 ? `+$${profit.toFixed(2)}` : `-$${Math.abs(profit).toFixed(2)}`;
-        showToast(currentLocale === 'hi' ? `🏁 एआई ऑर्डर [${data.orderNo.substring(0, 8)}] व्यवस्थित! ${icon} ${profitStr} USDT` : `🏁 AI Order [${data.orderNo.substring(0, 8)}] settled! ${icon} ${profitStr} USDT`, profit < 0);
+        showToast(currentLocale === 'hi' ? `🏁 एॉर्डर [${data.orderNo.substring(0, 8)}] व्यवस्थित! ${icon} ${profitStr} USDT` : `🏁 AI Order [${data.orderNo.substring(0, 8)}] settled! ${icon} ${profitStr} USDT`, profit < 0);
     }
 }
 
