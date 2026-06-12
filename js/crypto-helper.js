@@ -237,7 +237,7 @@ async function apiFetch(method, path, body = null, requireAuth = true) {
         const response = await fetch(baseUrl + finalPath, {
             method: method,
             headers: headers,
-            credentials: 'include',
+            credentials: routeToAdmin ? 'include' : 'same-origin',
             cache: 'no-store',
             body: method !== 'GET' && method !== 'DELETE' && body !== null ? bodyStr : undefined
         });
@@ -372,7 +372,7 @@ async function apiFetchRaw(method, path, body = null, requireAuth = true) {
         const response = await fetch(baseUrl + finalPath, {
             method: method,
             headers: headers,
-            credentials: 'include',
+            credentials: routeToAdmin ? 'include' : 'same-origin',
             cache: 'no-store',
             body: method !== 'GET' && method !== 'DELETE' && body !== null ? bodyStr : undefined
         });
@@ -458,7 +458,7 @@ async function apiFetchWithRawBody(method, path, rawBodyStr, requireAuth = true)
         const response = await fetch(baseUrl + finalPath, {
             method: method,
             headers: headers,
-            credentials: 'include',
+            credentials: routeToAdmin ? 'include' : 'same-origin',
             cache: 'no-store',
             body: rawBodyStr
         });
