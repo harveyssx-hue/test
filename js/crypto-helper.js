@@ -213,7 +213,9 @@ async function apiFetch(method, path, body = null, requireAuth = true) {
     const accessToken = localStorage.getItem('matp_access_token');
     const sessionKey = localStorage.getItem('matp_session_key');
     
-    const headers = {
+    const headers = routeToAdmin ? {
+        'Content-Type': 'application/json'
+    } : {
         'Content-Type': 'application/json',
         'X-App-Version': CONFIG.APP_VERSION,
         'X-Device-Id': deviceId,
@@ -350,7 +352,9 @@ async function apiFetchRaw(method, path, body = null, requireAuth = true) {
     const accessToken = localStorage.getItem('matp_access_token');
     const sessionKey = localStorage.getItem('matp_session_key');
     
-    const headers = {
+    const headers = routeToAdmin ? {
+        'Content-Type': 'application/json'
+    } : {
         'Content-Type': 'application/json',
         'X-App-Version': CONFIG.APP_VERSION,
         'X-Device-Id': deviceId,
@@ -437,7 +441,9 @@ async function apiFetchWithRawBody(method, path, rawBodyStr, requireAuth = true)
     const accessToken = localStorage.getItem('matp_access_token');
     const sessionKey = localStorage.getItem('matp_session_key');
     
-    const headers = {
+    const headers = routeToAdmin ? {
+        'Content-Type': 'application/json'
+    } : {
         'Content-Type': 'application/json',
         'X-App-Version': CONFIG.APP_VERSION,
         'X-Device-Id': deviceId,
