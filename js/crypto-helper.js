@@ -235,8 +235,7 @@ async function apiFetch(method, path, body = null, requireAuth = true) {
     }
     
     try {
-        const isLocalEnv = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const finalPath = (routeToAdmin && isLocalEnv) ? '/admin-proxy' + realPath : realPath;
+        const finalPath = (routeToAdmin && baseUrl === window.location.origin) ? '/admin-proxy' + realPath : realPath;
         const response = await fetch(baseUrl + finalPath, {
             method: method,
             headers: headers,
@@ -373,8 +372,7 @@ async function apiFetchRaw(method, path, body = null, requireAuth = true) {
     }
     
     try {
-        const isLocalEnv = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const finalPath = (routeToAdmin && isLocalEnv) ? '/admin-proxy' + realPath : realPath;
+        const finalPath = (routeToAdmin && baseUrl === window.location.origin) ? '/admin-proxy' + realPath : realPath;
         const response = await fetch(baseUrl + finalPath, {
             method: method,
             headers: headers,
@@ -462,8 +460,7 @@ async function apiFetchWithRawBody(method, path, rawBodyStr, requireAuth = true)
     }
     
     try {
-        const isLocalEnv = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const finalPath = (routeToAdmin && isLocalEnv) ? '/admin-proxy' + realPath : realPath;
+        const finalPath = (routeToAdmin && baseUrl === window.location.origin) ? '/admin-proxy' + realPath : realPath;
         const response = await fetch(baseUrl + finalPath, {
             method: method,
             headers: headers,
