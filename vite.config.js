@@ -45,6 +45,10 @@ export default defineConfig({
         target: 'http://127.0.0.1:9090',
         changeOrigin: true
       },
+      '/admin-proxy': {
+        target: 'http://127.0.0.1:9090',
+        changeOrigin: true
+      },
       '/upload-gcs': {
         target: 'http://127.0.0.1:9090',
         changeOrigin: true
