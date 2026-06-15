@@ -184,7 +184,15 @@ async function initChart() {
     });
 
     // Try fetching real history from online API first
-    const inst = recommendedInstruments.find(i => i.symbol.toLowerCase() === activeSymbol);
+    let inst = recommendedInstruments.find(i => i.symbol.toLowerCase() === activeSymbol);
+    if (!inst) {
+        const cleanSymbol = activeSymbol.toUpperCase();
+        const defaultExchangeId = recommendedInstruments.length > 0 ? recommendedInstruments[0].exchangeId : '1183071278383239173';
+        inst = {
+            symbol: cleanSymbol,
+            exchangeId: defaultExchangeId
+        };
+    }
     if (inst && inst.exchangeId) {
         try {
             const res = await apiFetch('GET', `/market/klines?exchangeId=${inst.exchangeId}&symbol=${inst.symbol.toUpperCase()}&interval=1m&limit=80`, null, false);
@@ -499,12 +507,47 @@ function showMarketDetail(symbol) {
     activeSymbol = symbol.toLowerCase();
     isMarketDetailActive = true;
     
+    // Instantly clear out old symbol elements to prevent visual sticking
+    const priceEl = document.getElementById('market-last-price');
+    if (priceEl) priceEl.innerText = '--';
+    const changeEl = document.getElementById('market-price-change');
+    if (changeEl) {
+        changeEl.innerText = '--';
+        changeEl.className = 'm-change-pct';
+    }
+    const highEl = document.getElementById('market-high');
+    if (highEl) highEl.innerText = '--';
+    const lowEl = document.getElementById('market-low');
+    if (lowEl) lowEl.innerText = '--';
+    
+    const spreadEl = document.getElementById('ob-spread-price');
+    if (spreadEl) spreadEl.innerText = '--';
+    
+    const asksEl = document.getElementById('ob-asks-list');
+    if (asksEl) asksEl.innerHTML = '<div style="text-align: center; padding: 15px; color: var(--text-muted); font-size: 0.75rem;">Loading...</div>';
+    const bidsEl = document.getElementById('ob-bids-list');
+    if (bidsEl) bidsEl.innerHTML = '<div style="text-align: center; padding: 15px; color: var(--text-muted); font-size: 0.75rem;">Loading...</div>';
+    
+    const tradesEl = document.getElementById('trades-ticker-list');
+    if (tradesEl) tradesEl.innerHTML = '<div style="text-align: center; padding: 15px; color: var(--text-muted); font-size: 0.75rem;">Loading...</div>';
+
     const listView = document.getElementById('market-list-view');
     const detailView = document.getElementById('market-detail-view');
     if (listView) listView.style.display = 'none';
     if (detailView) detailView.style.display = 'block';
     
-    const inst = recommendedInstruments.find(i => i.symbol.toLowerCase() === activeSymbol);
+    let inst = recommendedInstruments.find(i => i.symbol.toLowerCase() === activeSymbol);
+    if (!inst) {
+        // Fallback for custom/non-recommended symbols like SOLUSDT so that all details and snapshots still load
+        const cleanSymbol = symbol.toUpperCase();
+        const defaultExchangeId = recommendedInstruments.length > 0 ? recommendedInstruments[0].exchangeId : '1183071278383239173';
+        inst = {
+            symbol: cleanSymbol,
+            logo: getCoinFallbackSvg(cleanSymbol, 20),
+            exchangeId: defaultExchangeId,
+            name: cleanSymbol.replace('USDT', '')
+        };
+    }
     const logoEl = document.getElementById('detail-coin-logo');
     const symbolEl = document.getElementById('detail-coin-symbol');
     if (inst) {
@@ -518,6 +561,32 @@ function showMarketDetail(symbol) {
         }
         if (symbolEl) {
             symbolEl.innerText = inst.symbol.replace('USDT', '') + ' / USDT';
+        }
+        
+        // Fetch initial Order Book snapshot from HTTP API
+        if (inst.exchangeId) {
+            apiFetch('GET', `/market/depth?exchangeId=${inst.exchangeId}&symbol=${inst.symbol.toUpperCase()}`, null, false)
+                .then(depthRes => {
+                    if (depthRes && (depthRes.code === 200 || depthRes.asks)) {
+                        const depthData = depthRes.result || depthRes.data || depthRes;
+                        if (window.executeRenderMarketDepth && activeSymbol === inst.symbol.toLowerCase()) {
+                            window.executeRenderMarketDepth(depthData);
+                        }
+                    }
+                })
+                .catch(e => console.warn('Failed to load initial market depth snapshot:', e));
+
+            // Fetch initial Recent Trades snapshot from HTTP API
+            apiFetch('GET', `/market/trades?exchangeId=${inst.exchangeId}&symbol=${inst.symbol.toUpperCase()}&limit=10`, null, false)
+                .then(tradesRes => {
+                    if (tradesRes && (tradesRes.code === 200 || Array.isArray(tradesRes))) {
+                        const tradesData = tradesRes.result || tradesRes.data || tradesRes;
+                        if (Array.isArray(tradesData) && window.renderMarketTradesSnapshot && activeSymbol === inst.symbol.toLowerCase()) {
+                            window.renderMarketTradesSnapshot(tradesData);
+                        }
+                    }
+                })
+                .catch(e => console.warn('Failed to load initial market trades snapshot:', e));
         }
     }
     

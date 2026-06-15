@@ -2,14 +2,60 @@
 import { state } from './state.js?v=2.2.0';
 import { showToast } from './ui.js?v=2.2.0';
 
+let subscribedSymbol = null;
+
 function connectMarketWS() {
     if (marketWsReconnectTimer) {
         clearTimeout(marketWsReconnectTimer);
         marketWsReconnectTimer = null;
     }
-    if (marketWs && (marketWs.readyState === WebSocket.CONNECTING || marketWs.readyState === WebSocket.OPEN)) {
+    
+    // Dynamic Symbol Subscription Switching over existing connection
+    if (marketWs && marketWs.readyState === WebSocket.OPEN) {
+        if (subscribedSymbol !== activeSymbol) {
+            const oldSym = subscribedSymbol;
+            subscribedSymbol = activeSymbol;
+            
+            const unsubParams = [];
+            if (oldSym) {
+                unsubParams.push(`${oldSym}@trade`, `${oldSym}@kline_1m`, `${oldSym}@depth`);
+            }
+            
+            const subParams = [
+                `${activeSymbol}@trade`,
+                `${activeSymbol}@kline_1m`,
+                `${activeSymbol}@depth`
+            ];
+            
+            if (unsubParams.length > 0) {
+                try {
+                    marketWs.send(JSON.stringify({
+                        method: "UNSUBSCRIBE",
+                        params: unsubParams,
+                        id: Date.now()
+                    }));
+                } catch(e) {
+                    console.error('Error sending UNSUBSCRIBE via WS:', e);
+                }
+            }
+            
+            try {
+                marketWs.send(JSON.stringify({
+                    method: "SUBSCRIBE",
+                    params: subParams,
+                    id: Date.now() + 1
+                }));
+            } catch(e) {
+                console.error('Error sending SUBSCRIBE via WS:', e);
+            }
+        }
         return;
     }
+    
+    if (marketWs && marketWs.readyState === WebSocket.CONNECTING) {
+        return;
+    }
+    
     if (marketWs) {
         try { marketWs.close(); } catch(e){}
     }
@@ -18,6 +64,7 @@ function connectMarketWS() {
     marketWs = ws;
     
     ws.onopen = () => {
+        subscribedSymbol = activeSymbol; // Sync subscription record
         const params = [];
         // Subscribe to active coin detail streams
         params.push(
@@ -289,10 +336,13 @@ function executeRenderMarketDepth(data) {
     const spreadEl = getCachedElement('ob-spread-price');
     if (spreadEl) spreadEl.innerText = midPrice;
     
+    // Calculate maximum quantity to scale the depth bars appropriately
+    const maxQty = Math.max(...sortedAsks.map(getQty), ...sortedBids.map(getQty)) || 1.0;
+    
     asksEl.innerHTML = sortedAsks.map(ask => {
         const price = getPrice(ask);
         const qty = getQty(ask);
-        const pct = Math.min(100, (isNaN(qty) ? 0 : qty) * 60).toFixed(0);
+        const pct = Math.min(100, ((isNaN(qty) ? 0 : qty) / maxQty) * 100).toFixed(0);
         return `
             <div class="ob-row">
                 <span class="price">${isNaN(price) ? '--' : price.toFixed(activeSymbol === 'xrpusdt' ? 4 : 2)}</span>
@@ -305,12 +355,31 @@ function executeRenderMarketDepth(data) {
     bidsEl.innerHTML = sortedBids.map(bid => {
         const price = getPrice(bid);
         const qty = getQty(bid);
-        const pct = Math.min(100, (isNaN(qty) ? 0 : qty) * 60).toFixed(0);
+        const pct = Math.min(100, ((isNaN(qty) ? 0 : qty) / maxQty) * 100).toFixed(0);
         return `
             <div class="ob-row">
                 <span class="price">${isNaN(price) ? '--' : price.toFixed(activeSymbol === 'xrpusdt' ? 4 : 2)}</span>
                 <span class="text-right">${isNaN(qty) ? '--' : qty.toFixed(3)}</span>
                 <div class="bar" style="width: ${pct}%"></div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderMarketTradesSnapshot(trades) {
+    const listEl = getCachedElement('trades-ticker-list');
+    if (!listEl) return;
+    listEl.innerHTML = '';
+    
+    const sortedTrades = [...trades].sort((a, b) => b.timestamp - a.timestamp).slice(0, 6);
+    listEl.innerHTML = sortedTrades.map(t => {
+        const time = new Date(t.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const sideClass = t.side === 1 ? 'green' : 'red';
+        const priceStr = parseFloat(t.price).toFixed(activeSymbol === 'xrpusdt' ? 4 : 2);
+        return `
+            <div class="trade-row">
+                <span class="${sideClass}">${priceStr}</span>
+                <span class="text-right" style="color: var(--text-secondary); font-size: 0.6rem;">${time}</span>
             </div>
         `;
     }).join('');
@@ -435,5 +504,7 @@ function handleQuantOrderStatusChangeWS(data) {
 
 window.connectMarketWS = connectMarketWS;
 window.listenToBizEvents = listenToBizEvents;
+window.executeRenderMarketDepth = executeRenderMarketDepth;
+window.renderMarketTradesSnapshot = renderMarketTradesSnapshot;
 
 export { connectMarketWS, listenToBizEvents };
