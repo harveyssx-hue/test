@@ -1,4 +1,4 @@
-﻿            <div class="view-tab-content active" id="view-instruments">
+            <div class="view-tab-content active" id="view-instruments">
                 <div class="glass-panel data-panel" style="padding: 18px;">
                     <!-- Unified Filter Panel -->
                     <div style="border-bottom: 1.5px solid var(--border-light); padding-bottom: 15px; margin-bottom: 15px;">
@@ -12,7 +12,7 @@
                                 <input type="text" id="instruments-search-input" placeholder="搜索 Symbol 或名称..." oninput="debounceInstrumentsLoad()" style="height: 28px; font-size: 0.75rem; padding: 0 10px; border-radius: 4px; border: 1px solid var(--border-light); outline: none; background: var(--bg-screen); color: var(--text-primary); width: 160px;">
                                 
                                 <!-- Asset Class Filter -->
-                                <select id="instruments-asset-class-filter" onchange="loadInstrumentsList()" class="filter-select" style="height: 28px; font-size: 0.75rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 5px; background: transparent; color: var(--text-secondary); outline: none; cursor: pointer;">
+                                <select id="instruments-asset-class-filter" onchange="window.adminPages.instruments.current=1; loadInstrumentsList()" class="filter-select" style="height: 28px; font-size: 0.75rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 5px; background: transparent; color: var(--text-secondary); outline: none; cursor: pointer;">
                                     <option value="">所有资产类别 (All)</option>
                                     <option value="CRYPTO">加密货币 (CRYPTO)</option>
                                     <option value="FIAT">法币 (FIAT)</option>
@@ -25,21 +25,21 @@
                                 </select>
 
                                 <!-- Core status filter -->
-                                <select id="instruments-core-filter" onchange="loadInstrumentsList()" class="filter-select" style="height: 28px; font-size: 0.75rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 5px; background: transparent; color: var(--text-secondary); outline: none; cursor: pointer;">
+                                <select id="instruments-core-filter" onchange="window.adminPages.instruments.current=1; loadInstrumentsList()" class="filter-select" style="height: 28px; font-size: 0.75rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 5px; background: transparent; color: var(--text-secondary); outline: none; cursor: pointer;">
                                     <option value="">核心状态 (All)</option>
                                     <option value="true">仅核心商品 (Core)</option>
                                     <option value="false">非核心商品 (Non-Core)</option>
                                 </select>
 
                                 <!-- Recommended status filter -->
-                                <select id="instruments-recommended-filter" onchange="loadInstrumentsList()" class="filter-select" style="height: 28px; font-size: 0.75rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 5px; background: transparent; color: var(--text-secondary); outline: none; cursor: pointer;">
+                                <select id="instruments-recommended-filter" onchange="window.adminPages.instruments.current=1; loadInstrumentsList()" class="filter-select" style="height: 28px; font-size: 0.75rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 5px; background: transparent; color: var(--text-secondary); outline: none; cursor: pointer;">
                                     <option value="">推荐状态 (All)</option>
                                     <option value="true">仅推荐商品 (Rec)</option>
                                     <option value="false">非推荐商品 (Non-Rec)</option>
                                 </select>
 
                                 <!-- Enabled filter -->
-                                <select id="instruments-enabled-filter" onchange="loadInstrumentsList()" class="filter-select" style="height: 28px; font-size: 0.75rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 5px; background: transparent; color: var(--text-secondary); outline: none; cursor: pointer;">
+                                <select id="instruments-enabled-filter" onchange="window.adminPages.instruments.current=1; loadInstrumentsList()" class="filter-select" style="height: 28px; font-size: 0.75rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 5px; background: transparent; color: var(--text-secondary); outline: none; cursor: pointer;">
                                     <option value="">上架状态 (All)</option>
                                     <option value="true">已上架 (Enabled)</option>
                                     <option value="false">未上架 (Disabled)</option>
