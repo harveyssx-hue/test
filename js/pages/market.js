@@ -503,6 +503,40 @@ function switchMarketCategory(cat) {
     renderMarketList();
 }
 
+function renderMarketTickerData(tickerData) {
+    if (!tickerData) return;
+    
+    const lastPrice = parseFloat(tickerData.closePrice || tickerData.lastPrice || 0);
+    const chgPercent = parseFloat(tickerData.priceChangePercent || 0);
+    const highVal = parseFloat(tickerData.highPrice || tickerData.high || 0);
+    const lowVal = parseFloat(tickerData.lowPrice || tickerData.low || 0);
+    
+    const decimals = activeSymbol === 'xrpusdt' ? 4 : 2;
+    
+    const priceEl = document.getElementById('market-last-price');
+    if (priceEl && !isNaN(lastPrice) && lastPrice > 0) {
+        priceEl.innerText = lastPrice.toFixed(decimals);
+    }
+    
+    const changeEl = document.getElementById('market-price-change');
+    if (changeEl && !isNaN(chgPercent)) {
+        const chgStr = `${chgPercent >= 0 ? '+' : ''}${chgPercent.toFixed(2)}%`;
+        changeEl.innerText = chgStr;
+        changeEl.className = 'm-change-pct ' + (chgPercent >= 0 ? 'green' : 'red');
+    }
+    
+    const highEl = document.getElementById('market-high');
+    if (highEl && !isNaN(highVal) && highVal > 0) {
+        highEl.innerText = highVal.toFixed(decimals);
+    }
+    
+    const lowEl = document.getElementById('market-low');
+    if (lowEl && !isNaN(lowVal) && lowVal > 0) {
+        lowEl.innerText = lowVal.toFixed(decimals);
+    }
+}
+window.renderMarketTickerData = renderMarketTickerData;
+
 function showMarketDetail(symbol) {
     activeSymbol = symbol.toLowerCase();
     isMarketDetailActive = true;
@@ -545,9 +579,18 @@ function showMarketDetail(symbol) {
             symbol: cleanSymbol,
             logo: getCoinFallbackSvg(cleanSymbol, 20),
             exchangeId: defaultExchangeId,
-            name: cleanSymbol.replace('USDT', '')
+            name: cleanSymbol.replace('USDT', ''),
+            ticker: {}
         };
+        // Add it to recommendedInstruments so it is cached and doesn't get lost, and stays in the list of streams
+        recommendedInstruments.push(inst);
     }
+    
+    // Instantly render cached ticker data if present
+    if (inst.ticker) {
+        renderMarketTickerData(inst.ticker);
+    }
+    
     const logoEl = document.getElementById('detail-coin-logo');
     const symbolEl = document.getElementById('detail-coin-symbol');
     if (inst) {
@@ -563,8 +606,34 @@ function showMarketDetail(symbol) {
             symbolEl.innerText = inst.symbol.replace('USDT', '') + ' / USDT';
         }
         
-        // Fetch initial Order Book snapshot from HTTP API
+        // Fetch initial Ticker snapshot from HTTP API
         if (inst.exchangeId) {
+            apiFetch('GET', `/market/ticker?exchangeId=${inst.exchangeId}&symbol=${inst.symbol.toUpperCase()}`, null, false)
+                .then(tickerRes => {
+                    if (tickerRes && (tickerRes.code === 200 || tickerRes.lastPrice || tickerRes.closePrice)) {
+                        const tickerData = tickerRes.result || tickerRes.data || tickerRes;
+                        
+                        // Update cache in recommendedInstruments
+                        const cacheInst = recommendedInstruments.find(i => i.symbol.toLowerCase() === inst.symbol.toLowerCase());
+                        if (cacheInst) {
+                            cacheInst.ticker = {
+                                ...cacheInst.ticker,
+                                closePrice: tickerData.closePrice || tickerData.lastPrice,
+                                priceChangePercent: tickerData.priceChangePercent,
+                                highPrice: tickerData.highPrice || tickerData.high,
+                                lowPrice: tickerData.lowPrice || tickerData.low
+                            };
+                        }
+                        
+                        // Render if this is still the active symbol
+                        if (window.renderMarketTickerData && activeSymbol === inst.symbol.toLowerCase()) {
+                            window.renderMarketTickerData(tickerData);
+                        }
+                    }
+                })
+                .catch(e => console.warn('Failed to load initial market ticker snapshot:', e));
+
+            // Fetch initial Order Book snapshot from HTTP API
             apiFetch('GET', `/market/depth?exchangeId=${inst.exchangeId}&symbol=${inst.symbol.toUpperCase()}`, null, false)
                 .then(depthRes => {
                     if (depthRes && (depthRes.code === 200 || depthRes.asks)) {

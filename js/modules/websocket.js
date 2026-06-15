@@ -19,12 +19,17 @@ function connectMarketWS() {
             const unsubParams = [];
             if (oldSym) {
                 unsubParams.push(`${oldSym}@trade`, `${oldSym}@kline_1m`, `${oldSym}@depth`);
+                // Do not unsubscribe from index card tickers (BTC, ETH, SOL)
+                if (oldSym !== 'btcusdt' && oldSym !== 'ethusdt' && oldSym !== 'solusdt') {
+                    unsubParams.push(`${oldSym}@ticker`);
+                }
             }
             
             const subParams = [
                 `${activeSymbol}@trade`,
                 `${activeSymbol}@kline_1m`,
-                `${activeSymbol}@depth`
+                `${activeSymbol}@depth`,
+                `${activeSymbol}@ticker`
             ];
             
             if (unsubParams.length > 0) {
@@ -166,19 +171,9 @@ function renderMarketTicker(data) {
     
     // 1. Update active metrics if this matches active selected symbol (only when detail view is active)
     if (isMarketDetailActive && data.symbol.toLowerCase() === activeSymbol) {
-        const lastPriceEl = getCachedElement('market-last-price');
-        if (lastPriceEl) lastPriceEl.innerText = lastPrice.toFixed(activeSymbol === 'xrpusdt' ? 4 : 2);
-        
-        const changeEl = getCachedElement('market-price-change');
-        if (changeEl) {
-            changeEl.innerText = chgStr;
-            changeEl.className = `m-change-pct ${chgClass}`;
+        if (window.renderMarketTickerData) {
+            window.renderMarketTickerData(data);
         }
-        
-        const highEl = getCachedElement('market-high');
-        if (highEl) highEl.innerText = parseFloat(data.highPrice).toFixed(activeSymbol === 'xrpusdt' ? 4 : 2);
-        const lowEl = getCachedElement('market-low');
-        if (lowEl) lowEl.innerText = parseFloat(data.lowPrice).toFixed(activeSymbol === 'xrpusdt' ? 4 : 2);
     }
     
     // 2. Update home tab index cards
@@ -330,7 +325,16 @@ function executeRenderMarketDepth(data) {
     
     const ask0Price = asks.length > 0 ? getPrice(asks[0]) : 0;
     const bid0Price = bids.length > 0 ? getPrice(bids[0]) : 0;
-    const midPriceVal = (ask0Price + bid0Price) / 2;
+    
+    let midPriceVal = NaN;
+    if (ask0Price > 0 && bid0Price > 0) {
+        midPriceVal = (ask0Price + bid0Price) / 2;
+    } else if (ask0Price > 0) {
+        midPriceVal = ask0Price;
+    } else if (bid0Price > 0) {
+        midPriceVal = bid0Price;
+    }
+    
     const midPrice = isNaN(midPriceVal) ? '--' : midPriceVal.toFixed(activeSymbol === 'xrpusdt' ? 4 : 2);
     
     const spreadEl = getCachedElement('ob-spread-price');
