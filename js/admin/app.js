@@ -541,10 +541,16 @@ export function showToast(msg, isErr = false) {
     
     toast.innerText = msg;
     toast.style.background = isErr ? 'rgba(239, 68, 68, 0.95)' : 'rgba(91, 81, 249, 0.95)';
-    toast.classList.add('show');
+    toast.classList.add('active');
+    if (isErr) {
+        toast.classList.add('err');
+    } else {
+        toast.classList.remove('err');
+    }
     
     setTimeout(() => {
-        toast.classList.remove('show');
+        toast.classList.remove('active');
+        toast.classList.remove('err');
     }, 4000);
 }
 window.showToast = showToast;

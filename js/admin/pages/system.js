@@ -138,17 +138,26 @@ async function submitTenantSettings(event) {
     }
 
     // Save local app download links
+    let localChanged = false;
     const androidInput = document.getElementById('input-app-download-android');
     const iosInput = document.getElementById('input-app-download-ios');
     if (androidInput) {
         const val = androidInput.value.trim();
-        localStorage.setItem('app_download_android', val);
-        setSharedCookie('app_download_android', val);
+        const oldVal = localStorage.getItem('app_download_android') || '';
+        if (val !== oldVal) {
+            localStorage.setItem('app_download_android', val);
+            setSharedCookie('app_download_android', val);
+            localChanged = true;
+        }
     }
     if (iosInput) {
         const val = iosInput.value.trim();
-        localStorage.setItem('app_download_ios', val);
-        setSharedCookie('app_download_ios', val);
+        const oldVal = localStorage.getItem('app_download_ios') || '';
+        if (val !== oldVal) {
+            localStorage.setItem('app_download_ios', val);
+            setSharedCookie('app_download_ios', val);
+            localChanged = true;
+        }
     }
 
     const keyMap = {
@@ -176,7 +185,7 @@ async function submitTenantSettings(event) {
         'quant.backtest_data': 'input-quant-backtest-data'
     };
 
-    showToast('正在安全提交并批量保存设置参数...', false);
+    showToast('正在安全提交并保存设置参数...', false);
 
     try {
         const updatedSettings = [];
@@ -206,10 +215,14 @@ async function submitTenantSettings(event) {
 
         // 如果没有有效修改
         if (updatedSettings.length === 0) {
-            if (skippedKeys.length > 0) {
-                showToast(`⚠️ 保存跳过 (不支持的键: ${skippedKeys.join(', ')})，无其他有效参数修改。`, true);
+            if (localChanged) {
+                showToast('✓ 租户系统设置保存成功！', false);
             } else {
-                showToast('✓ 未检测到任何配置参数修改，无需保存。', false);
+                if (skippedKeys.length > 0) {
+                    showToast(`⚠️ 保存跳过 (不支持的键: ${skippedKeys.join(', ')})，无其他有效参数修改。`, true);
+                } else {
+                    showToast('✓ 未检测到任何配置参数修改，无需保存。', false);
+                }
             }
             return;
         }
@@ -218,7 +231,7 @@ async function submitTenantSettings(event) {
         const res = await apiFetch('POST', `/tenants/${activeTenantId}/settings/batch-upsert`, { items: updatedSettings }, true);
         
         if (res && res.code === 200) {
-            let successMsg = '✓ 租户系统设置更新成功，配置已实时生效！';
+            let successMsg = '✓ 租户系统设置保存成功，配置已实时生效！';
             if (skippedKeys.length > 0) {
                 successMsg += ` (已忽略不支持的键: ${skippedKeys.join(', ')})`;
             }
