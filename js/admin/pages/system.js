@@ -36,6 +36,7 @@ async function loadTenantSettings() {
         // 3. Map keys to form input fields
         const keyMap = {
             'finance.withdraw.untraded_deposit_fee_rate': 'input-untraded-deposit-fee-rate',
+            'finance.withdraw.untraded_fee_rate': 'input-untraded-fee-rate',
             'finance.withdraw.min_amount': 'input-withdraw-min-amount',
             'finance.withdraw.max_amount': 'input-withdraw-max-amount',
             'otp.code_validity': 'input-otp-validity',
@@ -46,8 +47,16 @@ async function loadTenantSettings() {
             'quant.min_invest_amount': 'input-quant-min-invest',
             'quant.max_invest_amount': 'input-quant-max-invest',
             'quant.brokerage.rate': 'input-quant-brokerage-rate',
+            'quant.brokerage.min_amount': 'input-quant-brokerage-min',
+            'quant.brokerage.max_amount': 'input-quant-brokerage-max',
             'quant.ai_computing_cost.rate': 'input-quant-computing-rate',
-            'quant.commission_rate': 'input-quant-commission-rate'
+            'quant.ai_computing_cost.min_amount': 'input-quant-computing-min',
+            'quant.ai_computing_cost.max_amount': 'input-quant-computing-max',
+            'quant.exchange_fee.rate': 'input-quant-exchange-rate',
+            'quant.exchange_fee.min_amount': 'input-quant-exchange-min',
+            'quant.exchange_fee.max_amount': 'input-quant-exchange-max',
+            'quant.commission_rate': 'input-quant-commission-rate',
+            'quant.backtest_data': 'input-quant-backtest-data'
         };
 
         // Pre-populate input values
@@ -144,6 +153,7 @@ async function submitTenantSettings(event) {
 
     const keyMap = {
         'finance.withdraw.untraded_deposit_fee_rate': 'input-untraded-deposit-fee-rate',
+        'finance.withdraw.untraded_fee_rate': 'input-untraded-fee-rate',
         'finance.withdraw.min_amount': 'input-withdraw-min-amount',
         'finance.withdraw.max_amount': 'input-withdraw-max-amount',
         'otp.code_validity': 'input-otp-validity',
@@ -154,14 +164,23 @@ async function submitTenantSettings(event) {
         'quant.min_invest_amount': 'input-quant-min-invest',
         'quant.max_invest_amount': 'input-quant-max-invest',
         'quant.brokerage.rate': 'input-quant-brokerage-rate',
+        'quant.brokerage.min_amount': 'input-quant-brokerage-min',
+        'quant.brokerage.max_amount': 'input-quant-brokerage-max',
         'quant.ai_computing_cost.rate': 'input-quant-computing-rate',
-        'quant.commission_rate': 'input-quant-commission-rate'
+        'quant.ai_computing_cost.min_amount': 'input-quant-computing-min',
+        'quant.ai_computing_cost.max_amount': 'input-quant-computing-max',
+        'quant.exchange_fee.rate': 'input-quant-exchange-rate',
+        'quant.exchange_fee.min_amount': 'input-quant-exchange-min',
+        'quant.exchange_fee.max_amount': 'input-quant-exchange-max',
+        'quant.commission_rate': 'input-quant-commission-rate',
+        'quant.backtest_data': 'input-quant-backtest-data'
     };
 
     showToast('正在安全提交并批量保存设置参数...', false);
 
     try {
         const updatedSettings = [];
+        const skippedKeys = [];
 
         for (const [key, inputId] of Object.entries(keyMap)) {
             const inputEl = document.getElementById(inputId);
@@ -171,45 +190,39 @@ async function submitTenantSettings(event) {
             const newValue = inputEl.value.trim();
 
             if (setting) {
-                // Clone and update value
-                const updatedObj = { ...setting, value: newValue };
-                updatedSettings.push(updatedObj);
-            } else {
-                // If missing from cache, create a new setting object with appropriate database schema values
-                let valType = 'DECIMAL';
-                let grp = 'quant';
-                let desc = '';
-
-                if (key.startsWith('otp.')) {
-                    valType = 'INT';
-                    grp = 'otp';
-                } else if (key.startsWith('finance.')) {
-                    valType = 'DECIMAL';
-                    grp = 'finance';
-                } else if (key === 'commons.phone_regex') {
-                    valType = 'STRING';
-                    grp = 'commons';
+                // 仅在值发生实际变化时提交，降低请求荷载并避免不必要的服务端重置
+                if (String(setting.value).trim() !== newValue) {
+                    const updatedObj = { ...setting, value: newValue };
+                    updatedSettings.push(updatedObj);
                 }
-
-                const newObj = {
-                    id: '',
-                    tenantId: activeTenantId,
-                    key: key,
-                    valueType: valType,
-                    value: newValue,
-                    enabled: true,
-                    group: grp,
-                    description: desc
-                };
-                updatedSettings.push(newObj);
+            } else {
+                // 如果后端初始配置列表里不存在此 key，说明当前系统后端版本尚未定义/不支持该参数。
+                // 强行提交会触发后端的 'unsupported sys setting key' (11001003) 校验错误。
+                // 采取白名单防御过滤，并打印警告，让支持的参数能够顺利保存。
+                skippedKeys.push(key);
+                console.warn(`[Tenant Settings] Key "${key}" (Element #${inputId}) is not defined/supported by the backend, skipped to prevent upsert failure.`);
             }
         }
 
-        // Send batch-upsert with correct schema layout { items: [...] }
+        // 如果没有有效修改
+        if (updatedSettings.length === 0) {
+            if (skippedKeys.length > 0) {
+                showToast(`⚠️ 保存跳过 (不支持的键: ${skippedKeys.join(', ')})，无其他有效参数修改。`, true);
+            } else {
+                showToast('✓ 未检测到任何配置参数修改，无需保存。', false);
+            }
+            return;
+        }
+
+        // 发送 batch-upsert
         const res = await apiFetch('POST', `/tenants/${activeTenantId}/settings/batch-upsert`, { items: updatedSettings }, true);
         
         if (res && res.code === 200) {
-            showToast('✓ 租户系统设置更新成功，配置已实时生效！', false);
+            let successMsg = '✓ 租户系统设置更新成功，配置已实时生效！';
+            if (skippedKeys.length > 0) {
+                successMsg += ` (已忽略不支持的键: ${skippedKeys.join(', ')})`;
+            }
+            showToast(successMsg, false);
             loadTenantSettings();
         } else {
             console.error('Failed to batch upsert tenant settings:', res);

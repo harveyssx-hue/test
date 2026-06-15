@@ -471,7 +471,7 @@ while ($listener.IsListening) {
             # Build proxy Web Request direct to GCS
             $gcsReq = [System.Net.HttpWebRequest]::Create($targetUrl)
             $gcsReq.Method = "PUT"
-            $gcsReq.ContentType = "image/jpeg"
+            $gcsReq.ContentType = if ($request.ContentType) { $request.ContentType } else { "image/jpeg" }
             $gcsReq.ContentLength = $reqBodyData.Length
 
             if ($reqBodyData.Length -gt 0) {
@@ -489,6 +489,16 @@ while ($listener.IsListening) {
                 while ($ex -and $ex.InnerException) { $ex = $ex.InnerException }
                 if ($ex -and $ex.GetType().Name -eq "WebException") {
                     $response.StatusCode = [int]$ex.Response.StatusCode
+                    try {
+                        $stream = $ex.Response.GetResponseStream()
+                        $reader = New-Object System.IO.StreamReader($stream)
+                        $errText = $reader.ReadToEnd()
+                        $reader.Close()
+                        $stream.Close()
+                        Write-Output "[ERROR] GCS PUT returned Status $($response.StatusCode): $errText"
+                    } catch {
+                        Write-Output "[ERROR] GCS PUT WebException: $_"
+                    }
                 } else {
                     Write-Output "[ERROR] GCS PUT failed: $_"
                     $response.StatusCode = 500
@@ -590,7 +600,7 @@ while ($listener.IsListening) {
         if ($reqPath.StartsWith("/api/v1/")) {
             $reqMethod = $request.HttpMethod
 
-            if ($reqPath -eq "/api/v1/common/upload/presigned") {
+            if ($reqPath -eq "/api/v1/common/upload/presigned" -or $reqPath -eq "/api/v1/upload/presigned") {
                 # Intercept presigned upload URL requests for admin panel to bypass 401 Unauthorized
                 $referer = $request.Headers["Referer"]
                 $accessToken = $request.Headers["X-Token"]
@@ -628,7 +638,7 @@ while ($listener.IsListening) {
                 }
             }
             
-            if ($reqPath -eq "/api/v1/common/upload/confirm") {
+            if ($reqPath -eq "/api/v1/common/upload/confirm" -or $reqPath -eq "/api/v1/upload/confirm") {
                 # Intercept confirm upload requests for local uploads
                 $referer = $request.Headers["Referer"]
                 $accessToken = $request.Headers["X-Token"]
