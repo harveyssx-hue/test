@@ -1,4 +1,4 @@
-﻿             <div class="view-tab-content active" id="view-platform-contents">
+             <div class="view-tab-content active" id="view-platform-contents">
                  <div class="glass-panel filter-panel" style="margin-bottom: 18px; padding: 15px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 15px;">
                      <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
                          <div style="display: flex; flex-direction: column; gap: 4px;">
@@ -22,7 +22,7 @@
                          <div style="display: flex; flex-direction: column; gap: 4px;">
                              <label style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 700;">关键词搜索 (Keyword)</label>
                              <div style="position: relative;">
-                                 <input type="text" id="search-doc-keyword" placeholder="标题 / 业务编码 / 摘要" style="height: 36px; padding: 0 10px 0 30px; border-radius: 6px; border: 1px solid var(--border-light); background: #fff; color: var(--text-primary); width: 220px; font-size: 0.85rem;">
+                                 <input type="text" id="search-doc-keyword" placeholder="标题 / 业务编码 / 摘要" onkeydown="if(event.key === 'Enter') loadPlatformContentsList(1)" style="height: 36px; padding: 0 10px 0 30px; border-radius: 6px; border: 1px solid var(--border-light); background: #fff; color: var(--text-primary); width: 220px; font-size: 0.85rem;">
                                  <span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 0.82rem; color: var(--text-secondary);">🔍</span>
                              </div>
                          </div>

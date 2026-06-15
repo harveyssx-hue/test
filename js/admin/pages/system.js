@@ -823,7 +823,16 @@ async function loadPlatformContentsList(page = 1) {
                     ? '<span class="badge badge-VERIFIED" style="background: rgba(16,185,129,0.1); color: #10B981;">已启用</span>'
                     : '<span class="badge badge-REJECTED" style="background: rgba(239,68,68,0.1); color: #EF4444;">已禁用</span>';
                 
-                const formattedTime = doc.updatedAt ? new Date(parseInt(doc.updatedAt)).toLocaleString() : '--';
+                // Safe date-time parsing that works with both numeric millisecond timestamps and ISO strings
+                let formattedTime = '--';
+                if (doc.updatedAt) {
+                    const ts = parseInt(doc.updatedAt);
+                    if (!isNaN(ts) && String(ts).length >= 10 && /^\d+$/.test(String(doc.updatedAt))) {
+                        formattedTime = new Date(ts).toLocaleString();
+                    } else {
+                        formattedTime = new Date(doc.updatedAt).toLocaleString();
+                    }
+                }
                 
                 html += `
                     <tr style="border-bottom: 1.5px solid var(--border-light);">
@@ -866,7 +875,7 @@ function changePlatformContentsPage(delta) {
     }
 }
 
-function openPlatformContentsDrawer(id = null) {
+async function openPlatformContentsDrawer(id = null) {
     const drawer = document.getElementById('platform-contents-drawer');
     const overlay = document.getElementById('platform-contents-overlay');
     const titleEl = document.getElementById('platform-contents-drawer-title');
@@ -889,6 +898,26 @@ function openPlatformContentsDrawer(id = null) {
             document.getElementById('edit-doc-summary').value = doc.summary || '';
             document.getElementById('edit-doc-enabled').checked = !!doc.enabled;
             document.getElementById('edit-doc-content').value = doc.content || '';
+            
+            // Asynchronously fetch full details to handle cases where list API omits the content field
+            try {
+                const res = await apiFetch('GET', `/platform-contents/${id}`, null, true);
+                const detailDoc = res.result || res.data;
+                if (res.code === 200 && detailDoc) {
+                    // Update content only if the drawer is still open for the same id
+                    if (document.getElementById('edit-doc-id').value === String(id)) {
+                        document.getElementById('edit-doc-content').value = detailDoc.content || '';
+                        
+                        // Sync back to list cache
+                        const idx = platformContentsList.findIndex(d => String(d.id) === String(id));
+                        if (idx !== -1) {
+                            platformContentsList[idx] = detailDoc;
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to fetch platform content detail:', err);
+            }
         }
     } else {
         titleEl.innerText = '➕ 新建平台文档';

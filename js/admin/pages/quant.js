@@ -66,8 +66,39 @@ window.toggleSelectAllPendingOrders = toggleSelectAllPendingOrders;
 export async function loadQuantMonitor() {
     if (!currentAdmin) return;
     
+    const pageConf = window.adminPages.quant;
+    const page = pageConf.current;
+    const pageSize = pageConf.size;
+    
+    // Extract filter values
+    const statusVal = document.getElementById('filter-quant-status')?.value || 'ALL';
+    const uidVal = document.getElementById('filter-quant-uid')?.value.trim() || '';
+    const orderNoVal = document.getElementById('filter-quant-orderNo')?.value.trim().toLowerCase() || '';
+    
+    // Hybrid pagination strategy: client side filter fallback if orderNo or partial UID search is active
+    const isSearchingOrderNo = orderNoVal !== '';
+    const isSearchingUidPartial = uidVal !== '' && (!/^\d+$/.test(uidVal) || uidVal.length < 18);
+    const isClientFallback = isSearchingOrderNo || isSearchingUidPartial;
+    
+    const apiPageSize = isClientFallback ? 1000 : pageSize;
+    const apiPage = isClientFallback ? 1 : page;
+    
+    let url = `/trading/quant/orders?page=${apiPage}&pageSize=${apiPageSize}`;
+    if (statusVal !== 'ALL') {
+        url += `&status=${statusVal}`;
+    }
+    // Only query server-side exact match if we have a full 18+ digit integer ID
+    if (uidVal !== '' && /^\d+$/.test(uidVal) && uidVal.length >= 18) {
+        url += `&userId=${uidVal}`;
+    }
+    
+    const tbody = document.getElementById('quant-monitor-table-body');
+    if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="13" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">🔄 正在安全同步全站跟单量化订单列表...</td></tr>';
+    }
+    
     try {
-        const res = await apiFetch('GET', '/trading/quant/orders', null, true);
+        const res = await apiFetch('GET', url, null, true);
         
         if (res.code === 200) {
             const orders = res.result || res.data || [];
@@ -77,36 +108,42 @@ export async function loadQuantMonitor() {
             const masterCheckbox = document.getElementById('select-all-pending-orders-checkbox');
             if (masterCheckbox) masterCheckbox.checked = false;
             
-            // Dynamically update Active Quant AI counts and Total investments on screen!
-            const activeCount = orders.filter(o => o.status === 'ACTIVE').length;
-            const statActiveQuantEl = document.getElementById('stat-active-quant');
-            if (statActiveQuantEl) statActiveQuantEl.innerText = activeCount;
+            // Background stats update to avoid blocking table rendering
+            apiFetch('GET', '/trading/quant/orders?page=1&pageSize=1000', null, true).then(statsRes => {
+                if (statsRes.code === 200) {
+                    const allOrders = statsRes.result || statsRes.data || [];
+                    const activeCount = allOrders.filter(o => o.status === 'ACTIVE').length;
+                    const statActiveQuantEl = document.getElementById('stat-active-quant');
+                    if (statActiveQuantEl) statActiveQuantEl.innerText = activeCount;
+                    
+                    let valuation = 0;
+                    allOrders.forEach(o => {
+                        valuation += parseFloat(o.investAmount) || 0;
+                    });
+                    const statTotalValuationEl = document.getElementById('stat-total-valuation');
+                    if (statTotalValuationEl) {
+                        statTotalValuationEl.innerText = '$' + valuation.toLocaleString([], { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    }
+                }
+            }).catch(err => console.error('Error loading background stats:', err));
             
-            let valuation = 0;
-            orders.forEach(o => {
-                valuation += parseFloat(o.investAmount) || 0;
-            });
-            const statTotalValuationEl = document.getElementById('stat-total-valuation');
-            if (statTotalValuationEl) statTotalValuationEl.innerText = '$' + valuation.toLocaleString([], { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            
-            // Extract filter values
-            const statusVal = document.getElementById('filter-quant-status')?.value || 'ALL';
-            const uidVal = document.getElementById('filter-quant-uid')?.value.trim().toLowerCase() || '';
-            const orderNoVal = document.getElementById('filter-quant-orderNo')?.value.trim().toLowerCase() || '';
-            
-            // Apply filtering logic
+            // Apply filtering logic for partial UID search or orderNo search
             let filteredOrders = orders;
-            if (statusVal !== 'ALL') {
-                filteredOrders = filteredOrders.filter(o => o.status === statusVal);
-            }
             if (uidVal !== '') {
-                filteredOrders = filteredOrders.filter(o => String(o.userId).toLowerCase().includes(uidVal));
+                filteredOrders = filteredOrders.filter(o => {
+                    const userUidStr = String(o.userId || '');
+                    const userAccount = '133' + userUidStr.substring(0, 4) + '1300';
+                    const shortUidStr = userUidStr.substring(0, 8);
+                    
+                    return userUidStr.toLowerCase().includes(uidVal.toLowerCase()) ||
+                           userAccount.toLowerCase().includes(uidVal.toLowerCase()) ||
+                           shortUidStr.toLowerCase().includes(uidVal.toLowerCase());
+                });
             }
             if (orderNoVal !== '') {
                 filteredOrders = filteredOrders.filter(o => String(o.orderNo).toLowerCase().includes(orderNoVal));
             }
             
-            const tbody = document.getElementById('quant-monitor-table-body');
             if (!tbody) return;
             
             if (filteredOrders.length === 0) {
@@ -123,7 +160,7 @@ export async function loadQuantMonitor() {
                 return;
             }
             
-            // Calculate filtered sums for the table footer statistics (computed over ALL filtered items)
+            // Calculate filtered sums for the table footer statistics (computed over current page/filtered list)
             let sumBuyAmount = 0;
             filteredOrders.forEach(o => {
                 sumBuyAmount += parseFloat(o.investAmount || 0);
@@ -132,10 +169,33 @@ export async function loadQuantMonitor() {
             document.getElementById('quant-total-principal-amount').innerText = sumBuyAmount.toFixed(2) + ' USDT';
             document.getElementById('quant-total-coupon-amount').innerText = '0.00 USDT';
             
-            // Paginate the filtered list
-            const paginatedOrders = paginateList(filteredOrders, 'quant');
+            // Paginate
+            let renderList = [];
             
-            tbody.innerHTML = paginatedOrders.map(o => {
+            if (isClientFallback) {
+                renderList = paginateList(filteredOrders, 'quant');
+            } else {
+                renderList = filteredOrders;
+                const pgInfo = res.paging || { page: page, pageSize: pageSize, pages: 1, records: filteredOrders.length };
+                const totalPages = pgInfo.pages || Math.max(1, Math.ceil(pgInfo.records / pageSize));
+                pageConf.totalPages = totalPages;
+                
+                if (pageConf.current > totalPages && totalPages > 0) {
+                    pageConf.current = totalPages;
+                    loadQuantMonitor();
+                    return;
+                }
+                if (pageConf.current < 1) {
+                    pageConf.current = 1;
+                }
+                
+                const indicator = document.getElementById(`quant-page-indicator`);
+                if (indicator) {
+                    indicator.innerText = `第 ${pageConf.current} / ${totalPages} 页 (共 ${pgInfo.records} 条)`;
+                }
+            }
+            
+            tbody.innerHTML = renderList.map(o => {
                 const profit = parseFloat(o.actualProfit || '0');
                 const algoName = o.algorithmModel ? (o.algorithmModel.displayName || o.algorithmModel.name) : '神经网络高频量化';
                 
@@ -249,24 +309,31 @@ function resetQuantFilters() {
 
 // Automatic review approval logic for all pending orders
 async function submitAllOrderReview() {
-    const pendingOrders = window.cachedQuantOrders ? window.cachedQuantOrders.filter(o => o.status === 'PENDING') : [];
-    if (pendingOrders.length === 0) {
-        showToast('❌ 当前无可审核的待处理跟单订单！', true);
-        return;
-    }
-    if (!confirm(`⚠️ 您确定要一键批准通过全站所有共 ${pendingOrders.length} 笔待审核跟单订单吗？`)) {
-        return;
-    }
-    const orderIds = pendingOrders.map(o => o.id);
-    showToast(`正在一键批量审核 ${orderIds.length} 笔订单...`, false);
+    showToast('正在检索全站待审核跟单订单...', false);
     try {
-        const res = await apiFetch('POST', '/trading/quant/orders/batch-approve', { orderIds: orderIds }, true);
+        const res = await apiFetch('GET', '/trading/quant/orders?status=PENDING&page=1&pageSize=1000', null, true);
         if (res.code === 200) {
-            showToast(`✓ 已成功一键批准 ${orderIds.length} 笔跟单委托启动！`, false);
-            loadQuantMonitor();
-            loadDashboardStats();
+            const pendingOrders = res.result || res.data || [];
+            if (pendingOrders.length === 0) {
+                showToast('❌ 当前全站无可审核的待处理跟单订单！', true);
+                return;
+            }
+            if (!confirm(`⚠️ 您确定要一键批准通过全站所有共 ${pendingOrders.length} 笔待审核跟单订单吗？`)) {
+                return;
+            }
+            const orderIds = pendingOrders.map(o => o.id);
+            showToast(`正在一键批量审核 ${orderIds.length} 笔订单...`, false);
+            
+            const reviewRes = await apiFetch('POST', '/trading/quant/orders/batch-approve', { orderIds: orderIds }, true);
+            if (reviewRes.code === 200) {
+                showToast(`✓ 已成功一键批准全站 ${orderIds.length} 笔跟单委托启动！`, false);
+                loadQuantMonitor();
+                loadDashboardStats();
+            } else {
+                showToast(reviewRes.errorMessage || '一键批量审核失败！', true);
+            }
         } else {
-            showToast(res.errorMessage || '一键批量审核失败！', true);
+            showToast(res.errorMessage || '获取待审核订单列表失败！', true);
         }
     } catch(e) {
         console.error(e);
@@ -887,7 +954,27 @@ function openQuantControlModal(orderId, defaultAction) {
     
     const qtyInput = document.getElementById('qctrl-qty');
     if (order) {
-        qtyInput.value = parseFloat(order.tradeQuantity || order.quantity || 0).toFixed(4);
+        let qty = parseFloat(order.tradeQuantity || order.quantity || 0);
+        qtyInput.value = qty > 0 ? qty.toFixed(4) : '';
+        
+        // Asynchronously query latest trades to verify and dynamically update the active position quantity
+        (async () => {
+            try {
+                const tradesRes = await apiFetch('GET', `/trading/quant/orders/${orderId}/trades`, null, true);
+                if (tradesRes.code === 200) {
+                    const trades = tradesRes.result || tradesRes.data || [];
+                    if (trades.length > 0) {
+                        const lastTrade = trades[trades.length - 1];
+                        const freshQty = parseFloat(lastTrade.quantity || 0);
+                        if (document.getElementById('qctrl-order-id').value === String(orderId)) {
+                            qtyInput.value = freshQty.toFixed(4);
+                        }
+                    }
+                }
+            } catch(e) {
+                console.error('Failed to fetch trades details in drawer:', e);
+            }
+        })();
     } else {
         qtyInput.value = '';
     }
@@ -1034,16 +1121,25 @@ let activeSettleOrders = []; // store in-memory for checkbox and selection opera
 async function loadQuantSettleList() {
     if (!currentAdmin) return;
     
-    const res = await apiFetch('GET', '/trading/quant/orders', null, true);
+    const pageConf = window.adminPages.quantSettle;
+    const page = pageConf.current;
+    const pageSize = pageConf.size;
     
-    if (res.code === 200) {
-        const orders = res.result || res.data || [];
+    const tbody = document.getElementById('quant-settle-table-body');
+    if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">🔄 正在安全同步跟单结算订单列表...</td></tr>';
+    }
+    
+    try {
+        const res = await apiFetch('GET', `/trading/quant/orders?status=ACTIVE&page=${page}&pageSize=${pageSize}`, null, true);
         
-        // Only keep ACTIVE orders
-        const activeOrders = orders.filter(o => o.status === 'ACTIVE');
-        
-        showToast('正在实时同步跟单交易明细...', false);
-        try {
+        if (res.code === 200) {
+            const orders = res.result || res.data || [];
+            
+            // Backend already filters by ACTIVE when queried with status=ACTIVE, but let's filter just in case
+            const activeOrders = orders.filter(o => o.status === 'ACTIVE');
+            
+            showToast('正在实时同步跟单交易明细...', false);
             await Promise.all(activeOrders.map(async (order) => {
                 const tradesRes = await apiFetch('GET', `/trading/quant/orders/${order.id}/trades`, null, true);
                 if (tradesRes.code === 200) {
@@ -1085,19 +1181,30 @@ async function loadQuantSettleList() {
             }));
             
             activeSettleOrders = activeOrders;
-            renderActiveSettleListHtml();
-        } catch(err) {
-            console.error('Error fetching trades traces:', err);
-            showToast('获取成交明细异常！', true);
-            activeSettleOrders = activeOrders;
-            renderActiveSettleListHtml();
+            const pgInfo = res.paging || { page: page, pageSize: pageSize, pages: 1, records: activeOrders.length };
+            const totalPages = pgInfo.pages || Math.max(1, Math.ceil(pgInfo.records / pageSize));
+            if (pageConf.current > totalPages && totalPages > 0) {
+                pageConf.current = totalPages;
+                loadQuantSettleList();
+                return;
+            }
+            renderActiveSettleListHtml(pgInfo);
+        } else {
+            showToast(res.errorMessage || '获取结算跟单列表失败！', true);
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: #EF4444; padding: 30px 0;">❌ 加载失败: ${res.errorMessage || '未知接口错误'}</td></tr>`;
+            }
         }
-    } else {
-        showToast(res.errorMessage || '获取结算跟单列表失败！', true);
+    } catch (err) {
+        console.error('Error fetching trades traces:', err);
+        showToast('获取成交明细异常！', true);
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: #EF4444; padding: 30px 0;">❌ 网络请求错误，请刷新重试！</td></tr>`;
+        }
     }
 }
 
-function renderActiveSettleListHtml() {
+function renderActiveSettleListHtml(paging = null) {
     const selectAllCheckbox = document.getElementById('select-all-settle-orders');
     if (selectAllCheckbox) selectAllCheckbox.checked = false;
     
@@ -1111,8 +1218,8 @@ function renderActiveSettleListHtml() {
         return;
     }
     
-    const paginatedList = paginateList(activeSettleOrders, 'quantSettle');
-    tbody.innerHTML = paginatedList.map(o => {
+    // Server-side paginated list: render activeSettleOrders directly
+    tbody.innerHTML = activeSettleOrders.map(o => {
         const profit = parseFloat(o.actualProfit || '0');
         const algoName = o.algorithmModel ? (o.algorithmModel.displayName || o.algorithmModel.name) : '神经网络高频量化';
         const date = o.createdAt ? new Date(parseInt(o.createdAt)).toLocaleString() : '--';
@@ -1158,6 +1265,16 @@ function renderActiveSettleListHtml() {
             </tr>
         `;
     }).join('');
+    
+    // Update pagination controls
+    const pageConf = window.adminPages.quantSettle;
+    const pg = paging || { page: pageConf.current, pageSize: pageConf.size, pages: 1, records: activeSettleOrders.length };
+    window.quantSettleTotalPages = pg.pages || 1;
+    
+    const indicator = document.getElementById('quantSettle-page-indicator');
+    if (indicator) {
+        indicator.innerText = `第 ${pg.page} / ${pg.pages} 页 (共 ${pg.records} 条)`;
+    }
 }
 
 window.renderActiveSettleListHtml = renderActiveSettleListHtml;
@@ -1402,7 +1519,16 @@ async function loadCopyTradingLeaders() {
     const filterNickname = document.getElementById('filter-leaders-nickname')?.value.trim().toLowerCase() || '';
     const filterStatus = document.getElementById('filter-leaders-status')?.value || 'ALL';
     
-    let url = '/copy-trading/leaders?page=1&pageSize=500';
+    const pageConf = window.adminPages.leaders;
+    const page = pageConf.current;
+    const pageSize = pageConf.size;
+    
+    // Hybrid pagination strategy: client side filter fallback if search input is active
+    const isSearching = filterUid !== '' || filterNickname !== '';
+    const apiPageSize = isSearching ? 500 : pageSize;
+    const apiPage = isSearching ? 1 : page;
+    
+    let url = `/copy-trading/leaders?page=${apiPage}&pageSize=${apiPageSize}`;
     if (filterStatus !== 'ALL') {
         url += `&status=${filterStatus}`;
     }
@@ -1434,10 +1560,31 @@ async function loadCopyTradingLeaders() {
                 return;
             }
             
-            // Client side paginated slice
-            const paginatedList = paginateList(filteredList, 'leaders');
+            let renderList = [];
+            if (isSearching) {
+                renderList = paginateList(filteredList, 'leaders');
+            } else {
+                renderList = filteredList;
+                const pgInfo = res.paging || { page: page, pageSize: pageSize, pages: 1, records: filteredList.length };
+                const totalPages = pgInfo.pages || Math.max(1, Math.ceil(pgInfo.records / pageSize));
+                pageConf.totalPages = totalPages;
+                
+                if (pageConf.current > totalPages && totalPages > 0) {
+                    pageConf.current = totalPages;
+                    loadCopyTradingLeaders();
+                    return;
+                }
+                if (pageConf.current < 1) {
+                    pageConf.current = 1;
+                }
+                
+                const indicator = document.getElementById(`leaders-page-indicator`);
+                if (indicator) {
+                    indicator.innerText = `第 ${pageConf.current} / ${totalPages} 页 (共 ${pgInfo.records} 条)`;
+                }
+            }
             
-            bodyEl.innerHTML = paginatedList.map(l => {
+            bodyEl.innerHTML = renderList.map(l => {
                 const yieldColor = l.yield > 0 ? 'var(--green)' : (l.yield < 0 ? 'var(--red)' : 'var(--text-secondary)');
                 const yieldText = l.yield ? `<span style="color: ${yieldColor}; font-weight: bold;">${parseFloat(l.yield).toFixed(2)}%</span>` : '--';
                 
@@ -1539,25 +1686,40 @@ window.resetLeadersFilters = resetLeadersFilters;
 async function loadCopyTradingRelations() {
     if (!currentAdmin) return;
     
-    const filterFollower = document.getElementById('filter-relations-follower')?.value.trim().toLowerCase() || '';
-    const filterLeader = document.getElementById('filter-relations-leader')?.value.trim().toLowerCase() || '';
+    const filterFollower = document.getElementById('filter-relations-follower')?.value.trim() || '';
+    const filterLeader = document.getElementById('filter-relations-leader')?.value.trim() || '';
     
-    let url = '/copy-trading/relations?page=1&pageSize=500';
+    const pageConf = window.adminPages.relations;
+    const page = pageConf.current;
+    const pageSize = pageConf.size;
+    
+    let url = `/copy-trading/relations?page=${page}&pageSize=${pageSize}`;
+    if (filterFollower !== '' && /^\d+$/.test(filterFollower)) {
+        url += `&followerId=${filterFollower}`;
+    }
+    if (filterLeader !== '' && /^\d+$/.test(filterLeader)) {
+        url += `&leaderId=${filterLeader}`;
+    }
+    
+    const bodyEl = document.getElementById('copytrading-relations-table-body');
+    if (bodyEl) {
+        bodyEl.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px 0;">⏳ 正在读取跟随绑定记录...</td></tr>`;
+    }
+    
     try {
         const res = await apiFetch('GET', url, null, true);
         if (res.code === 200) {
             const list = res.result || res.data || [];
             window.cachedRelations = list;
-            const bodyEl = document.getElementById('copytrading-relations-table-body');
             if (!bodyEl) return;
             
-            // Local hybrid filter
+            // Local fallback filter in case of non-integer queries (like partial names if any existed, or partial IDs)
             let filteredList = list;
-            if (filterFollower !== '') {
-                filteredList = filteredList.filter(r => String(r.followerId).toLowerCase().includes(filterFollower));
+            if (filterFollower !== '' && !/^\d+$/.test(filterFollower)) {
+                filteredList = filteredList.filter(r => String(r.followerId).toLowerCase().includes(filterFollower.toLowerCase()));
             }
-            if (filterLeader !== '') {
-                filteredList = filteredList.filter(r => String(r.leaderId).toLowerCase().includes(filterLeader));
+            if (filterLeader !== '' && !/^\d+$/.test(filterLeader)) {
+                filteredList = filteredList.filter(r => String(r.leaderId).toLowerCase().includes(filterLeader.toLowerCase()));
             }
             
             if (filteredList.length === 0) {
@@ -1567,9 +1729,33 @@ async function loadCopyTradingRelations() {
                 return;
             }
             
-            const paginatedList = paginateList(filteredList, 'relations');
+            const isClientFallback = (filterFollower !== '' && !/^\d+$/.test(filterFollower)) || (filterLeader !== '' && !/^\d+$/.test(filterLeader));
+            let renderList = [];
             
-            bodyEl.innerHTML = paginatedList.map(r => {
+            if (isClientFallback) {
+                renderList = paginateList(filteredList, 'relations');
+            } else {
+                renderList = filteredList;
+                const pgInfo = res.paging || { page: page, pageSize: pageSize, pages: 1, records: filteredList.length };
+                const totalPages = pgInfo.pages || Math.max(1, Math.ceil(pgInfo.records / pageSize));
+                pageConf.totalPages = totalPages;
+                
+                if (pageConf.current > totalPages && totalPages > 0) {
+                    pageConf.current = totalPages;
+                    loadCopyTradingRelations();
+                    return;
+                }
+                if (pageConf.current < 1) {
+                    pageConf.current = 1;
+                }
+                
+                const indicator = document.getElementById(`relations-page-indicator`);
+                if (indicator) {
+                    indicator.innerText = `第 ${pageConf.current} / ${totalPages} 页 (共 ${pgInfo.records} 条)`;
+                }
+            }
+            
+            bodyEl.innerHTML = renderList.map(r => {
                 const date = r.createdAt ? new Date(parseInt(r.createdAt)).toLocaleString() : '--';
                 
                 let statusClass = 'PENDING';
@@ -1878,29 +2064,46 @@ export // --- LEADER ORDERS & FOLLOWERS AUDITING CENTER ---
 async function loadCopyTradingOrders() {
     if (!currentAdmin) return;
     
-    const filterLeader = document.getElementById('filter-orders-leader')?.value.trim().toLowerCase() || '';
+    const filterLeader = document.getElementById('filter-orders-leader')?.value.trim() || '';
     const filterSymbol = document.getElementById('filter-orders-symbol')?.value.trim().toLowerCase() || '';
     const filterStatus = document.getElementById('filter-orders-status')?.value || 'ALL';
     
-    let url = '/copy-trading/leader-orders?page=1&pageSize=500';
+    const pageConf = window.adminPages.orders;
+    const page = pageConf.current;
+    const pageSize = pageConf.size;
+    
+    // Hybrid pagination strategy: client side filter fallback if filterSymbol is set
+    const isSearchingSymbol = filterSymbol !== '';
+    const apiPageSize = isSearchingSymbol ? 500 : pageSize;
+    const apiPage = isSearchingSymbol ? 1 : page;
+    
+    let url = `/copy-trading/leader-orders?page=${apiPage}&pageSize=${apiPageSize}`;
+    if (filterLeader !== '' && /^\d+$/.test(filterLeader)) {
+        url += `&leaderId=${filterLeader}`;
+    }
+    if (filterStatus !== 'ALL') {
+        url += `&status=${filterStatus}`;
+    }
+    
+    const bodyEl = document.getElementById('copytrading-orders-table-body');
+    if (bodyEl) {
+        bodyEl.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 30px 0;">⏳ 正在读取导师带单历史订单...</td></tr>`;
+    }
+    
     try {
         const res = await apiFetch('GET', url, null, true);
         if (res.code === 200) {
             const list = res.result || res.data || [];
             window.cachedLeaderOrders = list;
-            const bodyEl = document.getElementById('copytrading-orders-table-body');
             if (!bodyEl) return;
             
-            // Local hybrid search filter
+            // Local fallback filter for non-integer leader UIDs and symbol
             let filteredList = list;
-            if (filterLeader !== '') {
-                filteredList = filteredList.filter(o => String(o.leaderId || '').toLowerCase().includes(filterLeader));
+            if (filterLeader !== '' && !/^\d+$/.test(filterLeader)) {
+                filteredList = filteredList.filter(o => String(o.leaderId || '').toLowerCase().includes(filterLeader.toLowerCase()));
             }
             if (filterSymbol !== '') {
                 filteredList = filteredList.filter(o => String(o.instrumentSymbol || '').toLowerCase().includes(filterSymbol) || String(translateInstrument(o.instrumentId)).toLowerCase().includes(filterSymbol));
-            }
-            if (filterStatus !== 'ALL') {
-                filteredList = filteredList.filter(o => String(o.status || '') === filterStatus);
             }
             
             if (filteredList.length === 0) {
@@ -1910,9 +2113,33 @@ async function loadCopyTradingOrders() {
                 return;
             }
             
-            const paginatedList = paginateList(filteredList, 'orders');
+            const isClientFallback = isSearchingSymbol || (filterLeader !== '' && !/^\d+$/.test(filterLeader));
+            let renderList = [];
             
-            bodyEl.innerHTML = paginatedList.map(o => {
+            if (isClientFallback) {
+                renderList = paginateList(filteredList, 'orders');
+            } else {
+                renderList = filteredList;
+                const pgInfo = res.paging || { page: page, pageSize: pageSize, pages: 1, records: filteredList.length };
+                const totalPages = pgInfo.pages || Math.max(1, Math.ceil(pgInfo.records / pageSize));
+                pageConf.totalPages = totalPages;
+                
+                if (pageConf.current > totalPages && totalPages > 0) {
+                    pageConf.current = totalPages;
+                    loadCopyTradingOrders();
+                    return;
+                }
+                if (pageConf.current < 1) {
+                    pageConf.current = 1;
+                }
+                
+                const indicator = document.getElementById(`orders-page-indicator`);
+                if (indicator) {
+                    indicator.innerText = `第 ${pageConf.current} / ${totalPages} 页 (共 ${pgInfo.records} 条)`;
+                }
+            }
+            
+            bodyEl.innerHTML = renderList.map(o => {
                 const date = o.createdAt ? new Date(parseInt(o.createdAt)).toLocaleString() : '--';
                 
                 const sideBadge = o.side === 'BUY' 
