@@ -1,4 +1,4 @@
-﻿            <div class="view-tab-content active" id="view-manual-subjects">
+            <div class="view-tab-content active" id="view-manual-subjects">
                 <div class="glass-panel data-panel" style="padding: 18px;">
                     <!-- Unified Filter Panel -->
                     <div style="border-bottom: 1.5px solid var(--border-light); padding-bottom: 15px; margin-bottom: 15px;">
@@ -12,9 +12,10 @@
                             <!-- Pagination Controls Right -->
                             <div style="display: flex; gap: 6px; align-items: center; background: rgba(255, 255, 255, 0.05); padding: 2px 8px; border-radius: 6px; border: 1.5px solid var(--border-light);">
                                 <select class="filter-select" id="manualSubjects-size-select" onchange="changeAdminPageSize('manualSubjects', this.value)" style="height: 24px; font-size: 0.7rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 2px; width: 85px; background: transparent; color: var(--text-primary); font-weight: 600; cursor: pointer; outline: none; margin-right: 5px;">
-                                    <option value="5">5 条/页</option>
                                     <option value="10" selected>10 条/页</option>
-                                    <option value="20">20 条/页</option>
+                                    <option value="30">30 条/页</option>
+                                    <option value="50">50 条/页</option>
+                                    <option value="100">100 条/页</option>
                                 </select>
                                 <button class="action-btn" onclick="changeAdminPage('manualSubjects', -1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">上一页</button>
                                 <span id="manualSubjects-page-indicator" style="font-size: 0.72rem; font-weight: 600; color: var(--text-primary); margin: 0 4px; white-space: nowrap;">第 1 / 1 页 (共 0 条)</span>

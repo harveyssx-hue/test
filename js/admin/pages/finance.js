@@ -6,7 +6,7 @@ async function loadDepositList() {
     const phoneVal = document.getElementById('filter-deposit-phone')?.value.trim().toLowerCase() || '';
     const remittanceVal = document.getElementById('filter-deposit-remittance')?.value.trim().toLowerCase() || '';
     
-    let url = '/finance/deposits?page=1&pageSize=100';
+    let url = '/finance/deposits?page=1&pageSize=1000';
     if (filterStatus !== 'ALL') {
         url += `&status=${filterStatus}`;
     }
@@ -211,7 +211,7 @@ async function loadWithdrawList() {
     const phoneVal = document.getElementById('filter-withdraw-phone')?.value.trim().toLowerCase() || '';
     const idVal = document.getElementById('filter-withdraw-id')?.value.trim().toLowerCase() || '';
     
-    let url = '/finance/withdrawals?page=1&pageSize=100';
+    let url = '/finance/withdrawals?page=1&pageSize=1000';
     if (filterStatus !== 'ALL') {
         url += `&status=${filterStatus}`;
     }
@@ -1063,7 +1063,7 @@ async function loadExchangeRatesList() {
     tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 20px; color: var(--text-secondary);">🔄 正在调取全站结算汇率配置...</td></tr>`;
     
     try {
-        const res = await apiFetch('GET', '/asset-exchange-rates?page=1&pageSize=100', null, true);
+        const res = await apiFetch('GET', '/asset-exchange-rates?page=1&pageSize=1000', null, true);
         if (res && res.code === 200) {
             const rates = res.result || res.data || [];
             exchangeRatesList = rates; // Cache globally
@@ -1250,7 +1250,7 @@ async function submitRateChanges(event) {
     
     try {
         // Stringify Snowflake BigInt properly without precision loss matching REST spec
-        const payloadStr = `{"baseAssetId":${baseAssetId},"quoteAssetId":${quoteAssetId},"rate":${rate},"enabled":${enabled},"remark":"${remark}"}`;
+        const payloadStr = `{"baseAssetId":${baseAssetId},"quoteAssetId":${quoteAssetId},"rate":${rate},"enabled":${enabled},"remark":${JSON.stringify(remark)}}`;
         
         let res;
         if (rateId) {
@@ -1506,7 +1506,8 @@ async function submitManualFundingOrder(event) {
         if (users) {
             const matchedUser = users.find(u => 
                 (u.phone && String(u.phone).trim() === userVal) || 
-                (u.uid && String(u.uid).trim() === userVal)
+                (u.uid && String(u.uid).trim() === userVal) ||
+                (u.id && String(u.id).trim() === userVal)
             );
             if (matchedUser) {
                 userId = matchedUser.id;
@@ -1608,8 +1609,8 @@ async function loadManualSubjectsList() {
                         <td style="font-weight: bold; color: var(--text-primary);">${s.name}</td>
                         <td><code style="background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px;">${s.code}</code></td>
                         <td>${scopeName}</td>
-                        <td><span class="status-badge" style="background: ${statusColor}15; color: ${statusColor}; border: 1px solid ${statusColor}30;">${statusName}</span></td>
                         <td>${s.memo || '-'}</td>
+                        <td><span class="status-badge" style="background: ${statusColor}15; color: ${statusColor}; border: 1px solid ${statusColor}30;">${statusName}</span></td>
                         <td style="text-align: center;">
                             <div style="display: flex; gap: 8px; justify-content: center;">
                                 <button class="action-btn" style="background: rgba(56, 189, 248, 0.1); color: #38BDF8; border: 1px solid rgba(56,189,248,0.2); padding: 2px 6px; font-size: 0.72rem; border-radius: 4px; cursor: pointer;" onclick="openSubjectModal('${s.id}')">\u7f16\u8f91</button>
@@ -1657,6 +1658,7 @@ async function openSubjectModal(id = null) {
                     codeEl.value = matched.code || '';
                     scopeEl.value = matched.scope || 'DEPOSIT';
                     memoEl.value = matched.memo || '';
+                    window.currentEditingSubject = matched;
                 }
             }
         } catch (e) {
@@ -1669,6 +1671,7 @@ async function openSubjectModal(id = null) {
         codeEl.value = '';
         scopeEl.value = 'DEPOSIT';
         memoEl.value = '';
+        window.currentEditingSubject = null;
     }
     
     const modal = document.getElementById('manual-subject-modal');
@@ -1704,13 +1707,16 @@ async function submitSubjectForm(event) {
     
     showToast('\u6b63\u5728\u63d0\u4ea4\u5b58\u63d0\u79d1\u76ee\u914d\u7f6e...', false);
     try {
+        const originalPriority = (window.currentEditingSubject && window.currentEditingSubject.priority) !== undefined ? window.currentEditingSubject.priority : 1;
+        const originalEnabled = (window.currentEditingSubject && window.currentEditingSubject.enabled) !== undefined ? window.currentEditingSubject.enabled : true;
+        
         const bodyObj = {
             name: name,
             code: code,
             scope: scope,
             memo: memo,
-            enabled: true,
-            priority: 1
+            enabled: originalEnabled,
+            priority: originalPriority
         };
         
         let res;
