@@ -3,8 +3,8 @@
 
 const CONFIG = {
     // Production API Base URLs (Dynamic local proxy mapping with protocol fallback)
-    APP_API_BASE: (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? window.location.origin : 'https://matp-app.qchats.org',
-    ADMIN_API_BASE: (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? window.location.origin : 'https://matp-admin.qchats.org',
+    APP_API_BASE: (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? window.location.origin : 'https://aimatp.harveyssx.workers.dev',
+    ADMIN_API_BASE: (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? window.location.origin : 'https://admin-aimatp.harveyssx.workers.dev',
     MARKET_WS_URL: 'wss://matp-wss.qchats.org/ws/v1/market',
     BIZ_WS_URL: 'wss://matp-biz-wss.qchats.org/ws/v1/biz',
     
