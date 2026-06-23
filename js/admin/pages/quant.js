@@ -124,7 +124,8 @@ export async function loadQuantMonitor() {
     const pageSize = pageConf.size;
     
     // Extract filter values
-    const statusVal = document.getElementById('filter-quant-status')?.value || 'PENDING';
+    const statusEl = document.getElementById('filter-quant-status');
+    const statusVal = statusEl ? statusEl.value : 'ALL';
     const uidVal = document.getElementById('filter-quant-uid')?.value.trim() || '';
     const orderNoVal = document.getElementById('filter-quant-orderNo')?.value.trim().toLowerCase() || '';
     
