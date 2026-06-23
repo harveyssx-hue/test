@@ -15,6 +15,14 @@
                                     <input type="text" id="filter-deposit-remittance" placeholder="输入防伪识别码" oninput="window.adminPages.deposit.current=1; loadDepositList()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 6px; width: 130px; background: transparent; color: var(--text-primary);">
                                 </div>
                                 <div style="display: flex; align-items: center; gap: 4px;">
+                                    <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">开始时间</span>
+                                    <input type="date" id="filter-deposit-start-date" onchange="window.adminPages.deposit.current=1; loadDepositList()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 4px; background: transparent; color: var(--text-primary);">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">结束时间</span>
+                                    <input type="date" id="filter-deposit-end-date" onchange="window.adminPages.deposit.current=1; loadDepositList()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 4px; background: transparent; color: var(--text-primary);">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 4px;">
                                     <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">状态</span>
                                     <select class="filter-select" id="deposit-status-filter" onchange="window.adminPages.deposit.current=1; loadDepositList()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 4px; width: 140px;">
                                         <option value="ALL">全部状态</option>

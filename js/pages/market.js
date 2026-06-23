@@ -35,6 +35,12 @@ const getCoinFallbackSvg = (symbol, size = 32) => {
 };
 window.getCoinFallbackSvg = getCoinFallbackSvg;
 
+// Stock rankings cache and state
+let stockGainers = [];
+let stockLosers = [];
+let stockTurnover = [];
+let loadingStockRankings = false;
+
 const domElementCache = {};
 
 function getCachedElement(id) {
@@ -378,6 +384,11 @@ function renderMarketList() {
     const container = document.getElementById('market-list-container');
     if (!container) return;
     
+    if (loadingStockRankings) {
+        container.innerHTML = `<div class="loading-state-mini">${t('loading_market_list')}</div>`;
+        return;
+    }
+    
     if (recommendedInstruments.length === 0) {
         container.innerHTML = `<div class="loading-state-mini">${t('market_no_symbols')}</div>`;
         return;
@@ -403,6 +414,12 @@ function renderMarketList() {
             const bVal = volOrder[b.symbol.toLowerCase()] || 99;
             return aVal - bVal;
         });
+    } else if (currentMarketCategory === 'stock-gainers') {
+        list = [...stockGainers];
+    } else if (currentMarketCategory === 'stock-losers') {
+        list = [...stockLosers];
+    } else if (currentMarketCategory === 'stock-turnover') {
+        list = [...stockTurnover];
     } else {
         // 'sector': default order from API
     }
@@ -484,7 +501,7 @@ function renderMarketList() {
 function switchMarketCategory(cat) {
     currentMarketCategory = cat;
     
-    const categories = ['watchlist', 'sector', 'cap', 'volume'];
+    const categories = ['watchlist', 'sector', 'cap', 'volume', 'stock-gainers', 'stock-losers', 'stock-turnover'];
     categories.forEach(c => {
         const btn = document.getElementById(`m-cat-${c}`);
         if (btn) {
@@ -500,7 +517,68 @@ function switchMarketCategory(cat) {
         }
     });
     
+    if (cat.startsWith('stock-')) {
+        loadStockRankings(cat);
+    } else {
+        loadingStockRankings = false;
+        renderMarketList();
+    }
+}
+
+async function loadStockRankings(type) {
+    loadingStockRankings = true;
     renderMarketList();
+    
+    let path = '';
+    if (type === 'stock-gainers') {
+        path = '/market/stock-rankings/gainers';
+    } else if (type === 'stock-losers') {
+        path = '/market/stock-rankings/losers';
+    } else if (type === 'stock-turnover') {
+        path = '/market/stock-rankings/turnover';
+    }
+    
+    try {
+        const res = await apiFetch('GET', path, null, false);
+        let data = res ? (res.result || res.data || []) : [];
+        if (!Array.isArray(data)) {
+            data = [];
+        }
+        
+        if (type === 'stock-gainers') {
+            stockGainers = data;
+        } else if (type === 'stock-losers') {
+            stockLosers = data;
+        } else if (type === 'stock-turnover') {
+            stockTurnover = data;
+        }
+        
+        // Add loaded instruments to recommendedInstruments if missing
+        data.forEach(inst => {
+            if (inst && inst.id && inst.symbol) {
+                if (!recommendedInstruments.some(r => r.id && r.id.toString() === inst.id.toString())) {
+                    recommendedInstruments.push(inst);
+                }
+                
+                // Initialize dummy sparkline pools for stock symbols
+                const symUpper = inst.symbol.toUpperCase();
+                if (!sparklinePools[symUpper]) {
+                    const base = parseFloat(inst.ticker?.closePrice) || 1.0;
+                    sparklinePools[symUpper] = Array.from({length: 12}, () => base + (Math.random() - 0.5) * base * 0.005);
+                }
+            }
+        });
+        
+        // Dynamic subscription update for new tickers
+        if (window.subscribeNewInstruments) {
+            window.subscribeNewInstruments(data);
+        }
+    } catch (e) {
+        console.error(`Failed to load stock rankings for ${type}:`, e);
+    } finally {
+        loadingStockRankings = false;
+        renderMarketList();
+    }
 }
 
 function renderMarketTickerData(tickerData) {

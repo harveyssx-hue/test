@@ -3,6 +3,7 @@ import { state } from './state.js?v=2.2.0';
 import { showToast } from './ui.js?v=2.2.0';
 
 let subscribedSymbol = null;
+window.subscribedTickers = window.subscribedTickers || new Set();
 
 function connectMarketWS() {
     if (marketWsReconnectTimer) {
@@ -39,6 +40,9 @@ function connectMarketWS() {
                         params: unsubParams,
                         id: Date.now()
                     }));
+                    if (oldSym && oldSym !== 'btcusdt' && oldSym !== 'ethusdt' && oldSym !== 'solusdt') {
+                        window.subscribedTickers.delete(oldSym.toLowerCase());
+                    }
                 } catch(e) {
                     console.error('Error sending UNSUBSCRIBE via WS:', e);
                 }
@@ -50,6 +54,7 @@ function connectMarketWS() {
                     params: subParams,
                     id: Date.now() + 1
                 }));
+                window.subscribedTickers.add(activeSymbol.toLowerCase());
             } catch(e) {
                 console.error('Error sending SUBSCRIBE via WS:', e);
             }
@@ -70,6 +75,7 @@ function connectMarketWS() {
     
     ws.onopen = () => {
         subscribedSymbol = activeSymbol; // Sync subscription record
+        window.subscribedTickers.clear();
         const params = [];
         // Subscribe to active coin detail streams
         params.push(
@@ -80,6 +86,9 @@ function connectMarketWS() {
         
         // Always subscribe to BTC, ETH, and SOL tickers for home index cards
         params.push('btcusdt@ticker', 'ethusdt@ticker', 'solusdt@ticker');
+        window.subscribedTickers.add('btcusdt');
+        window.subscribedTickers.add('ethusdt');
+        window.subscribedTickers.add('solusdt');
         
         // Subscribe to tickers for all recommended coins to keep listing alive
         if (recommendedInstruments.length > 0) {
@@ -87,12 +96,14 @@ function connectMarketWS() {
                 const symLower = inst.symbol.toLowerCase();
                 if (!params.includes(`${symLower}@ticker`)) {
                     params.push(`${symLower}@ticker`);
+                    window.subscribedTickers.add(symLower);
                 }
             });
         } else {
             const activeSymLower = activeSymbol.toLowerCase();
             if (!params.includes(`${activeSymLower}@ticker`)) {
                 params.push(`${activeSymLower}@ticker`);
+                window.subscribedTickers.add(activeSymLower);
             }
         }
         
@@ -510,5 +521,31 @@ window.connectMarketWS = connectMarketWS;
 window.listenToBizEvents = listenToBizEvents;
 window.executeRenderMarketDepth = executeRenderMarketDepth;
 window.renderMarketTradesSnapshot = renderMarketTradesSnapshot;
+
+function subscribeNewInstruments(instruments) {
+    if (!marketWs || marketWs.readyState !== WebSocket.OPEN) return;
+    
+    const newParams = [];
+    instruments.forEach(inst => {
+        const symLower = inst.symbol.toLowerCase();
+        if (!window.subscribedTickers.has(symLower)) {
+            newParams.push(`${symLower}@ticker`);
+            window.subscribedTickers.add(symLower);
+        }
+    });
+    
+    if (newParams.length > 0) {
+        try {
+            marketWs.send(JSON.stringify({
+                method: "SUBSCRIBE",
+                params: newParams,
+                id: Date.now()
+            }));
+        } catch(e) {
+            console.error('Error sending SUBSCRIBE for new tickers via WS:', e);
+        }
+    }
+}
+window.subscribeNewInstruments = subscribeNewInstruments;
 
 export { connectMarketWS, listenToBizEvents };

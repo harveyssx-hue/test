@@ -1,0 +1,87 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Background Gradient -->
+    <radialGradient id="bgGrad" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#1A1558" />
+      <stop offset="60%" stop-color="#090729" />
+      <stop offset="100%" stop-color="#040314" />
+    </radialGradient>
+
+    <!-- Border Glow Gradient -->
+    <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00F2FE" />
+      <stop offset="50%" stop-color="#5B51F9" />
+      <stop offset="100%" stop-color="#FF007A" />
+    </linearGradient>
+
+    <!-- Left Brain Gradient -->
+    <linearGradient id="leftBrainGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#A594FF" />
+      <stop offset="100%" stop-color="#5B51F9" />
+    </linearGradient>
+
+    <!-- Right Brain Gradient -->
+    <linearGradient id="rightBrainGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#00F2FE" />
+      <stop offset="100%" stop-color="#0072FF" />
+    </linearGradient>
+
+    <!-- Trend Arrow Gradient -->
+    <linearGradient id="arrowGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00E676" />
+      <stop offset="100%" stop-color="#1DE9B6" />
+    </linearGradient>
+
+    <!-- Glowing Filters -->
+    <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="15" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+    
+    <filter id="subtleShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="#000000" flood-opacity="0.6" />
+    </filter>
+  </defs>
+
+  <!-- App Icon Squircle Background (Standard iOS style rounded icon) -->
+  <rect x="80" y="80" width="864" height="864" rx="210" fill="url(#bgGrad)" stroke="url(#borderGrad)" stroke-width="6" stroke-opacity="0.6" filter="url(#subtleShadow)" />
+
+  <!-- Center Emblem Group -->
+  <g transform="translate(0, 0)">
+    
+    <!-- LEFT BRAIN HEMISPHERE (AI) -->
+    <!-- Outer Arc -->
+    <path d="M 440 320 A 180 180 0 0 0 440 704" fill="none" stroke="url(#leftBrainGrad)" stroke-width="42" stroke-linecap="round" />
+    <!-- Middle Arc -->
+    <path d="M 440 400 A 100 100 0 0 0 440 624" fill="none" stroke="url(#leftBrainGrad)" stroke-width="42" stroke-linecap="round" />
+    <!-- Inner Arc -->
+    <path d="M 440 480 A 25 25 0 0 0 440 544" fill="none" stroke="url(#leftBrainGrad)" stroke-width="42" stroke-linecap="round" />
+
+    <!-- RIGHT BRAIN HEMISPHERE (AI) -->
+    <!-- Outer Arc -->
+    <path d="M 584 320 A 180 180 0 0 1 584 704" fill="none" stroke="url(#rightBrainGrad)" stroke-width="42" stroke-linecap="round" />
+    <!-- Middle Arc -->
+    <path d="M 584 400 A 100 100 0 0 1 584 624" fill="none" stroke="url(#rightBrainGrad)" stroke-width="42" stroke-linecap="round" />
+    <!-- Inner Arc -->
+    <path d="M 584 480 A 25 25 0 0 1 584 544" fill="none" stroke="url(#rightBrainGrad)" stroke-width="42" stroke-linecap="round" />
+
+    <!-- Neural Nodes (Circles at key positions to enhance tech feel) -->
+    <circle cx="440" cy="320" r="16" fill="#A594FF" />
+    <circle cx="440" cy="704" r="16" fill="#5B51F9" />
+    <circle cx="584" cy="320" r="16" fill="#00F2FE" />
+    <circle cx="584" cy="704" r="16" fill="#0072FF" />
+
+    <!-- VISUAL CUTOUT FOR ARROW (Dark mask path to create floating overlap effect) -->
+    <path d="M 320 700 Q 480 620 680 340" fill="none" stroke="#090729" stroke-width="84" stroke-linecap="round" />
+    <path d="M 580 340 L 680 340 L 680 440" fill="none" stroke="#090729" stroke-width="84" stroke-linecap="round" stroke-linejoin="round" />
+
+    <!-- RISING TREND ARROW (Trading/Exchange) -->
+    <path d="M 320 700 Q 480 620 680 340" fill="none" stroke="url(#arrowGrad)" stroke-width="48" stroke-linecap="round" filter="url(#neonGlow)" />
+    <path d="M 580 340 L 680 340 L 680 440" fill="none" stroke="url(#arrowGrad)" stroke-width="48" stroke-linejoin="round" stroke-linecap="round" filter="url(#neonGlow)" />
+    
+    <!-- White inner core on the arrow to make it look hyper-neon and shiny -->
+    <path d="M 320 700 Q 480 620 680 340" fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" opacity="0.9" />
+    <path d="M 580 340 L 680 340 L 680 440" fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linejoin="round" stroke-linecap="round" opacity="0.9" />
+
+  </g>
+</svg>

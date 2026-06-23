@@ -65,6 +65,7 @@ window.toggleSelectAllPendingOrders = toggleSelectAllPendingOrders;
 
 export async function loadQuantMonitor() {
     if (!currentAdmin) return;
+    await ensureInstrumentsLoaded();
     
     const pageConf = window.adminPages.quant;
     const page = pageConf.current;
@@ -1020,8 +1021,7 @@ function recalculateQctrlQuantity() {
             qtyInput.value = '';
         }
     } else {
-        // 卖出数量直接固定为持仓数量
-        qtyInput.value = parseFloat(order.tradeQuantity || 0).toFixed(4);
+        // 卖出时，修改价格不重新计算或覆盖数量，保留用户输入的数量或默认数量
     }
 }
 window.recalculateQctrlQuantity = recalculateQctrlQuantity;
@@ -1031,6 +1031,7 @@ function toggleQctrlActionFields() {
     const priceLabel = document.getElementById('qctrl-price-label');
     const qtyLabel = document.getElementById('qctrl-qty-label');
     const submitBtn = document.getElementById('qctrl-submit-btn');
+    const qtyInput = document.getElementById('qctrl-qty');
     
     if (action === 'buy') {
         priceLabel.innerText = '买入价格 (Buy Price)';
@@ -1038,8 +1039,15 @@ function toggleQctrlActionFields() {
         submitBtn.innerText = '发送物理【买入】撮合指令';
     } else {
         priceLabel.innerText = '卖出价格 (Sell Price)';
-        qtyLabel.innerText = '卖出数量 (Sell Quantity) [持仓全部卖出]';
+        qtyLabel.innerText = '卖出数量 (Sell Quantity)';
         submitBtn.innerText = '发送物理【卖出】撮合指令';
+        
+        const orderId = document.getElementById('qctrl-order-id').value;
+        const order = (window.cachedQuantOrders || []).find(o => String(o.id) === String(orderId)) 
+                     || (activeSettleOrders || []).find(o => String(o.id) === String(orderId));
+        if (order) {
+            qtyInput.value = parseFloat(order.tradeQuantity || order.quantity || 0).toFixed(4);
+        }
     }
     
     // 动态重算数量
@@ -1120,6 +1128,7 @@ let activeSettleOrders = []; // store in-memory for checkbox and selection opera
 
 async function loadQuantSettleList() {
     if (!currentAdmin) return;
+    await ensureInstrumentsLoaded();
     
     const pageConf = window.adminPages.quantSettle;
     const page = pageConf.current;
@@ -1138,47 +1147,6 @@ async function loadQuantSettleList() {
             
             // Backend already filters by ACTIVE when queried with status=ACTIVE, but let's filter just in case
             const activeOrders = orders.filter(o => o.status === 'ACTIVE');
-            
-            showToast('正在实时同步跟单交易明细...', false);
-            await Promise.all(activeOrders.map(async (order) => {
-                const tradesRes = await apiFetch('GET', `/trading/quant/orders/${order.id}/trades`, null, true);
-                if (tradesRes.code === 200) {
-                    const trades = tradesRes.result || tradesRes.data || [];
-                    // Sort trades chronologically (oldest to newest)
-                    trades.sort((a, b) => a.createdAt - b.createdAt);
-                    order.trades = trades;
-                    
-                    if (trades.length === 0) {
-                        order.price = null;
-                        order.tradeQuantity = 0;
-                        order.sellPrice = null;
-                        order.actualProfit = 0;
-                    } else {
-                        const lastTrade = trades[trades.length - 1];
-                        if (lastTrade.tradeType === 'BUY') {
-                            order.price = parseFloat(lastTrade.price);
-                            order.tradeQuantity = parseFloat(lastTrade.quantity);
-                            order.sellPrice = null;
-                            order.actualProfit = 0;
-                        } else {
-                            // Find the last BUY price before this SELL trade
-                            let lastBuyPrice = null;
-                            for (let i = trades.length - 1; i >= 0; i--) {
-                                if (trades[i].tradeType === 'BUY') {
-                                    lastBuyPrice = parseFloat(trades[i].price);
-                                    break;
-                                }
-                            }
-                            order.price = lastBuyPrice;
-                            order.tradeQuantity = parseFloat(lastTrade.quantity);
-                            order.sellPrice = parseFloat(lastTrade.price);
-                            order.actualProfit = parseFloat(lastTrade.profit || 0);
-                        }
-                    }
-                } else {
-                    order.trades = [];
-                }
-            }));
             
             activeSettleOrders = activeOrders;
             const pgInfo = res.paging || { page: page, pageSize: pageSize, pages: 1, records: activeOrders.length };
@@ -1220,21 +1188,15 @@ function renderActiveSettleListHtml(paging = null) {
     
     // Server-side paginated list: render activeSettleOrders directly
     tbody.innerHTML = activeSettleOrders.map(o => {
-        const profit = parseFloat(o.actualProfit || '0');
         const algoName = o.algorithmModel ? (o.algorithmModel.displayName || o.algorithmModel.name) : '神经网络高频量化';
         const date = o.createdAt ? new Date(parseInt(o.createdAt)).toLocaleString() : '--';
-        
-        let instrumentName = 'BTC/USDT';
-        if (o.instrumentId) {
-            if (String(o.instrumentId) === '1126151490264633457') instrumentName = 'ETH/USDT';
-            else if (String(o.instrumentId) === '1126151490264633458') instrumentName = 'SOL/USDT';
-        }
+        const instrumentName = o.instrumentId ? translateInstrument(o.instrumentId) : '--';
         
         const checkboxHtml = `<input type="checkbox" class="order-settle-checkbox" value="${o.id}">`;
         const statusBadge = `<span style="background: rgba(59, 130, 246, 0.12); color: #3b82f6; border: 1.5px solid rgba(59, 130, 246, 0.25); padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: 700; margin-left: 6px; white-space: nowrap;">进行中</span>`;
         const actionBtnHtml = `
             <div style="display: flex; gap: 6px; justify-content: center; align-items: center;">
-                <button class="action-btn" style="background: rgba(91, 81, 249, 0.08); border: 1.5px solid var(--primary); color: var(--primary); padding: 4px 8px; font-size: 0.7rem; font-weight: 600; border-radius: 4px; cursor: pointer; height: 26px; line-height: 1;" onclick="openQuantControlModal('${o.id}')">⚙️ 操盘设置</button>
+                <button class="action-btn" style="background: rgba(91, 81, 249, 0.08); border: 1.5px solid var(--primary); color: var(--primary); padding: 4px 8px; font-size: 0.7rem; font-weight: 600; border-radius: 4px; cursor: pointer; height: 26px; line-height: 1;" onclick="openQuantOrderDetailModal('${o.id}')">📋 订单详情</button>
                 <button class="action-btn btn-reject" style="padding: 4px 8px; font-size: 0.7rem; font-weight: 600; border-radius: 4px; cursor: pointer; height: 26px; line-height: 1;" onclick="handleSingleQuantSettle('${o.id}')">⚡ 强制结算</button>
             </div>
         `;
@@ -1253,13 +1215,9 @@ function renderActiveSettleListHtml(paging = null) {
                 <td style="font-weight: 600;">${parseFloat(o.investAmount).toFixed(2)} USDT</td>
                 <td>
                     <div>${instrumentName}</div>
-                    ${o.price ? `<div style="color: var(--text-muted); font-size: 0.68rem; margin-top: 3px; font-weight: 500; white-space: nowrap;">开仓价: <b style="color: var(--primary);">${parseFloat(o.price).toFixed(2)}</b></div>` : ''}
-                    ${o.sellPrice ? `<div style="color: var(--text-muted); font-size: 0.68rem; margin-top: 3px; font-weight: 500; white-space: nowrap;">平仓价: <b style="color: #ef4444;">${parseFloat(o.sellPrice).toFixed(2)}</b></div>` : ''}
                 </td>
-                <td style="font-weight: 500;">${parseFloat(o.tradeQuantity || '0').toFixed(4)}</td>
-                <td class="${profit >= 0 ? 'profit-positive' : 'profit-negative'}" style="font-weight: 600;">
-                    ${profit >= 0 ? '+' : ''}${profit.toFixed(2)} USDT
-                </td>
+                <td style="font-weight: 500; color: var(--text-muted);">--</td>
+                <td style="font-weight: 600; color: var(--text-muted);">--</td>
                 <td style="color: var(--text-muted); font-size: 0.75rem;">${date}</td>
                 <td style="text-align: center;">${actionBtnHtml}</td>
             </tr>
@@ -1275,6 +1233,12 @@ function renderActiveSettleListHtml(paging = null) {
     if (indicator) {
         indicator.innerText = `第 ${pg.page} / ${pg.pages} 页 (共 ${pg.records} 条)`;
     }
+    
+    // Ensure the batch UI fields are initialized in sync with the selected mode dropdown
+    const batchModeSelect = document.getElementById('selected-batch-mode');
+    if (batchModeSelect) {
+        toggleBatchModeFields();
+    }
 }
 
 window.renderActiveSettleListHtml = renderActiveSettleListHtml;
@@ -1288,59 +1252,143 @@ function toggleSelectAllSettleOrders(master) {
     });
 }
 
-async function submitSelectedBatchSettle(action) {
+function toggleBatchModeFields() {
+    const mode = document.getElementById('selected-batch-mode').value;
+    const instSelect = document.getElementById('selected-batch-instrument');
+    const qtyInput = document.getElementById('selected-batch-qty');
+    const qtyHint = document.getElementById('selected-batch-qty-hint');
+    const submitBtn = document.getElementById('selected-batch-submit-btn');
+    
+    if (mode === 'buy') {
+        instSelect.style.display = '';
+        qtyInput.style.display = '';
+        qtyHint.style.display = 'none';
+        submitBtn.innerText = '⚡ 执行批量买入';
+        submitBtn.style.background = 'var(--primary)';
+    } else {
+        instSelect.style.display = 'none';
+        qtyInput.style.display = 'none';
+        qtyHint.style.display = '';
+        submitBtn.innerText = '⚡ 执行批量卖出';
+        submitBtn.style.background = '#EF4444';
+    }
+}
+
+async function executeSelectedBatchSettle() {
     const checkboxes = document.querySelectorAll('.order-settle-checkbox:checked');
     if (checkboxes.length === 0) {
         showToast('❌ 请先勾选需要批量操作的跟单订单！', true);
         return;
     }
     
-    const priceInput = document.getElementById('selected-settle-price').value;
-    const qtyInput = document.getElementById('selected-settle-qty').value;
+    const mode = document.getElementById('selected-batch-mode').value;
+    const priceStr = document.getElementById('selected-batch-price').value;
     
-    if (!priceInput || !qtyInput) {
-        showToast('❌ 请输入批量操作均价与成交数量！', true);
+    if (!priceStr) {
+        showToast('❌ 请输入批量均价！', true);
+        return;
+    }
+    const price = parseFloat(priceStr);
+    if (isNaN(price) || price <= 0) {
+        showToast('❌ 价格必须大于 0！', true);
         return;
     }
     
-    const price = parseFloat(priceInput);
-    const qty = parseFloat(qtyInput);
-    
-    if (isNaN(price) || price <= 0 || isNaN(qty) || qty <= 0) {
-        showToast('❌ 价格与数量必须大于 0！', true);
-        return;
-    }
-    
-    const isSell = action === 'sell';
+    const isSell = mode === 'sell';
     const actionStr = isSell ? '批量卖出' : '批量买入';
+    
+    // Early validation for BUY mode instrument select
+    let buyInstrumentId = '';
+    if (!isSell) {
+        buyInstrumentId = document.getElementById('selected-batch-instrument').value;
+        if (!buyInstrumentId) {
+            showToast('❌ 请选择批量买入的交易品种！', true);
+            return;
+        }
+    }
     
     if (!confirm(`⚠️ 您确定要对已勾选的 ${checkboxes.length} 笔跟单订单执行 [${actionStr}] 操作吗？`)) {
         return;
     }
     
-    // Construct the payload array with robust active orders filtering
     const requests = [];
-    checkboxes.forEach(cb => {
+    const errors = [];
+    
+    showToast(`⏳ 正在同步计算各订单仓位数据...`, false);
+    
+    // Process selected orders in parallel
+    await Promise.all(Array.from(checkboxes).map(async (cb) => {
         const orderIdStr = cb.value;
         const orderObj = activeSettleOrders.find(o => String(o.id) === String(orderIdStr));
+        if (!orderObj || orderObj.status !== 'ACTIVE') return;
         
-        if (orderObj && orderObj.status === 'ACTIVE') {
-            const instrumentId = orderObj.instrumentId ? orderObj.instrumentId : "1126151490264633456";
+        if (isSell) {
+            // Query trades of each order to get exact remaining quantity and instrument ID (Point 8 & 10)
+            try {
+                const tradesRes = await apiFetch('GET', `/trading/quant/orders/${orderIdStr}/trades`, null, true);
+                if (tradesRes.code === 200) {
+                    const trades = tradesRes.result || tradesRes.data || [];
+                    let bought = 0;
+                    let sold = 0;
+                    let instId = orderObj.instrumentId || '1126151490264633456';
+                    trades.forEach(t => {
+                        const qty = parseFloat(t.quantity || 0);
+                        if (t.tradeType === 'BUY') {
+                            bought += qty;
+                            instId = t.instrumentId;
+                        } else {
+                            sold += qty;
+                        }
+                    });
+                    const remainingQty = bought - sold;
+                    const finalQty = parseFloat(remainingQty.toFixed(4));
+                    if (finalQty > 0) {
+                        requests.push({
+                            orderId: orderIdStr,
+                            instrumentId: instId,
+                            price: price,
+                            quantity: finalQty
+                        });
+                    } else {
+                        errors.push(`订单 #${orderObj.orderNo} 暂无持仓或持仓量过低 (<0.0001)`);
+                    }
+                } else {
+                    errors.push(`订单 #${orderObj.orderNo} 同步失败`);
+                }
+            } catch (err) {
+                console.error(err);
+                errors.push(`订单 #${orderObj.orderNo} 通信异常`);
+            }
+        } else {
+            // For BUY, we use the selected instrument, and either the input quantity or (investAmount / price)
+            const qtyStr = document.getElementById('selected-batch-qty').value;
+            let qty = parseFloat(qtyStr);
+            
+            if (isNaN(qty) || qty <= 0) {
+                // Autocalculate based on individual investAmount
+                const investAmount = parseFloat(orderObj.investAmount || 0);
+                qty = investAmount / price;
+            }
+            
             requests.push({
                 orderId: orderIdStr,
-                instrumentId: instrumentId,
+                instrumentId: buyInstrumentId,
                 price: price,
-                quantity: qty
+                quantity: parseFloat(qty.toFixed(4))
             });
         }
-    });
+    }));
+    
+    if (errors.length > 0) {
+        console.warn('Batch processing partial errors:', errors);
+    }
     
     if (requests.length === 0) {
-        showToast('❌ 所勾选的订单无有效活动仓位可操作！', true);
+        showToast('❌ 所勾选的订单无有效可操作持仓或品种匹配失败！', true);
         return;
     }
     
-    showToast(`正在提交 ${requests.length} 笔订单的批量操盘指令...`, false);
+    showToast(`正在提交 ${requests.length} 笔订单的 [${actionStr}] 批量指令...`, false);
     
     try {
         const endpoint = isSell ? '/trading/quant/trades/batch-sell' : '/trading/quant/trades/batch-buy';
@@ -1348,8 +1396,8 @@ async function submitSelectedBatchSettle(action) {
         
         if (res.code === 200) {
             showToast(`✓ 已成功执行 ${requests.length} 笔跟单的 [${actionStr}] 批量操盘！`, false);
-            document.getElementById('selected-settle-price').value = '';
-            document.getElementById('selected-settle-qty').value = '';
+            document.getElementById('selected-batch-price').value = '';
+            document.getElementById('selected-batch-qty').value = '';
             loadQuantSettleList();
             loadDashboardStats();
         } else {
@@ -1435,7 +1483,9 @@ async function submitStrategyBatchSettle() {
 // Bind to window to allow calling from HTML
 window.loadQuantSettleList = loadQuantSettleList;
 window.toggleSelectAllSettleOrders = toggleSelectAllSettleOrders;
-window.submitSelectedBatchSettle = submitSelectedBatchSettle;
+window.executeSelectedBatchSettle = executeSelectedBatchSettle;
+window.toggleBatchModeFields = toggleBatchModeFields;
+window.submitSelectedBatchSettle = executeSelectedBatchSettle; // Compatibility fallback
 window.submitStrategyBatchSettle = submitStrategyBatchSettle;
 window.loadQuantMonitor = loadQuantMonitor;
 window.resetQuantFilters = resetQuantFilters;
@@ -1931,14 +1981,48 @@ async function handleFollowRelation(relationId, action) {
 }
 window.handleFollowRelation = handleFollowRelation;
 
-function translateInstrument(id) {
-    const dict = {
-        '1126151490264633456': 'BTC/USDT',
-        '1126151490264633457': 'ETH/USDT',
-        '1126151490264633458': 'SOL/USDT'
-    };
-    return dict[String(id || '')] || id;
+let cachedInstruments = [];
+let instrumentsLoaded = false;
+
+async function loadInstruments() {
+    try {
+        const res = await apiFetch('GET', '/instruments?enabled=true&pageSize=100', null, true);
+        if (res.code === 200) {
+            cachedInstruments = res.result || res.data || [];
+            populateInstrumentSelects();
+        }
+    } catch (e) {
+        console.error('Failed to load instruments:', e);
+    }
 }
+
+async function ensureInstrumentsLoaded() {
+    if (instrumentsLoaded) return;
+    await loadInstruments();
+    instrumentsLoaded = true;
+}
+
+function populateInstrumentSelects() {
+    const options = cachedInstruments.map(i => `<option value="${i.id}">${i.symbol}</option>`).join('');
+    const qctrl = document.getElementById('qctrl-instrument');
+    if (qctrl) qctrl.innerHTML = options;
+    const batch = document.getElementById('selected-batch-instrument');
+    if (batch) batch.innerHTML = options;
+    const qdetail = document.getElementById('qdetail-instrument');
+    if (qdetail) qdetail.innerHTML = options;
+}
+
+function translateInstrument(id) {
+    if (!id) return '';
+    const inst = cachedInstruments.find(i => String(i.id) === String(id));
+    return inst ? inst.symbol : id;
+}
+
+window.translateInstrument = translateInstrument;
+window.loadInstruments = loadInstruments;
+window.ensureInstrumentsLoaded = ensureInstrumentsLoaded;
+window.populateInstrumentSelects = populateInstrumentSelects;
+
 
 async function viewLeaderPositions(userId) {
     const modal = document.getElementById('leader-positions-modal');
@@ -2380,3 +2464,278 @@ async function handleSingleQuantSettle(orderId) {
     }
 }
 window.handleSingleQuantSettle = handleSingleQuantSettle;
+
+// --- LEVEL 2 ORDER DETAIL & MULTI-TRADE OPERATIONAL CONTROL PANEL ---
+let currentDetailOrderId = null;
+let currentDetailOrder = null;
+let currentDetailHoldingQty = 0;
+let currentDetailHoldingInstrumentId = null;
+
+let tenantSettingsCache = {};
+async function getTenantSettings() {
+    if (Object.keys(tenantSettingsCache).length > 0) return tenantSettingsCache;
+    try {
+        const tenantsRes = await apiFetch('GET', '/tenants', null, true);
+        if (tenantsRes && tenantsRes.code === 200 && tenantsRes.data && tenantsRes.data.length > 0) {
+            const activeTenantId = tenantsRes.data[0].id;
+            const settingsRes = await apiFetch('GET', `/tenants/${activeTenantId}/settings`, null, true);
+            if (settingsRes && settingsRes.code === 200 && settingsRes.data) {
+                settingsRes.data.forEach(s => {
+                    tenantSettingsCache[s.key] = s.value;
+                });
+            }
+        }
+    } catch (e) {
+        console.error('Error loading tenant settings for fee rates:', e);
+    }
+    return tenantSettingsCache;
+}
+
+export async function openQuantOrderDetailModal(orderId) {
+    currentDetailOrderId = orderId;
+    const modal = document.getElementById('quant-order-detail-modal');
+    if (!modal) return;
+    
+    const order = (window.cachedQuantOrders || []).find(o => String(o.id) === String(orderId)) 
+                 || (activeSettleOrders || []).find(o => String(o.id) === String(orderId));
+    
+    if (!order) {
+        showToast('❌ 未找到该笔跟单订单数据！', true);
+        return;
+    }
+    currentDetailOrder = order;
+    
+    document.getElementById('qdet-order-id').innerText = order.id;
+    document.getElementById('qdet-order-no').innerText = order.orderNo;
+    document.getElementById('qdet-user-uid').innerText = String(order.userId || '').substring(0, 12) + '...';
+    document.getElementById('qdet-invest-amount').innerText = parseFloat(order.investAmount).toFixed(2);
+    document.getElementById('qdet-algo-model').innerText = order.algorithmModel ? (order.algorithmModel.displayName || order.algorithmModel.name) : '神经网络高频量化';
+    
+    const settings = await getTenantSettings();
+    const brokerageRate = order.brokerageRate || settings['quant.brokerage.rate'] || '0.05';
+    const computingRate = order.aiComputingCostRate || settings['quant.ai_computing_cost.rate'] || '0.03';
+    
+    document.getElementById('qdetail-rate-brokerage').placeholder = `配置值: ${brokerageRate}`;
+    document.getElementById('qdetail-rate-computing').placeholder = `配置值: ${computingRate}`;
+    
+    document.getElementById('qdetail-price').value = '';
+    document.getElementById('qdetail-qty').value = '';
+    document.getElementById('qdetail-rate-brokerage').value = '';
+    document.getElementById('qdetail-rate-computing').value = '';
+    
+    populateInstrumentSelects();
+    
+    await refreshOrderDetailTrades();
+    
+    modal.style.display = 'flex';
+    modal.classList.add('active');
+}
+
+export function closeQuantOrderDetailModal() {
+    const modal = document.getElementById('quant-order-detail-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('active');
+    }
+    if (activeTab === 'quant-settle') {
+        loadQuantSettleList();
+    }
+}
+
+export async function refreshOrderDetailTrades() {
+    if (!currentDetailOrderId) return;
+    
+    const tbody = document.getElementById('qdetail-trades-table-body');
+    if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px 0;">🔄 正在读取交易记录...</td></tr>';
+    }
+    
+    try {
+        const res = await apiFetch('GET', `/trading/quant/orders/${currentDetailOrderId}/trades`, null, true);
+        if (res.code === 200) {
+            const trades = res.result || res.data || [];
+            trades.sort((a, b) => a.createdAt - b.createdAt);
+            
+            let boughtQty = 0;
+            let soldQty = 0;
+            let currentInstId = null;
+            
+            const rowsHtml = trades.map(t => {
+                const isBuy = t.tradeType === 'BUY';
+                const qty = parseFloat(t.quantity || 0);
+                if (isBuy) {
+                    boughtQty += qty;
+                    currentInstId = t.instrumentId;
+                } else {
+                    soldQty += qty;
+                }
+                
+                const typeBadge = isBuy 
+                    ? `<span style="color: #10B981; font-weight: bold;">买入 (BUY)</span>`
+                    : `<span style="color: #EF4444; font-weight: bold;">卖出 (SELL)</span>`;
+                
+                const price = parseFloat(t.price || 0).toFixed(2);
+                const quantity = qty.toFixed(4);
+                const amount = parseFloat(t.amount || (qty * t.price) || 0).toFixed(2);
+                const profit = t.profit ? parseFloat(t.profit).toFixed(2) + ' USDT' : '--';
+                const timeStr = new Date(parseInt(t.createdAt)).toLocaleString();
+                
+                return `
+                    <tr style="border-bottom: 1px solid var(--border-light);">
+                        <td style="padding: 6px;">${timeStr}</td>
+                        <td style="padding: 6px; text-align: center;">${typeBadge}</td>
+                        <td style="padding: 6px; text-align: right;">${price}</td>
+                        <td style="padding: 6px; text-align: right;">${quantity}</td>
+                        <td style="padding: 6px; text-align: right; font-weight: 600;" class="${t.profit >= 0 ? 'profit-positive' : 'profit-negative'}">${profit}</td>
+                    </tr>
+                `;
+            }).join('');
+            
+            currentDetailHoldingQty = Math.max(0, boughtQty - soldQty);
+            currentDetailHoldingInstrumentId = currentInstId || currentDetailOrder.instrumentId;
+            
+            document.getElementById('qdet-holding-qty').innerText = currentDetailHoldingQty.toFixed(4);
+            
+            if (tbody) {
+                if (trades.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px 0;">暂无交易成交明细记录</td></tr>';
+                } else {
+                    tbody.innerHTML = rowsHtml;
+                }
+            }
+            
+            const actionSelect = document.getElementById('qdetail-action');
+            if (actionSelect) {
+                actionSelect.value = currentDetailHoldingQty > 0 ? 'sell' : 'buy';
+            }
+            toggleQdetailActionFields();
+            
+        } else {
+            showToast(res.errorMessage || '获取交易历史失败！', true);
+        }
+    } catch (e) {
+        console.error(e);
+        showToast('读取交易历史网络异常！', true);
+    }
+}
+
+export function toggleQdetailActionFields() {
+    const action = document.getElementById('qdetail-action').value;
+    const priceLabel = document.getElementById('qdetail-price-label');
+    const qtyLabel = document.getElementById('qdetail-qty-label');
+    const submitBtn = document.getElementById('qdetail-submit-btn');
+    const instSelect = document.getElementById('qdetail-instrument');
+    
+    if (action === 'buy') {
+        if (priceLabel) priceLabel.innerText = '买入价格 (Buy Price)';
+        if (qtyLabel) qtyLabel.innerText = '买入数量 (Buy Qty) [自动计算]';
+        submitBtn.innerText = '发送物理【买入】操盘指令';
+        submitBtn.style.background = 'var(--primary)';
+        
+        if (currentDetailHoldingQty > 0 && currentDetailHoldingInstrumentId) {
+            instSelect.value = currentDetailHoldingInstrumentId;
+            instSelect.disabled = true;
+        } else {
+            instSelect.disabled = false;
+        }
+    } else {
+        if (priceLabel) priceLabel.innerText = '卖出价格 (Sell Price)';
+        if (qtyLabel) qtyLabel.innerText = '卖出数量 (Sell Qty)';
+        submitBtn.innerText = '发送物理【卖出】操盘指令';
+        submitBtn.style.background = '#EF4444';
+        
+        if (currentDetailHoldingInstrumentId) {
+            instSelect.value = currentDetailHoldingInstrumentId;
+        }
+        instSelect.disabled = true;
+        
+        const qtyInput = document.getElementById('qdetail-qty');
+        qtyInput.value = currentDetailHoldingQty.toFixed(4);
+    }
+}
+
+export function recalculateQdetailQuantity() {
+    const action = document.getElementById('qdetail-action').value;
+    const priceInput = document.getElementById('qdetail-price');
+    const qtyInput = document.getElementById('qdetail-qty');
+    
+    if (action === 'buy' && currentDetailOrder) {
+        const price = parseFloat(priceInput.value);
+        const investAmount = parseFloat(currentDetailOrder.investAmount || 0);
+        if (!isNaN(price) && price > 0 && investAmount > 0) {
+            const calculatedQty = investAmount / price;
+            qtyInput.value = calculatedQty.toFixed(4);
+        } else {
+            qtyInput.value = '';
+        }
+    }
+}
+
+export async function submitDetailTradeControl(event) {
+    event.preventDefault();
+    if (!currentDetailOrderId || !currentDetailOrder) return;
+    
+    const action = document.getElementById('qdetail-action').value;
+    const instrumentId = document.getElementById('qdetail-instrument').value;
+    const price = parseFloat(document.getElementById('qdetail-price').value);
+    const quantity = parseFloat(document.getElementById('qdetail-qty').value);
+    
+    const rateComputingStr = document.getElementById('qdetail-rate-computing').value;
+    const rateBrokerageStr = document.getElementById('qdetail-rate-brokerage').value;
+    
+    if (isNaN(price) || price <= 0 || isNaN(quantity) || quantity <= 0) {
+        showToast('⚠️ 请输入有效的价格与数量！', true);
+        return;
+    }
+    
+    const finalQty = parseFloat(quantity.toFixed(4));
+    
+    if (action === 'sell' && finalQty > parseFloat(currentDetailHoldingQty.toFixed(4))) {
+        showToast(`⚠️ 卖出数量不能大于当前持仓数量 ${currentDetailHoldingQty.toFixed(4)}！`, true);
+        return;
+    }
+    
+    const submitBtn = document.getElementById('qdetail-submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.innerText = '正在发送操盘指令...';
+    
+    const payload = {
+        orderId: currentDetailOrderId,
+        instrumentId: instrumentId,
+        price: price,
+        quantity: finalQty
+    };
+    
+    if (rateComputingStr.trim() !== '') {
+        payload.aiComputingCostRate = parseFloat(rateComputingStr);
+    }
+    if (rateBrokerageStr.trim() !== '') {
+        payload.brokerageRate = parseFloat(rateBrokerageStr);
+    }
+    
+    try {
+        const url = action === 'buy' ? '/trading/quant/trades/buy' : '/trading/quant/trades/sell';
+        const res = await apiFetch('POST', url, payload, true);
+        if (res.code === 200) {
+            showToast(`✓ AI量化物理【${action === 'buy' ? '买入' : '卖出'}】撮合操盘成功！已实时结算盈亏。`, false);
+            await refreshOrderDetailTrades();
+            document.getElementById('qdetail-price').value = '';
+            document.getElementById('qdetail-qty').value = '';
+        } else {
+            showToast(res.errorMessage || '操盘指令被后端拒绝', true);
+        }
+    } catch (e) {
+        console.error(e);
+        showToast('发送操盘指令网络异常！', true);
+    } finally {
+        submitBtn.disabled = false;
+        toggleQdetailActionFields();
+    }
+}
+
+window.openQuantOrderDetailModal = openQuantOrderDetailModal;
+window.closeQuantOrderDetailModal = closeQuantOrderDetailModal;
+window.refreshOrderDetailTrades = refreshOrderDetailTrades;
+window.toggleQdetailActionFields = toggleQdetailActionFields;
+window.recalculateQdetailQuantity = recalculateQdetailQuantity;
+window.submitDetailTradeControl = submitDetailTradeControl;

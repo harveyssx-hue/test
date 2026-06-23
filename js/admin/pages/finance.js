@@ -5,6 +5,8 @@ async function loadDepositList() {
     const filterStatus = document.getElementById('deposit-status-filter').value;
     const phoneVal = document.getElementById('filter-deposit-phone')?.value.trim().toLowerCase() || '';
     const remittanceVal = document.getElementById('filter-deposit-remittance')?.value.trim().toLowerCase() || '';
+    const startDateVal = document.getElementById('filter-deposit-start-date')?.value || '';
+    const endDateVal = document.getElementById('filter-deposit-end-date')?.value || '';
     
     let url = '/finance/deposits?page=1&pageSize=1000';
     if (filterStatus !== 'ALL') {
@@ -23,6 +25,22 @@ async function loadDepositList() {
         const res = await apiFetch('GET', url, null, true);
         if (res.code === 200) {
             const list = res.result || res.data || [];
+            
+            // Sort: PENDING (2) > CONFIRMED (1) > Others (0), then by createdAt descending
+            list.sort((a, b) => {
+                const getPriority = (status) => {
+                    if (status === 'PENDING') return 2;
+                    if (status === 'CONFIRMED') return 1;
+                    return 0;
+                };
+                const pA = getPriority(a.status);
+                const pB = getPriority(b.status);
+                if (pA !== pB) return pB - pA;
+                const timeA = parseInt(a.createdAt || 0);
+                const timeB = parseInt(b.createdAt || 0);
+                return timeB - timeA;
+            });
+
             window.cachedDeposits = list;
             const bodyEl = document.getElementById('deposit-table-body');
             if (!bodyEl) return;
@@ -40,6 +58,14 @@ async function loadDepositList() {
                     const remittance = d.remittanceCode || '';
                     return remittance.toLowerCase().includes(remittanceVal);
                 });
+            }
+            if (startDateVal !== '') {
+                const startMs = new Date(startDateVal + 'T00:00:00').getTime();
+                filteredList = filteredList.filter(d => parseInt(d.createdAt || 0) >= startMs);
+            }
+            if (endDateVal !== '') {
+                const endMs = new Date(endDateVal + 'T23:59:59').getTime();
+                filteredList = filteredList.filter(d => parseInt(d.createdAt || 0) <= endMs);
             }
             
             if (filteredList.length === 0) {
@@ -210,6 +236,8 @@ async function loadWithdrawList() {
     const filterStatus = document.getElementById('withdraw-status-filter').value;
     const phoneVal = document.getElementById('filter-withdraw-phone')?.value.trim().toLowerCase() || '';
     const idVal = document.getElementById('filter-withdraw-id')?.value.trim().toLowerCase() || '';
+    const startDateVal = document.getElementById('filter-withdraw-start-date')?.value || '';
+    const endDateVal = document.getElementById('filter-withdraw-end-date')?.value || '';
     
     let url = '/finance/withdrawals?page=1&pageSize=1000';
     if (filterStatus !== 'ALL') {
@@ -228,6 +256,22 @@ async function loadWithdrawList() {
         const res = await apiFetch('GET', url, null, true);
         if (res.code === 200) {
             const list = res.result || res.data || [];
+            
+            // Sort: PENDING (2) > ACCEPTED (1) > Others (0), then by createdAt descending
+            list.sort((a, b) => {
+                const getPriority = (status) => {
+                    if (status === 'PENDING') return 2;
+                    if (status === 'ACCEPTED') return 1;
+                    return 0;
+                };
+                const pA = getPriority(a.status);
+                const pB = getPriority(b.status);
+                if (pA !== pB) return pB - pA;
+                const timeA = parseInt(a.createdAt || 0);
+                const timeB = parseInt(b.createdAt || 0);
+                return timeB - timeA;
+            });
+
             const bodyEl = document.getElementById('withdraw-table-body');
             if (!bodyEl) return;
             
@@ -241,6 +285,14 @@ async function loadWithdrawList() {
             }
             if (idVal !== '') {
                 filteredList = filteredList.filter(w => String(w.id).toLowerCase().includes(idVal));
+            }
+            if (startDateVal !== '') {
+                const startMs = new Date(startDateVal + 'T00:00:00').getTime();
+                filteredList = filteredList.filter(w => parseInt(w.createdAt || 0) >= startMs);
+            }
+            if (endDateVal !== '') {
+                const endMs = new Date(endDateVal + 'T23:59:59').getTime();
+                filteredList = filteredList.filter(w => parseInt(w.createdAt || 0) <= endMs);
             }
             
             if (filteredList.length === 0) {
@@ -1303,10 +1355,14 @@ async function deleteExchangeRate(rateId) {
 export function resetDepositFilters() {
     const phone = document.getElementById('filter-deposit-phone');
     const remittance = document.getElementById('filter-deposit-remittance');
+    const start = document.getElementById('filter-deposit-start-date');
+    const end = document.getElementById('filter-deposit-end-date');
     const status = document.getElementById('deposit-status-filter');
     const size = document.getElementById('deposit-size-select');
     if (phone) phone.value = '';
     if (remittance) remittance.value = '';
+    if (start) start.value = '';
+    if (end) end.value = '';
     if (status) status.value = 'ALL';
     if (size) size.value = '10';
     window.adminPages.deposit.size = 10;
@@ -1319,10 +1375,14 @@ window.resetDepositFilters = resetDepositFilters;
 export function resetWithdrawFilters() {
     const phone = document.getElementById('filter-withdraw-phone');
     const id = document.getElementById('filter-withdraw-id');
+    const start = document.getElementById('filter-withdraw-start-date');
+    const end = document.getElementById('filter-withdraw-end-date');
     const status = document.getElementById('withdraw-status-filter');
     const size = document.getElementById('withdraw-size-select');
     if (phone) phone.value = '';
     if (id) id.value = '';
+    if (start) start.value = '';
+    if (end) end.value = '';
     if (status) status.value = 'ALL';
     if (size) size.value = '10';
     window.adminPages.withdraw.size = 10;

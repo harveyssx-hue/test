@@ -800,8 +800,9 @@ async function loadPlatformContentsList(page = 1) {
         const dataList = res.result || res.data;
         if (res.code === 200 && dataList) {
             platformContentsList = dataList;
-            const totalCount = res.total || dataList.length;
-            const totalPages = Math.ceil(totalCount / docPageSize) || 1;
+            const paging = res.paging || { page: page, pages: 1, pageSize: docPageSize, records: dataList.length };
+            const totalCount = paging.records !== undefined ? paging.records : dataList.length;
+            const totalPages = paging.pages !== undefined ? paging.pages : Math.max(1, Math.ceil(totalCount / docPageSize));
             
             document.getElementById('doc-total-count').innerText = totalCount;
             document.getElementById('doc-current-page').innerText = page;
