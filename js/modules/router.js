@@ -42,11 +42,20 @@ const pageControllers = {
         if (window.renderHomeTrending) window.renderHomeTrending();
     },
     initMarketPage() {
-        if (window.hideMarketDetail) window.hideMarketDetail();
-        if (window.renderMarketList) window.renderMarketList();
+        if (window.pendingMarketDetailSymbol) {
+            if (window.showMarketDetail) window.showMarketDetail(window.pendingMarketDetailSymbol);
+            window.pendingMarketDetailSymbol = null;
+        } else {
+            if (window.hideMarketDetail) window.hideMarketDetail();
+            if (window.renderMarketList) window.renderMarketList();
+        }
     },
     initFollowPage() {
         if (window.renderStrategyLobby) window.renderStrategyLobby();
+        if (window.pendingFollowModelId) {
+            if (window.openOrderDrawer) window.openOrderDrawer(window.pendingFollowModelId);
+            window.pendingFollowModelId = null;
+        }
     },
     initAssetsPage() {
         if (window.loadUserAssets) window.loadUserAssets();

@@ -175,7 +175,7 @@ async function loadQuantConfig() {
             
             const featMinText = isInr ? `${labelMinShort} \u20b9${(strategyMinInvest * 83.00).toFixed(0)}` : `${labelMinShort} $${strategyMinInvest.toFixed(0)}`;
             return `
-                <div class="feat-strat-card" onclick="switchTab('follow'); setTimeout(() => openOrderDrawer('${m.id}'), 150);">
+                <div class="feat-strat-card" onclick="window.pendingFollowModelId = '${m.id}'; switchTab('follow');">
                     <span class="feat-tag tag-${classTags[idx]}">${tags[idx]}</span>
                     <div class="feat-avatar-row">
                         ${avatarHtml}
@@ -408,6 +408,17 @@ let currentRiskLevel = 'MEDIUM'; // 'LOW', 'MEDIUM', 'HIGH'
 let currentStopLossRate = 0.1; // float 0.0 - 1.0 (corresponds to 10%)
 let minInvestAmount = 90.0; // Dynamic minimum from config (default 90 USDT)
 
+function getStrategyMinInvestAmount(strategy) {
+    if (!strategy) return minInvestAmount;
+    const minVal = parseFloat(strategy.minInvestAmount || strategy.minAmount);
+    if (minVal > 0) return minVal;
+    const parsedVal = parseFloat(strategy.icon);
+    if (strategy.icon && !isNaN(parsedVal) && parsedVal > 0) {
+        return parsedVal;
+    }
+    return minInvestAmount;
+}
+
 function openOrderDrawer(modelId) {
     if (!currentUser) { openAuthModal(); return; }
     const strategy = strategyModels.find(m => m.id.toString() === modelId.toString());
@@ -479,7 +490,7 @@ function openOrderDrawer(modelId) {
     const currencySymbol = isInr ? '\u20b9' : '$';
     
     // Calculate display minimum and default based on strategy-specific or global minInvestAmount
-    const strategyMinInvest = (selectedStrategy.icon && !isNaN(parseFloat(selectedStrategy.icon)) && parseFloat(selectedStrategy.icon) > 0) ? parseFloat(selectedStrategy.icon) : minInvestAmount;
+    const strategyMinInvest = getStrategyMinInvestAmount(selectedStrategy);
     const minVal = isInr ? (strategyMinInvest * 83.00) : strategyMinInvest;
     const baseDefault = Math.max(100, strategyMinInvest);
     const defaultVal = isInr ? (baseDefault * 83.00) : baseDefault;
@@ -618,7 +629,8 @@ function recalcAgreeButtonState() {
     
     // Minimum threshold check
     const isInr = assetDisplayCurrency === 'INR';
-    const minThreshold = isInr ? (minInvestAmount * 83.00) : minInvestAmount;
+    const strategyMinInvest = getStrategyMinInvestAmount(selectedStrategy);
+    const minThreshold = isInr ? (strategyMinInvest * 83.00) : strategyMinInvest;
     const isAmountValid = amountVal >= minThreshold;
     
     if (submitBtn) {
@@ -648,7 +660,7 @@ async function submitQuantFollowOrderNew() {
     
     // Minimum threshold
     const isInr = assetDisplayCurrency === 'INR';
-    const strategyMinInvest = (selectedStrategy.icon && !isNaN(parseFloat(selectedStrategy.icon)) && parseFloat(selectedStrategy.icon) > 0) ? parseFloat(selectedStrategy.icon) : minInvestAmount;
+    const strategyMinInvest = getStrategyMinInvestAmount(selectedStrategy);
     const minThreshold = isInr ? (strategyMinInvest * 83.00) : strategyMinInvest;
     if (isNaN(inputVal) || inputVal < minThreshold) {
         const errorMsg = isInr 

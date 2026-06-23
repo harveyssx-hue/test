@@ -614,51 +614,109 @@ export function copyToClipboard(text, msg = '复制成功！') {
 }
 window.copyToClipboard = copyToClipboard;
 
-export function viewProofImage(id) {
+export async function viewProofImage(id) {
     const lightbox = document.getElementById('proof-lightbox-modal');
     const lightboxImg = document.getElementById('proof-lightbox-img');
     const errorDiv = document.getElementById('proof-lightbox-error');
     
     if (!lightbox || !lightboxImg || !errorDiv) return;
     
+    // Revoke previous Object URL to prevent memory leaks
+    if (window.currentProofObjectURL) {
+        try {
+            URL.revokeObjectURL(window.currentProofObjectURL);
+        } catch(e) {}
+        window.currentProofObjectURL = null;
+    }
+    
     lightbox.style.display = 'flex';
     lightboxImg.style.display = 'none';
-    errorDiv.style.display = 'flex';
+    errorDiv.style.display = 'none';
     
     lightboxImg.src = '';
     
-    window.apiFetchRaw('GET', `/finance/proof/${id}`, null, true)
-        .then(response => {
-            if (!response.ok) throw new Error('Failed to fetch proof image');
-            return response.blob();
-        })
-        .then(blob => {
-            const objectURL = URL.createObjectURL(blob);
-            lightboxImg.src = objectURL;
-            lightboxImg.style.display = 'block';
-            errorDiv.style.display = 'none';
-        })
-        .catch(err => {
-            console.error('Error fetching proof image:', err);
-            lightboxImg.style.display = 'none';
-            errorDiv.style.display = 'flex';
+    const list = window.cachedDeposits || [];
+    const deposit = list.find(d => String(d.id) === String(id));
+    window.lastSelectedProofUrl = deposit ? deposit.paymentProof : '';
+    
+    try {
+        const path = `/finance/proof/${id}`;
+        const realPath = path.startsWith('/api/v1') ? path : '/api/v1' + path;
+        
+        let baseUrl = CONFIG.APP_API_BASE;
+        const isAdminRequest = window.isAdminPanel === true || window.location.pathname.includes('admin') || realPath.startsWith('/api/v1/admin') || realPath.includes('audit') || realPath.includes('approve') || realPath.includes('reject');
+        const isCommonEndpoint = realPath.includes('/common/');
+        const isAdminPageContext = window.isAdminPanel === true || window.location.pathname.includes('admin');
+        const routeToAdmin = (isAdminPageContext || isAdminRequest) && !isCommonEndpoint;
+        if (routeToAdmin) {
+            baseUrl = CONFIG.ADMIN_API_BASE;
+        }
+        
+        const finalPath = (routeToAdmin && baseUrl === window.location.origin) ? '/admin-proxy' + realPath : realPath;
+        
+        const response = await fetch(baseUrl + finalPath, {
+            method: 'GET',
+            credentials: routeToAdmin ? 'include' : 'same-origin',
+            cache: 'no-store'
         });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const blob = await response.blob();
+        const objectURL = URL.createObjectURL(blob);
+        window.currentProofObjectURL = objectURL;
+        lightboxImg.src = objectURL;
+        lightboxImg.style.display = 'block';
+    } catch (err) {
+        console.error('Error fetching proof image:', err);
+        lightboxImg.style.display = 'none';
+        errorDiv.style.display = 'flex';
+        handleProofImageError();
+    }
 }
 window.viewProofImage = viewProofImage;
 
 export function handleProofImageError() {
-    const errorDiv = document.getElementById('proof-lightbox-error');
     const img = document.getElementById('proof-lightbox-img');
-    if (errorDiv && img) {
+    const errorEl = document.getElementById('proof-lightbox-error');
+    const errorMsgEl = document.getElementById('proof-error-msg');
+    
+    if (img && errorEl) {
         img.style.display = 'none';
-        errorDiv.style.display = 'flex';
+        errorEl.style.display = 'flex';
+        
+        const url = window.lastSelectedProofUrl || '';
+        if (url.includes('matp-app.qchats.org') || url.endsWith('proof.png')) {
+            if (errorMsgEl) {
+                errorMsgEl.innerHTML = `⚠️ <b>该充值单为历史测试/模拟数据</b><br><span style="font-size: 0.78rem; font-weight: normal; color: var(--text-secondary); display: inline-block; margin-top: 5px;">由于原模拟域名 (<code>matp-app.qchats.org</code>) 的服务器已下线，该默认测试图片已失效，因此无法正常预览。</span>`;
+            }
+        } else {
+            if (errorMsgEl) {
+                errorMsgEl.innerHTML = `⚠️ <b>凭证图片加载失败</b><br><span style="font-size: 0.78rem; font-weight: normal; color: var(--text-secondary); display: inline-block; margin-top: 5px;">该凭证图片文件在服务器上不存在，或者网络访问超时。</span>`;
+            }
+        }
     }
 }
 window.handleProofImageError = handleProofImageError;
 
 export function closeProofLightbox() {
     const lightbox = document.getElementById('proof-lightbox-modal');
-    if (lightbox) lightbox.style.display = 'none';
+    const lightboxImg = document.getElementById('proof-lightbox-img');
+    const errorDiv = document.getElementById('proof-lightbox-error');
+    if (window.currentProofObjectURL) {
+        try {
+            URL.revokeObjectURL(window.currentProofObjectURL);
+        } catch(e) {}
+        window.currentProofObjectURL = null;
+    }
+    if (lightbox) {
+        lightbox.style.display = 'none';
+        lightbox.classList.remove('active');
+    }
+    if (lightboxImg) lightboxImg.src = '';
+    if (errorDiv) errorDiv.style.display = 'none';
 }
 window.closeProofLightbox = closeProofLightbox;
 

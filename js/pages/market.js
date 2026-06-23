@@ -72,6 +72,12 @@ function switchActiveSymbol(symbol) {
 
     activeSymbol = symbol.toLowerCase();
     
+    if (window.location.hash !== '#/market') {
+        window.pendingMarketDetailSymbol = activeSymbol;
+        window.location.hash = '#/market';
+        return;
+    }
+    
     // Unconditionally activate Market tab view without resetting to list view
     const views = document.querySelectorAll('.view-tab-content');
     views.forEach(v => v.classList.remove('active'));
@@ -222,6 +228,11 @@ async function initChart() {
                     }
                 }
                 candleSeries.setData(uniqueChartData);
+                if (uniqueChartData.length > 0) {
+                    const lastBar = uniqueChartData[uniqueChartData.length - 1];
+                    lastBarTime = lastBar.time;
+                    currentBar = { ...lastBar };
+                }
                 return;
             }
         } catch (e) {
@@ -254,6 +265,11 @@ async function initChart() {
     }
     
     candleSeries.setData(data);
+    if (data.length > 0) {
+        const lastBar = data[data.length - 1];
+        lastBarTime = lastBar.time;
+        currentBar = { ...lastBar };
+    }
 }
 
 function relayoutTradingChart() {
@@ -1040,7 +1056,7 @@ function renderSearchResults(query, isHotDefault) {
             const emoji = strategyEmojis[typeKey] || '🤖';
             
             html += `
-                <div class="notify-row" style="padding: 10px; margin-bottom: 8px; border-radius: 10px; background: rgba(255,255,255,0.6); border: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s;" onclick="closeSearchModal(); switchTab('follow'); setTimeout(() => openOrderDrawer('${m.id}'), 150);">
+                <div class="notify-row" style="padding: 10px; margin-bottom: 8px; border-radius: 10px; background: rgba(255,255,255,0.6); border: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s;" onclick="closeSearchModal(); window.pendingFollowModelId = '${m.id}'; switchTab('follow');">
                     <div style="display: flex; align-items: center; gap: 10px; text-align: left;">
                         <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(91,81,249,0.06); display: flex; align-items: center; justify-content: center; font-size: 1rem;">
                             ${emoji}

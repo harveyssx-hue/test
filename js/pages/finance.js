@@ -138,17 +138,15 @@ async function openDepositModal() {
             const methodsRes = JSON.parse(methodsRaw);
             if (methodsRes.code === 200) {
                 const list = methodsRes.result || methodsRes.data || [];
-                // Sort by orderIndex in ascending order (sorting weight)
-                currentPaymentMethods = list.sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
                 
-                if (currentPaymentMethods.length === 0) {
+                if (list.length === 0) {
                     container.innerHTML = `<div style="text-align: center; padding: 20px; color: #EF4444; font-size: 0.85rem;">${currentLocale === 'hi' ? '⚠️ कोई जमा चैनल उपलब्ध नहीं है।' : '⚠️ No deposit channels available.'}</div>`;
                     return;
                 }
                 
                 // Safe parser for BigInt identifiers in raw payload to prevent precision loss
                 const rawMethodsArr = methodsRaw.match(/\{[^}]+"paymentMethodAssetId"\s*:\s*(\d+)/g) || [];
-                currentPaymentMethods.forEach((m, idx) => {
+                list.forEach((m, idx) => {
                     let actualAssetId = String(m.paymentMethodAssetId);
                     if (rawMethodsArr[idx]) {
                         const match = rawMethodsArr[idx].match(/"paymentMethodAssetId"\s*:\s*(\d+)/);
@@ -156,6 +154,9 @@ async function openDepositModal() {
                     }
                     m.paymentMethodAssetIdRawStr = actualAssetId; // Cache clean raw string BigInt
                 });
+                
+                // Sort by orderIndex in ascending order (sorting weight)
+                currentPaymentMethods = list.sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
                 
                 // Build card-list interface dynamically
                 container.innerHTML = currentPaymentMethods.map((m, idx) => {

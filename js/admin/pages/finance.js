@@ -160,75 +160,7 @@ async function handleDepositReview(id, action) {
     }
 }
 
-function viewProofImage(id) {
-    const list = window.cachedDeposits || [];
-    const deposit = list.find(d => String(d.id) === String(id));
-    if (!deposit || !deposit.paymentProof) {
-        showToast('⚠️ 找不到该笔充值的凭证图片！', true);
-        return;
-    }
-    
-    const modal = document.getElementById('proof-lightbox-modal');
-    const img = document.getElementById('proof-lightbox-img');
-    const errorEl = document.getElementById('proof-lightbox-error');
-    if (modal && img) {
-        let proofUrl = deposit.paymentProof;
-        const isLocalDev = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
-        if (isLocalDev && (proofUrl.includes('storage.googleapis.com') || proofUrl.startsWith('http://') || proofUrl.startsWith('https://'))) {
-            proofUrl = '/download-gcs?url=' + encodeURIComponent(proofUrl);
-        }
-        window.lastSelectedProofUrl = deposit.paymentProof;
-        img.src = proofUrl;
-        img.style.display = 'block';
-        if (errorEl) errorEl.style.display = 'none';
-        modal.style.display = 'flex';
-        modal.classList.add('active');
-    } else {
-        showToast('⚠️ 凭证预览窗口未在页面中定义！', true);
-    }
-}
-
-function handleProofImageError() {
-    const img = document.getElementById('proof-lightbox-img');
-    const errorEl = document.getElementById('proof-lightbox-error');
-    const errorMsgEl = document.getElementById('proof-error-msg');
-    
-    if (img && errorEl) {
-        img.style.display = 'none';
-        errorEl.style.display = 'flex';
-        
-        const url = window.lastSelectedProofUrl || '';
-        if (url.includes('matp-app.qchats.org') || url.endsWith('proof.png')) {
-            if (errorMsgEl) {
-                errorMsgEl.innerHTML = `⚠️ <b>该充值单为历史测试/模拟数据</b><br><span style="font-size: 0.78rem; font-weight: normal; color: var(--text-secondary); display: inline-block; margin-top: 5px;">由于原模拟域名 (<code>matp-app.qchats.org</code>) 的服务器已下线，该默认测试图片已失效，因此无法正常预览。</span>`;
-            }
-        } else {
-            if (errorMsgEl) {
-                errorMsgEl.innerHTML = `⚠️ <b>凭证图片加载失败 (404)</b><br><span style="font-size: 0.78rem; font-weight: normal; color: var(--text-secondary); display: inline-block; margin-top: 5px;">该凭证图片文件在服务器上不存在，或者网络访问超时。</span>`;
-            }
-        }
-    }
-}
-
-function closeProofLightbox() {
-    const modal = document.getElementById('proof-lightbox-modal');
-    const img = document.getElementById('proof-lightbox-img');
-    const errorEl = document.getElementById('proof-lightbox-error');
-    if (modal) {
-        modal.style.display = 'none';
-        modal.classList.remove('active');
-    }
-    if (img) {
-        img.src = '';
-    }
-    if (errorEl) {
-        errorEl.style.display = 'none';
-    }
-}
-
-window.viewProofImage = viewProofImage;
-window.handleProofImageError = handleProofImageError;
-window.closeProofLightbox = closeProofLightbox;
+// viewProofImage, handleProofImageError, and closeProofLightbox are now globally managed in app.js
 
 async function loadWithdrawList() {
     if (!currentAdmin) return;

@@ -263,7 +263,12 @@ async function apiFetch(method, path, body = null, requireAuth = true) {
         }
         
         try {
-            const parsed = JSON.parse(text);
+            // Quote BigInts (15+ digits) safely outside string literals to prevent precision loss in JS
+            const safeText = text.replace(
+                /("[^"\\]*(?:\\.[^"\\]*)*")|(?<=[:,\s\[]|^)(-?\d{15,})(?=[,\}\]\s]|$)/g,
+                (match, p1, p2) => p1 ? p1 : '"' + p2 + '"'
+            );
+            const parsed = JSON.parse(safeText);
             if (parsed.code === 401) {
                 if (localStorage.getItem('matp_access_token')) {
                     localStorage.removeItem('matp_access_token');
@@ -479,7 +484,12 @@ async function apiFetchWithRawBody(method, path, rawBodyStr, requireAuth = true)
         }
         
         try {
-            return JSON.parse(text);
+            // Quote BigInts (15+ digits) safely outside string literals to prevent precision loss in JS
+            const safeText = text.replace(
+                /("[^"\\]*(?:\\.[^"\\]*)*")|(?<=[:,\s\[]|^)(-?\d{15,})(?=[,\}\]\s]|$)/g,
+                (match, p1, p2) => p1 ? p1 : '"' + p2 + '"'
+            );
+            return JSON.parse(safeText);
         } catch(e) {
             return { code: response.status, errorMessage: text || `HTTP ${response.status}` };
         }
