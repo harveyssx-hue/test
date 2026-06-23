@@ -1,6 +1,9 @@
 // js/admin/app.js
 import { state } from './state.js';
 
+// Cache buster for ESM pages and views
+const ADMIN_APP_VERSION = Date.now();
+
 // Global variables
 window.currentAdmin = null;
 window.activeTab = 'overview';
@@ -229,9 +232,9 @@ export async function switchAdminTab(tab, btnEl) {
     }
     
     try {
-        // Fetch view HTML
+        // Fetch view HTML with cache buster
         const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
-        const response = await fetch(`${basePath}components/admin/view-${tab}.html`);
+        const response = await fetch(`${basePath}components/admin/view-${tab}.html?v=${ADMIN_APP_VERSION}`);
         if (!response.ok) throw new Error(`Failed to load view components for ${tab}`);
         const html = await response.text();
         
@@ -244,9 +247,9 @@ export async function switchAdminTab(tab, btnEl) {
             }
         }
         
-        // Load sub-controller
+        // Load sub-controller with cache buster
         const ctrl = tabConfig[tab].controller;
-        const module = await import(`./pages/${ctrl}.js`);
+        const module = await import(`./pages/${ctrl}.js?v=${ADMIN_APP_VERSION}`);
         
         // Expose exported methods to window so inline event handlers work
         for (const [key, val] of Object.entries(module)) {

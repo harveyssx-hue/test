@@ -1253,12 +1253,6 @@ function renderActiveSettleListHtml(paging = null) {
     if (indicator) {
         indicator.innerText = `第 ${pg.page} / ${pg.pages} 页 (共 ${pg.records} 条)`;
     }
-    
-    // Ensure the batch UI fields are initialized in sync with the selected mode dropdown
-    const batchModeSelect = document.getElementById('selected-batch-mode');
-    if (batchModeSelect) {
-        toggleBatchModeFields();
-    }
 }
 
 window.renderActiveSettleListHtml = renderActiveSettleListHtml;
@@ -1272,78 +1266,62 @@ function toggleSelectAllSettleOrders(master) {
     });
 }
 
-function toggleBatchModeFields() {
-    const mode = document.getElementById('selected-batch-mode').value;
-    const instSelect = document.getElementById('selected-batch-instrument');
-    const qtyInput = document.getElementById('selected-batch-qty');
-    const qtyHint = document.getElementById('selected-batch-qty-hint');
-    const submitBtn = document.getElementById('selected-batch-submit-btn');
-    
-    if (mode === 'buy') {
-        instSelect.style.display = '';
-        qtyInput.style.display = '';
-        qtyHint.style.display = 'none';
-        submitBtn.innerText = '⚡ 执行批量买入';
-        submitBtn.style.background = 'var(--primary)';
-    } else {
-        instSelect.style.display = 'none';
-        qtyInput.style.display = 'none';
-        qtyHint.style.display = '';
-        submitBtn.innerText = '⚡ 执行批量卖出';
-        submitBtn.style.background = '#EF4444';
-    }
-}
-
-async function executeSelectedBatchSettle() {
+export function openBatchBuyModal() {
     const checkboxes = document.querySelectorAll('.order-settle-checkbox:checked');
     if (checkboxes.length === 0) {
-        showToast('❌ 请先勾选需要批量操作的量化订单！', true);
+        showToast('❌ 请先勾选需要批量买入的量化订单！', true);
         return;
     }
-    
-    const mode = document.getElementById('selected-batch-mode').value;
-    const priceStr = document.getElementById('selected-batch-price').value;
-    
-    if (!priceStr) {
-        showToast('❌ 请输入批量均价！', true);
+    ensureInstrumentsLoaded().then(() => {
+        populateInstrumentSelects();
+        const modal = document.getElementById('selected-batch-buy-modal');
+        if (modal) modal.style.display = 'flex';
+    });
+}
+
+export function closeBatchBuyModal() {
+    const modal = document.getElementById('selected-batch-buy-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+export function openBatchSellModal() {
+    const checkboxes = document.querySelectorAll('.order-settle-checkbox:checked');
+    if (checkboxes.length === 0) {
+        showToast('❌ 请先勾选需要批量结算卖出的量化订单！', true);
         return;
     }
-    const price = parseFloat(priceStr);
-    if (isNaN(price) || price <= 0) {
-        showToast('❌ 价格必须大于 0！', true);
+    const modal = document.getElementById('selected-batch-sell-modal');
+    if (modal) modal.style.display = 'flex';
+}
+
+export function closeBatchSellModal() {
+    const modal = document.getElementById('selected-batch-sell-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+async function executeSelectedBatchSettleInternal(price, qty, buyInstrumentId, isSell) {
+    const checkboxes = document.querySelectorAll('.order-settle-checkbox:checked');
+    if (checkboxes.length === 0) {
+        showToast('❌ 请先勾选需要操作的量化订单！', true);
         return;
     }
-    
-    const isSell = mode === 'sell';
+
     const actionStr = isSell ? '批量卖出' : '批量买入';
-    
-    // Early validation for BUY mode instrument select
-    let buyInstrumentId = '';
-    if (!isSell) {
-        buyInstrumentId = document.getElementById('selected-batch-instrument').value;
-        if (!buyInstrumentId) {
-            showToast('❌ 请选择批量买入的交易品种！', true);
-            return;
-        }
-    }
-    
     if (!confirm(`⚠️ 您确定要对已勾选的 ${checkboxes.length} 笔量化订单执行 [${actionStr}] 操作吗？`)) {
         return;
     }
-    
+
     const requests = [];
     const errors = [];
     
     showToast(`⏳ 正在同步计算各订单仓位数据...`, false);
     
-    // Process selected orders in parallel
     await Promise.all(Array.from(checkboxes).map(async (cb) => {
         const orderIdStr = cb.value;
         const orderObj = activeSettleOrders.find(o => String(o.id) === String(orderIdStr));
         if (!orderObj || orderObj.status !== 'ACTIVE') return;
         
         if (isSell) {
-            // Query trades of each order to get exact remaining quantity and instrument ID (Point 8 & 10)
             try {
                 const tradesRes = await apiFetch('GET', `/trading/quant/orders/${orderIdStr}/trades`, null, true);
                 if (tradesRes.code === 200) {
@@ -1352,12 +1330,12 @@ async function executeSelectedBatchSettle() {
                     let sold = 0;
                     let instId = orderObj.instrumentId || '1126151490264633456';
                     trades.forEach(t => {
-                        const qty = parseFloat(t.quantity || 0);
+                        const q = parseFloat(t.quantity || 0);
                         if (t.tradeType === 'BUY') {
-                            bought += qty;
+                            bought += q;
                             instId = t.instrumentId;
                         } else {
-                            sold += qty;
+                            sold += q;
                         }
                     });
                     const remainingQty = bought - sold;
@@ -1370,7 +1348,7 @@ async function executeSelectedBatchSettle() {
                             quantity: finalQty
                         });
                     } else {
-                        errors.push(`订单 #${orderObj.orderNo} 暂无持仓或持仓量过低 (<0.0001)`);
+                        errors.push(`订单 #${orderObj.orderNo} 暂无持仓或持仓量过低`);
                     }
                 } else {
                     errors.push(`订单 #${orderObj.orderNo} 同步失败`);
@@ -1380,21 +1358,17 @@ async function executeSelectedBatchSettle() {
                 errors.push(`订单 #${orderObj.orderNo} 通信异常`);
             }
         } else {
-            // For BUY, we use the selected instrument, and either the input quantity or (investAmount / price)
-            const qtyStr = document.getElementById('selected-batch-qty').value;
-            let qty = parseFloat(qtyStr);
-            
-            if (isNaN(qty) || qty <= 0) {
-                // Autocalculate based on individual investAmount
+            let finalQty = qty;
+            if (isNaN(finalQty) || finalQty <= 0) {
                 const investAmount = parseFloat(orderObj.investAmount || 0);
-                qty = investAmount / price;
+                finalQty = investAmount / price;
             }
             
             requests.push({
                 orderId: orderIdStr,
                 instrumentId: buyInstrumentId,
                 price: price,
-                quantity: parseFloat(qty.toFixed(4))
+                quantity: parseFloat(finalQty.toFixed(4))
             });
         }
     }));
@@ -1404,7 +1378,7 @@ async function executeSelectedBatchSettle() {
     }
     
     if (requests.length === 0) {
-        showToast('❌ 所勾选的订单无有效可操作持仓或品种匹配失败！', true);
+        showToast('❌ 所勾选的订单无有效可操作持仓或类型匹配失败！', true);
         return;
     }
     
@@ -1416,10 +1390,10 @@ async function executeSelectedBatchSettle() {
         
         if (res.code === 200) {
             showToast(`✓ 已成功执行 ${requests.length} 笔量化的 [${actionStr}] 批量操盘！`, false);
-            document.getElementById('selected-batch-price').value = '';
-            document.getElementById('selected-batch-qty').value = '';
             loadQuantSettleList();
             loadDashboardStats();
+            closeBatchBuyModal();
+            closeBatchSellModal();
         } else {
             showToast(res.errorMessage || `批量操作执行失败！`, true);
         }
@@ -1429,84 +1403,53 @@ async function executeSelectedBatchSettle() {
     }
 }
 
-async function submitStrategyBatchSettle() {
-    const strategyModel = document.getElementById('batch-settle-strategy').value;
-    const action = document.getElementById('batch-settle-action').value;
+export async function submitBatchBuy(event) {
+    if (event) event.preventDefault();
+    const priceStr = document.getElementById('batch-buy-price').value;
+    const qtyStr = document.getElementById('batch-buy-qty').value;
+    const buyInstrumentId = document.getElementById('batch-buy-instrument').value;
     
-    const priceInput = document.getElementById('batch-settle-price').value;
-    const qtyInput = document.getElementById('batch-settle-qty').value;
-    
-    if (!priceInput || !qtyInput) {
-        showToast('❌ 请输入结算均价与成交数量！', true);
+    if (!priceStr) {
+        showToast('❌ 请输入买入价格！', true);
+        return;
+    }
+    const price = parseFloat(priceStr);
+    if (isNaN(price) || price <= 0) {
+        showToast('❌ 价格必须大于 0！', true);
         return;
     }
     
-    const price = parseFloat(priceInput);
-    const qty = parseFloat(qtyInput);
+    const qty = parseFloat(qtyStr);
     
-    if (isNaN(price) || price <= 0 || isNaN(qty) || qty <= 0) {
-        showToast('❌ 价格与数量必须大于 0！', true);
+    await executeSelectedBatchSettleInternal(price, qty, buyInstrumentId, false);
+}
+
+export async function submitBatchSell(event) {
+    if (event) event.preventDefault();
+    const priceStr = document.getElementById('batch-sell-price').value;
+    
+    if (!priceStr) {
+        showToast('❌ 请输入卖出价格！', true);
+        return;
+    }
+    const price = parseFloat(priceStr);
+    if (isNaN(price) || price <= 0) {
+        showToast('❌ 价格必须大于 0！', true);
         return;
     }
     
-    let targetOrders = [];
-    if (strategyModel === 'ALL') {
-        targetOrders = activeSettleOrders.filter(o => o.status === 'ACTIVE');
-    } else {
-        targetOrders = activeSettleOrders.filter(o => {
-            const algoName = getAlgoModelName(o.algorithmModel);
-            return o.status === 'ACTIVE' && algoName.includes(strategyModel.toUpperCase());
-        });
-    }
-    
-    if (targetOrders.length === 0) {
-        showToast(`❌ 当前没有符合条件且处于运行中的量化仓位！`, true);
-        return;
-    }
-    
-    const actionStr = action === 'sell' ? '批量卖出' : '批量买入';
-    if (!confirm(`⚠️ 您确定要对 [${strategyModel}] 策略下的所有共 ${targetOrders.length} 笔运行中量化执行 [${actionStr}] 操作吗？`)) {
-        return;
-    }
-    
-    const requests = targetOrders.map(o => {
-        const instrumentId = o.instrumentId ? o.instrumentId : "1126151490264633456";
-        return {
-            orderId: o.id,
-            instrumentId: instrumentId,
-            price: price,
-            quantity: qty
-        };
-    });
-    
-    showToast(`正在提交 [${strategyModel}] 策略 ${targetOrders.length} 笔订单 of 批量操盘指令...`, false);
-    
-    try {
-        const endpoint = action === 'sell' ? '/trading/quant/trades/batch-sell' : '/trading/quant/trades/batch-buy';
-        const res = await apiFetch('POST', endpoint, requests, true);
-        
-        if (res.code === 200) {
-            showToast(`✓ 已成功对 [${strategyModel}] 策略 of ${targetOrders.length} 笔量化执行 [${actionStr}] 批量操盘！`, false);
-            document.getElementById('batch-settle-price').value = '';
-            document.getElementById('batch-settle-qty').value = '';
-            loadQuantSettleList();
-            loadDashboardStats();
-        } else {
-            showToast(res.errorMessage || `策略批量操作执行失败！`, true);
-        }
-    } catch(e) {
-        console.error(e);
-        showToast('策略批量操盘发送网络异常！', true);
-    }
+    await executeSelectedBatchSettleInternal(price, null, null, true);
 }
 
 // Bind to window to allow calling from HTML
 window.loadQuantSettleList = loadQuantSettleList;
 window.toggleSelectAllSettleOrders = toggleSelectAllSettleOrders;
-window.executeSelectedBatchSettle = executeSelectedBatchSettle;
-window.toggleBatchModeFields = toggleBatchModeFields;
-window.submitSelectedBatchSettle = executeSelectedBatchSettle; // Compatibility fallback
-window.submitStrategyBatchSettle = submitStrategyBatchSettle;
+window.openBatchBuyModal = openBatchBuyModal;
+window.closeBatchBuyModal = closeBatchBuyModal;
+window.openBatchSellModal = openBatchSellModal;
+window.closeBatchSellModal = closeBatchSellModal;
+window.submitBatchBuy = submitBatchBuy;
+window.submitBatchSell = submitBatchSell;
 window.loadQuantMonitor = loadQuantMonitor;
 window.resetQuantFilters = resetQuantFilters;
 window.submitAllOrderReview = submitAllOrderReview;
@@ -2026,8 +1969,8 @@ function populateInstrumentSelects() {
     const options = cachedInstruments.map(i => `<option value="${i.id}">${i.symbol}</option>`).join('');
     const qctrl = document.getElementById('qctrl-instrument');
     if (qctrl) qctrl.innerHTML = options;
-    const batch = document.getElementById('selected-batch-instrument');
-    if (batch) batch.innerHTML = options;
+    const batchBuy = document.getElementById('batch-buy-instrument');
+    if (batchBuy) batchBuy.innerHTML = options;
     const qdetail = document.getElementById('qdetail-instrument');
     if (qdetail) qdetail.innerHTML = options;
 }
