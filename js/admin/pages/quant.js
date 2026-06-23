@@ -238,7 +238,7 @@ export async function loadQuantMonitor() {
                 // Create solid status blocks to match the screenshot
                 let statusCellHtml = '';
                 if (o.status === 'PENDING') {
-                    statusCellHtml = `<div style="background: rgba(245, 158, 11, 0.12); color: #D97706; font-weight: 700; font-size: 0.72rem; padding: 6px 12px; border-radius: 4px; text-align: center; border: 1.5px solid rgba(245, 158, 11, 0.25);">未审核</div>`;
+                    statusCellHtml = `<div onclick="handleQuantReviewSubmit('${o.id}', 'approve')" style="background: rgba(245, 158, 11, 0.12); color: #D97706; font-weight: 700; font-size: 0.72rem; padding: 6px 12px; border-radius: 4px; text-align: center; border: 1.5px solid rgba(245, 158, 11, 0.25); cursor: pointer;" title="点击进行快捷审核确认">未审核</div>`;
                 } else if (o.status === 'ACTIVE') {
                     statusCellHtml = `<div style="background: rgba(16, 185, 129, 0.12); color: #059669; font-weight: 700; font-size: 0.72rem; padding: 6px 12px; border-radius: 4px; text-align: center; border: 1.5px solid rgba(16, 185, 129, 0.25);">运行中</div>`;
                 } else if (o.status === 'COMPLETED') {
@@ -1154,29 +1154,124 @@ async function loadQuantSettleList() {
     const page = pageConf.current;
     const pageSize = pageConf.size;
     
+    // Extract filter values
+    const uidFilter = document.getElementById('filter-settle-uid')?.value.trim().toLowerCase() || '';
+    const orderNoFilter = document.getElementById('filter-settle-orderno')?.value.trim().toLowerCase() || '';
+    const statusFilter = document.getElementById('filter-settle-status')?.value || 'ALL';
+    
+    const isFiltering = uidFilter !== '' || orderNoFilter !== '' || statusFilter !== 'ALL';
+    
+    const apiPageSize = isFiltering ? 1000 : pageSize;
+    const apiPage = isFiltering ? 1 : page;
+    
     const tbody = document.getElementById('quant-settle-table-body');
     if (tbody) {
         tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">🔄 正在安全同步量化结算订单列表...</td></tr>';
     }
     
     try {
-        const res = await apiFetch('GET', `/trading/quant/orders?status=ACTIVE&page=${page}&pageSize=${pageSize}`, null, true);
+        const res = await apiFetch('GET', `/trading/quant/orders?status=ACTIVE&page=${apiPage}&pageSize=${apiPageSize}`, null, true);
         
         if (res.code === 200) {
             const orders = res.result || res.data || [];
-            
-            // Backend already filters by ACTIVE when queried with status=ACTIVE, but let's filter just in case
             const activeOrders = orders.filter(o => o.status === 'ACTIVE');
             
-            activeSettleOrders = activeOrders;
-            const pgInfo = res.paging || { page: page, pageSize: pageSize, pages: 1, records: activeOrders.length };
-            const totalPages = pgInfo.pages || Math.max(1, Math.ceil(pgInfo.records / pageSize));
-            if (pageConf.current > totalPages && totalPages > 0) {
-                pageConf.current = totalPages;
-                loadQuantSettleList();
-                return;
+            // Retrieve user phone map to support phone number display & search
+            let userPhoneMap = {};
+            try {
+                userPhoneMap = await window.adminState.getUserPhoneMap();
+            } catch(e) {
+                console.error(e);
             }
-            renderActiveSettleListHtml(pgInfo);
+            
+            // Fetch trades list for all fetched active orders concurrently
+            const ordersWithTrades = await Promise.all(activeOrders.map(async (o) => {
+                let trades = [];
+                try {
+                    const tradesRes = await apiFetch('GET', `/trading/quant/orders/${o.id}/trades`, null, true);
+                    if (tradesRes.code === 200) {
+                        trades = tradesRes.result || tradesRes.data || [];
+                    }
+                } catch(err) {
+                    console.error(`Failed to fetch trades for order ${o.id}:`, err);
+                }
+                return { ...o, trades };
+            }));
+            
+            // Filter client-side
+            let resultList = ordersWithTrades;
+            if (uidFilter !== '') {
+                resultList = resultList.filter(o => {
+                    const uidStr = String(o.userId || '').toLowerCase();
+                    const phoneStr = String(userPhoneMap[String(o.userId)] || '').toLowerCase();
+                    return uidStr.includes(uidFilter) || phoneStr.includes(uidFilter);
+                });
+            }
+            if (orderNoFilter !== '') {
+                resultList = resultList.filter(o => {
+                    return String(o.orderNo || '').toLowerCase().includes(orderNoFilter);
+                });
+            }
+            if (statusFilter !== 'ALL') {
+                resultList = resultList.filter(o => {
+                    const trades = o.trades || [];
+                    let boughtQty = 0;
+                    let soldQty = 0;
+                    trades.forEach(t => {
+                        const q = parseFloat(t.quantity || 0);
+                        if (t.tradeType === 'BUY') boughtQty += q;
+                        else if (t.tradeType === 'SELL') soldQty += q;
+                    });
+                    const holdingQty = boughtQty - soldQty;
+                    
+                    if (statusFilter === 'BOUGHT') {
+                        return holdingQty > 0;
+                    } else if (statusFilter === 'SOLD') {
+                        return holdingQty === 0 && trades.length > 0;
+                    } else if (statusFilter === 'PENDING') {
+                        return holdingQty === 0 && trades.length === 0;
+                    }
+                    return true;
+                });
+            }
+            
+            // Paginate
+            let renderList = [];
+            let pgInfo = null;
+            
+            if (isFiltering) {
+                const totalRecords = resultList.length;
+                const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
+                pageConf.totalPages = totalPages;
+                
+                if (pageConf.current > totalPages) pageConf.current = totalPages;
+                if (pageConf.current < 1) pageConf.current = 1;
+                
+                const start = (pageConf.current - 1) * pageSize;
+                const end = start + pageSize;
+                renderList = resultList.slice(start, end);
+                
+                pgInfo = { page: pageConf.current, pageSize: pageSize, pages: totalPages, records: totalRecords };
+            } else {
+                renderList = resultList;
+                const backendPg = res.paging || { page: page, pageSize: pageSize, pages: 1, records: resultList.length };
+                const totalPages = backendPg.pages || Math.max(1, Math.ceil(backendPg.records / pageSize));
+                pageConf.totalPages = totalPages;
+                
+                if (pageConf.current > totalPages && totalPages > 0) {
+                    pageConf.current = totalPages;
+                    loadQuantSettleList();
+                    return;
+                }
+                if (pageConf.current < 1) {
+                    pageConf.current = 1;
+                }
+                
+                pgInfo = { page: pageConf.current, pageSize: pageSize, pages: totalPages, records: backendPg.records };
+            }
+            
+            activeSettleOrders = renderList;
+            renderActiveSettleListHtml(pgInfo, userPhoneMap);
         } else {
             showToast(res.errorMessage || '获取结算量化列表失败！', true);
             if (tbody) {
@@ -1192,7 +1287,7 @@ async function loadQuantSettleList() {
     }
 }
 
-function renderActiveSettleListHtml(paging = null) {
+function renderActiveSettleListHtml(paging = null, userPhoneMap = {}) {
     const selectAllCheckbox = document.getElementById('select-all-settle-orders');
     if (selectAllCheckbox) selectAllCheckbox.checked = false;
     
@@ -1206,14 +1301,47 @@ function renderActiveSettleListHtml(paging = null) {
         return;
     }
     
-    // Server-side paginated list: render activeSettleOrders directly
     tbody.innerHTML = activeSettleOrders.map(o => {
         const algoName = getAlgoDisplayName(o.algorithmModel);
         const date = o.createdAt ? new Date(parseInt(o.createdAt)).toLocaleString() : '--';
-        const instrumentName = o.instrumentId ? translateInstrument(o.instrumentId) : '--';
+        
+        // Calculate holding quantity and latest instrument
+        const trades = o.trades || [];
+        let boughtQty = 0;
+        let soldQty = 0;
+        let lastInstId = o.instrumentId;
+        trades.forEach(t => {
+            const q = parseFloat(t.quantity || 0);
+            if (t.tradeType === 'BUY') {
+                boughtQty += q;
+                lastInstId = t.instrumentId || lastInstId;
+            } else if (t.tradeType === 'SELL') {
+                soldQty += q;
+            }
+        });
+        const holdingQty = boughtQty - soldQty;
+        const instrumentName = lastInstId ? translateInstrument(lastInstId) : '--';
+        
+        // Build status badge
+        let statusBadge = '';
+        if (holdingQty > 0) {
+            statusBadge = `<span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1.5px solid rgba(16, 185, 129, 0.25); padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: 700; white-space: nowrap;">已买入</span>`;
+        } else if (trades.length > 0) {
+            statusBadge = `<span class="badge" style="background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1.5px solid rgba(239, 68, 68, 0.25); padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: 700; white-space: nowrap;">已卖出</span>`;
+        } else {
+            statusBadge = `<span class="badge" style="background: rgba(245, 158, 11, 0.12); color: #f59e0b; border: 1.5px solid rgba(245, 158, 11, 0.25); padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: 700; white-space: nowrap;">待交易</span>`;
+        }
+        
+        // Format actualProfit
+        const profitVal = parseFloat(o.actualProfit || 0);
+        const profitColor = profitVal > 0 ? 'var(--green)' : (profitVal < 0 ? 'var(--red)' : 'var(--text-secondary)');
+        const profitText = `<span style="color: ${profitColor}; font-weight: bold; font-family: 'Outfit';">${profitVal > 0 ? '+' : ''}${profitVal.toFixed(2)} USDT</span>`;
+        
+        // Format user mobile number/account
+        const userAccount = userPhoneMap[String(o.userId)] || '--';
+        const userUidStr = String(o.userId);
         
         const checkboxHtml = `<input type="checkbox" class="order-settle-checkbox" value="${o.id}">`;
-        const statusBadge = `<span style="background: rgba(59, 130, 246, 0.12); color: #3b82f6; border: 1.5px solid rgba(59, 130, 246, 0.25); padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: 700; margin-left: 6px; white-space: nowrap;">进行中</span>`;
         const actionBtnHtml = `
             <div style="display: flex; gap: 6px; justify-content: center; align-items: center;">
                 <button class="action-btn" style="background: rgba(91, 81, 249, 0.08); border: 1.5px solid var(--primary); color: var(--primary); padding: 4px 8px; font-size: 0.7rem; font-weight: 600; border-radius: 4px; cursor: pointer; height: 26px; line-height: 1;" onclick="openQuantOrderDetailModal('${o.id}')">📋 订单详情</button>
@@ -1224,21 +1352,24 @@ function renderActiveSettleListHtml(paging = null) {
         return `
             <tr>
                 <td style="text-align: center;">${checkboxHtml}</td>
-                <td>${String(o.userId || '').substring(0, 12)}...</td>
                 <td>
-                    <div style="display: flex; align-items: center; flex-wrap: nowrap;">
+                    <div style="font-weight: 600;">${userAccount}</div>
+                    <div style="color: var(--primary); font-size: 0.68rem; font-weight: 600; font-family: monospace;">${userUidStr}</div>
+                </td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 6px;">
                         <span class="badge badge-ACTIVE">${algoName}</span>
                         ${statusBadge}
                     </div>
                 </td>
                 <td style="font-family: monospace; font-size: 0.72rem;">${o.orderNo}</td>
-                <td style="font-weight: 600;">${parseFloat(o.investAmount).toFixed(2)} USDT</td>
+                <td style="font-weight: 700; font-family: 'Outfit';">${parseFloat(o.investAmount).toFixed(2)} USDT</td>
                 <td>
-                    <div>${instrumentName}</div>
+                    <span style="font-weight: 600; color: var(--text-primary);">${instrumentName}</span>
                 </td>
-                <td style="font-weight: 500; color: var(--text-muted);">--</td>
-                <td style="font-weight: 600; color: var(--text-muted);">--</td>
-                <td style="color: var(--text-muted); font-size: 0.75rem;">${date}</td>
+                <td style="font-weight: 600; font-family: 'Outfit';">${holdingQty.toFixed(4)}</td>
+                <td>${profitText}</td>
+                <td style="color: var(--text-muted); font-size: 0.72rem;">${date}</td>
                 <td style="text-align: center;">${actionBtnHtml}</td>
             </tr>
         `;
@@ -1253,6 +1384,20 @@ function renderActiveSettleListHtml(paging = null) {
     if (indicator) {
         indicator.innerText = `第 ${pg.page} / ${pg.pages} 页 (共 ${pg.records} 条)`;
     }
+}
+
+export function resetSettleFilters() {
+    const uidFilter = document.getElementById('filter-settle-uid');
+    const orderNoFilter = document.getElementById('filter-settle-orderno');
+    const statusFilter = document.getElementById('filter-settle-status');
+    
+    if (uidFilter) uidFilter.value = '';
+    if (orderNoFilter) orderNoFilter.value = '';
+    if (statusFilter) statusFilter.value = 'ALL';
+    
+    window.adminPages.quantSettle.current = 1;
+    loadQuantSettleList();
+    showToast('✓ 结算筛选条件已重置为默认值', false);
 }
 
 window.renderActiveSettleListHtml = renderActiveSettleListHtml;
@@ -1455,6 +1600,7 @@ export async function submitBatchSell(event) {
 
 // Bind to window to allow calling from HTML
 window.loadQuantSettleList = loadQuantSettleList;
+window.resetSettleFilters = resetSettleFilters;
 window.toggleSelectAllSettleOrders = toggleSelectAllSettleOrders;
 window.openBatchBuyModal = openBatchBuyModal;
 window.closeBatchBuyModal = closeBatchBuyModal;
