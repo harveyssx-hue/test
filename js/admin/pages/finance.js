@@ -160,7 +160,64 @@ async function handleDepositReview(id, action) {
     }
 }
 
-// viewProofImage, handleProofImageError, and closeProofLightbox are now globally managed in app.js
+// viewProofImage, handleProofImageError, and closeProofLightbox fallback implementations in finance.js
+export function viewProofImage(id) {
+    console.log('[finance.js viewProofImage] Clicked with ID:', id);
+    if (window.viewProofImage && window.viewProofImage !== viewProofImage) {
+        console.log('[finance.js viewProofImage] Delegating to global viewProofImage');
+        window.viewProofImage(id);
+        return;
+    }
+    
+    const lightbox = document.getElementById('proof-lightbox-modal');
+    const lightboxImg = document.getElementById('proof-lightbox-img');
+    const errorDiv = document.getElementById('proof-lightbox-error');
+    
+    console.log('[finance.js viewProofImage] Lightbox elements:', { lightbox, lightboxImg, errorDiv });
+    
+    if (!lightbox || !lightboxImg || !errorDiv) return;
+    
+    lightbox.style.display = 'flex';
+    lightboxImg.style.display = 'none';
+    errorDiv.style.display = 'none';
+    lightboxImg.src = '';
+    
+    const list = window.cachedDeposits || [];
+    const deposit = list.find(d => String(d.id) === String(id));
+    const proofUrl = deposit ? deposit.paymentProof : '';
+    window.lastSelectedProofUrl = proofUrl;
+    
+    if (!proofUrl) {
+        lightboxImg.style.display = 'none';
+        errorDiv.style.display = 'flex';
+        if (typeof window.handleProofImageError === 'function') {
+            window.handleProofImageError();
+        }
+        return;
+    }
+    
+    let targetUrl = proofUrl;
+    const isLocalDev = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+    if (isLocalDev && (targetUrl.includes('storage.googleapis.com') || targetUrl.startsWith('http://') || targetUrl.startsWith('https://'))) {
+        targetUrl = '/download-gcs?url=' + encodeURIComponent(targetUrl);
+    }
+    
+    lightboxImg.src = targetUrl;
+    lightboxImg.style.display = 'block';
+}
+
+export function closeProofLightbox() {
+    if (window.closeProofLightbox && window.closeProofLightbox !== closeProofLightbox) {
+        window.closeProofLightbox();
+        return;
+    }
+    const lightbox = document.getElementById('proof-lightbox-modal');
+    const lightboxImg = document.getElementById('proof-lightbox-img');
+    const errorDiv = document.getElementById('proof-lightbox-error');
+    if (lightbox) lightbox.style.display = 'none';
+    if (lightboxImg) lightboxImg.src = '';
+    if (errorDiv) errorDiv.style.display = 'none';
+}
 
 async function loadWithdrawList() {
     if (!currentAdmin) return;

@@ -124,7 +124,7 @@ export async function loadQuantMonitor() {
     const pageSize = pageConf.size;
     
     // Extract filter values
-    const statusVal = document.getElementById('filter-quant-status')?.value || 'ALL';
+    const statusVal = document.getElementById('filter-quant-status')?.value || 'PENDING';
     const uidVal = document.getElementById('filter-quant-uid')?.value.trim() || '';
     const orderNoVal = document.getElementById('filter-quant-orderNo')?.value.trim().toLowerCase() || '';
     
@@ -146,8 +146,8 @@ export async function loadQuantMonitor() {
         let allOrders = [];
         let currentPage = 1;
         
-        while (currentPage <= 10) {
-            let fetchUrl = `/trading/quant/orders?page=${currentPage}&pageSize=100`;
+        while (currentPage <= 50) {
+            let fetchUrl = `/trading/quant/orders?page=${currentPage}&pageSize=60`;
             if (statusVal !== 'ALL') {
                 fetchUrl += `&status=${statusVal}`;
             }
@@ -170,7 +170,7 @@ export async function loadQuantMonitor() {
             const pg = res.paging || { page: currentPage, pageSize: 60, pages: 1, records: allOrders.length };
             const totalRecords = pg.records || allOrders.length;
             
-            if (allOrders.length >= totalRecords || list.length === 0 || currentPage >= pg.pages) {
+            if (allOrders.length >= totalRecords || list.length === 0) {
                 break;
             }
             currentPage++;
@@ -178,13 +178,8 @@ export async function loadQuantMonitor() {
         
         const orders = allOrders;
         
-        // Sort: PENDING (未审核) orders first, then by createdAt descending (newest first)
+        // Sort by createdAt descending (newest first)
         orders.sort((a, b) => {
-            const priorityA = a.status === 'PENDING' ? 1 : 0;
-            const priorityB = b.status === 'PENDING' ? 1 : 0;
-            if (priorityA !== priorityB) {
-                return priorityB - priorityA;
-            }
             const timeA = parseInt(a.createdAt || 0);
             const timeB = parseInt(b.createdAt || 0);
             return timeB - timeA;
@@ -349,7 +344,7 @@ function resetQuantFilters() {
     const orderNoFilter = document.getElementById('filter-quant-orderNo');
     const uidFilter = document.getElementById('filter-quant-uid');
     
-    if (statusFilter) statusFilter.value = 'ALL';
+    if (statusFilter) statusFilter.value = 'PENDING';
     if (orderNoFilter) orderNoFilter.value = '';
     if (uidFilter) uidFilter.value = '';
     
@@ -362,29 +357,44 @@ function resetQuantFilters() {
 async function submitAllOrderReview() {
     showToast('正在检索全站待审核量化订单...', false);
     try {
-        const res = await apiFetch('GET', '/trading/quant/orders?status=PENDING&page=1&pageSize=1000', null, true);
-        if (res.code === 200) {
-            const pendingOrders = res.result || res.data || [];
-            if (pendingOrders.length === 0) {
-                showToast('❌ 当前全站无可审核的待处理量化订单！', true);
+        let pendingOrders = [];
+        let currentPage = 1;
+        while (currentPage <= 50) {
+            const fetchUrl = `/trading/quant/orders?status=PENDING&page=${currentPage}&pageSize=60`;
+            const res = await apiFetch('GET', fetchUrl, null, true);
+            if (res.code !== 200) {
+                showToast(res.errorMessage || '获取待审核订单列表失败！', true);
                 return;
             }
-            if (!confirm(`⚠️ 您确定要一键批准通过全站所有共 ${pendingOrders.length} 笔待审核量化订单吗？`)) {
-                return;
-            }
-            const orderIds = pendingOrders.map(o => o.id);
-            showToast(`正在一键批量审核 ${orderIds.length} 笔订单...`, false);
+            const list = res.result || res.data || [];
+            pendingOrders = pendingOrders.concat(list);
             
-            const reviewRes = await apiFetch('POST', '/trading/quant/orders/batch-approve', { orderIds: orderIds }, true);
-            if (reviewRes.code === 200) {
-                showToast(`✓ 已成功一键批准全站 ${orderIds.length} 笔量化委托启动！`, false);
-                loadQuantMonitor();
-                loadDashboardStats();
-            } else {
-                showToast(reviewRes.errorMessage || '一键批量审核失败！', true);
+            const pg = res.paging || { page: currentPage, pageSize: 60, pages: 1, records: pendingOrders.length };
+            const totalRecords = pg.records || pendingOrders.length;
+            
+            if (pendingOrders.length >= totalRecords || list.length === 0) {
+                break;
             }
+            currentPage++;
+        }
+        
+        if (pendingOrders.length === 0) {
+            showToast('❌ 当前全站无可审核的待处理量化订单！', true);
+            return;
+        }
+        if (!confirm(`⚠️ 您确定要一键批准通过全站所有共 ${pendingOrders.length} 笔待审核量化订单吗？`)) {
+            return;
+        }
+        const orderIds = pendingOrders.map(o => o.id);
+        showToast(`正在一键批量审核 ${orderIds.length} 笔订单...`, false);
+        
+        const reviewRes = await apiFetch('POST', '/trading/quant/orders/batch-approve', { orderIds: orderIds }, true);
+        if (reviewRes.code === 200) {
+            showToast(`✓ 已成功一键批准全站 ${orderIds.length} 笔量化委托启动！`, false);
+            loadQuantMonitor();
+            loadDashboardStats();
         } else {
-            showToast(res.errorMessage || '获取待审核订单列表失败！', true);
+            showToast(reviewRes.errorMessage || '一键批量审核失败！', true);
         }
     } catch(e) {
         console.error(e);
@@ -1216,8 +1226,8 @@ async function loadQuantSettleList() {
         let allOrders = [];
         let currentPage = 1;
         
-        while (currentPage <= 10) {
-            const fetchUrl = `/trading/quant/orders?status=ACTIVE&page=${currentPage}&pageSize=100`;
+        while (currentPage <= 50) {
+            const fetchUrl = `/trading/quant/orders?status=ACTIVE&page=${currentPage}&pageSize=60`;
             const res = await apiFetch('GET', fetchUrl, null, true);
             
             if (res.code !== 200) {
@@ -1234,7 +1244,7 @@ async function loadQuantSettleList() {
             const pg = res.paging || { page: currentPage, pageSize: 60, pages: 1, records: allOrders.length };
             const totalRecords = pg.records || allOrders.length;
             
-            if (allOrders.length >= totalRecords || list.length === 0 || currentPage >= pg.pages) {
+            if (allOrders.length >= totalRecords || list.length === 0) {
                 break;
             }
             currentPage++;

@@ -16,8 +16,8 @@
                                 <div style="display: flex; align-items: center; gap: 4px;">
                                     <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">状态</span>
                                     <select id="filter-quant-status" onchange="window.adminPages.quant.current=1; loadQuantMonitor()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 4px; width: 140px;">
+                                        <option value="PENDING" selected>未审核 (PENDING)</option>
                                         <option value="ALL">所有状态</option>
-                                        <option value="PENDING">未审核 (PENDING)</option>
                                         <option value="ACTIVE">运行中 (ACTIVE)</option>
                                         <option value="COMPLETED">已结算 (COMPLETED)</option>
                                     </select>

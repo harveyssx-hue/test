@@ -615,11 +615,17 @@ export function copyToClipboard(text, msg = '复制成功！') {
 window.copyToClipboard = copyToClipboard;
 
 export async function viewProofImage(id) {
+    console.log('[viewProofImage] Clicked with ID:', id);
     const lightbox = document.getElementById('proof-lightbox-modal');
     const lightboxImg = document.getElementById('proof-lightbox-img');
     const errorDiv = document.getElementById('proof-lightbox-error');
     
-    if (!lightbox || !lightboxImg || !errorDiv) return;
+    console.log('[viewProofImage] Lightbox elements:', { lightbox, lightboxImg, errorDiv });
+    
+    if (!lightbox || !lightboxImg || !errorDiv) {
+        console.error('[viewProofImage] Aborting: Missing lightbox elements in DOM!');
+        return;
+    }
     
     // Revoke previous Object URL if any to prevent memory leaks
     if (window.currentProofObjectURL) {
