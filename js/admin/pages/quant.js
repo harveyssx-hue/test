@@ -1440,6 +1440,8 @@ window.submitStrategyBatchSettle = submitStrategyBatchSettle;
 window.loadQuantMonitor = loadQuantMonitor;
 window.resetQuantFilters = resetQuantFilters;
 window.submitAllOrderReview = submitAllOrderReview;
+window.handleQuantReviewSubmit = handleQuantReviewSubmit;
+
 
 // SECTION 11: DAILY OPERATIONAL REPORT - BACKEND DATA AGGREGATION & RENDERING
 let cachedDailyReportData = [];
