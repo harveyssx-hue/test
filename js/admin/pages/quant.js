@@ -1305,7 +1305,7 @@ async function loadQuantSettleList() {
             const renderList = paginateList(resultList, 'quantSettle');
             
             activeSettleOrders = renderList;
-            renderActiveSettleListHtml(pgInfo, userPhoneMap);
+            renderActiveSettleListHtml(null, userPhoneMap);
     } catch (err) {
         console.error('Error fetching trades traces:', err);
         showToast('获取成交明细异常！', true);
