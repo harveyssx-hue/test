@@ -43,10 +43,9 @@
                                 <button class="action-btn" onclick="changeAdminPage('quant', 1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">下一页</button>
                             </div>
                         </div>
-                        <div style="margin-top: 8px; font-size: 0.7rem; color: #DC2626; font-weight: 700;">说明: 购买总额 = 本金 + 券金额</div>
                     </div>
                     
-                    <!-- Table Container with the new 13 columns structure -->
+                    <!-- Table Container with the new 11 columns structure -->
                     <div class="table-container compact-table">
                         <table>
                             <thead>
@@ -57,9 +56,7 @@
                                     <th>交易日期/场次</th>
                                     <th>会员账号/UID</th>
                                     <th>量化类型</th>
-                                    <th>购买总额 (USDT)</th>
                                     <th>本金金额 (USDT)</th>
-                                    <th>券金额 (USDT)</th>
                                     <th>仓位比例</th>
                                     <th>周期(天)</th>
                                     <th>订单号</th>
@@ -74,9 +71,7 @@
                             <tfoot>
                                 <tr style="background: rgba(91, 81, 249, 0.05); font-weight: bold; border-top: 1.5px solid var(--border-light);">
                                     <td colspan="4" style="text-align: left; padding: 12px 15px; color: var(--text-primary);">统计 (Summary)</td>
-                                    <td id="quant-total-buy-amount" style="font-weight: 700; color: var(--primary);">0.00 USDT</td>
                                     <td id="quant-total-principal-amount" style="font-weight: 700; color: var(--green);">0.00 USDT</td>
-                                    <td id="quant-total-coupon-amount" style="font-weight: 700; color: var(--text-secondary);">0.00 USDT</td>
                                     <td colspan="6"></td>
                                 </tr>
                             </tfoot>

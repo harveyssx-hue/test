@@ -200,12 +200,10 @@ export async function loadQuantMonitor() {
             if (!tbody) return;
             
             if (filteredOrders.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; color: var(--text-muted); padding: 30px 0;">全站暂无符合筛选条件的量化委托订单</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--text-muted); padding: 30px 0;">全站暂无符合筛选条件的量化委托订单</td></tr>`;
                 
                 // Reset summary statistics to zero
-                document.getElementById('quant-total-buy-amount').innerText = '0.00 USDT';
                 document.getElementById('quant-total-principal-amount').innerText = '0.00 USDT';
-                document.getElementById('quant-total-coupon-amount').innerText = '0.00 USDT';
                 
                 // Update pagination indicator
                 const indicator = document.getElementById(`quant-page-indicator`);
@@ -218,9 +216,7 @@ export async function loadQuantMonitor() {
             filteredOrders.forEach(o => {
                 sumBuyAmount += parseFloat(o.investAmount || 0);
             });
-            document.getElementById('quant-total-buy-amount').innerText = sumBuyAmount.toFixed(2) + ' USDT';
             document.getElementById('quant-total-principal-amount').innerText = sumBuyAmount.toFixed(2) + ' USDT';
-            document.getElementById('quant-total-coupon-amount').innerText = '0.00 USDT';
             
             // Paginate
             let renderList = [];
@@ -321,9 +317,7 @@ export async function loadQuantMonitor() {
                             <div style="font-weight: 600; color: var(--text-primary);">每日量化</div>
                             <div style="color: var(--text-muted); font-size: 0.7rem;">${algoName}</div>
                         </td>
-                        <td style="font-weight: 700; font-family: monospace;">${parseFloat(o.investAmount).toFixed(2)}</td>
                         <td style="font-weight: 600; font-family: monospace; color: var(--green);">${parseFloat(o.investAmount).toFixed(2)}</td>
-                        <td style="color: var(--text-muted); font-family: monospace;">0.00</td>
                         <td style="font-weight: 600; text-align: center; font-family: monospace;">${positionRatio}</td>
                         <td style="text-align: center; font-family: monospace;">1</td>
                         <td>
