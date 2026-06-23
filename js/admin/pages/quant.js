@@ -155,6 +155,19 @@ export async function loadQuantMonitor() {
         
         if (res.code === 200) {
             const orders = res.result || res.data || [];
+            
+            // Sort: PENDING (未审核) orders first, then by createdAt descending (newest first)
+            orders.sort((a, b) => {
+                const priorityA = a.status === 'PENDING' ? 1 : 0;
+                const priorityB = b.status === 'PENDING' ? 1 : 0;
+                if (priorityA !== priorityB) {
+                    return priorityB - priorityA;
+                }
+                const timeA = parseInt(a.createdAt || 0);
+                const timeB = parseInt(b.createdAt || 0);
+                return timeB - timeA;
+            });
+            
             window.cachedQuantOrders = orders;
             
             // Reset master checkbox
@@ -294,7 +307,6 @@ export async function loadQuantMonitor() {
                     actionHtml = `
                         <div style="display: flex; gap: 4px; justify-content: center; align-items: center; flex-wrap: wrap;">
                             <button class="action-btn btn-approve" style="background: rgba(91, 81, 249, 0.08); border: 1.5px solid var(--primary); color: var(--primary); padding: 4px 8px; font-size: 0.7rem; white-space: nowrap; cursor: pointer; height: 26px; line-height: 1;" onclick="switchAdminTab('quant-settle', document.getElementById('quant-settle-menu-btn'))">⚡ 结算中心</button>
-                            <button class="action-btn btn-reject" style="padding: 4px 8px; font-size: 0.7rem; font-weight: 600; border-radius: 4px; cursor: pointer; height: 26px; line-height: 1; white-space: nowrap;" onclick="handleSingleQuantSettle('${o.id}')">⚡ 一键结算</button>
                         </div>
                     `;
                 } else {
@@ -1390,7 +1402,6 @@ function renderActiveSettleListHtml(paging = null, userPhoneMap = {}) {
         const actionBtnHtml = `
             <div style="display: flex; gap: 6px; justify-content: center; align-items: center;">
                 <button class="action-btn" style="background: rgba(91, 81, 249, 0.08); border: 1.5px solid var(--primary); color: var(--primary); padding: 4px 8px; font-size: 0.7rem; font-weight: 600; border-radius: 4px; cursor: pointer; height: 26px; line-height: 1;" onclick="openQuantOrderDetailModal('${o.id}')">📋 订单详情</button>
-                <button class="action-btn btn-reject" style="padding: 4px 8px; font-size: 0.7rem; font-weight: 600; border-radius: 4px; cursor: pointer; height: 26px; line-height: 1;" onclick="handleSingleQuantSettle('${o.id}')">⚡ 强制结算</button>
             </div>
         `;
         
@@ -2553,83 +2564,7 @@ function closeLeaderOrderFollowersModal() {
 window.closeLeaderOrderFollowersModal = closeLeaderOrderFollowersModal;
 
 
-export // --- SINGLE QUANT ORDER MANUAL CLOSE & SETTLEMENT ---
-async function handleSingleQuantSettle(orderId) {
-    if (!currentAdmin) return;
-
-    const order = (window.cachedQuantOrders || []).find(o => String(o.id) === String(orderId)) 
-                 || (activeSettleOrders || []).find(o => String(o.id) === String(orderId));
-                 
-    if (!order) {
-        showToast('❌ 未找到该笔量化订单数据！', true);
-        return;
-    }
-    
-    // Attempt to resolve quantity
-    let defaultQty = parseFloat(order.tradeQuantity || order.quantity || 0);
-    if (defaultQty <= 0) {
-        try {
-            const tradesRes = await apiFetch('GET', `/trading/quant/orders/${orderId}/trades`, null, true);
-            if (tradesRes.code === 200) {
-                const trades = tradesRes.result || tradesRes.data || [];
-                if (trades.length > 0) {
-                    const lastTrade = trades[trades.length - 1];
-                    defaultQty = parseFloat(lastTrade.quantity || 0);
-                }
-            }
-        } catch(e) {
-            console.error(e);
-        }
-    }
-    
-    if (defaultQty <= 0) {
-        const qtyStr = prompt('该订单尚未建立初始持仓或持仓量为0，请输入要强制平仓结算的交易数量 (Quantity):', '0.0010');
-        if (qtyStr === null) return;
-        defaultQty = parseFloat(qtyStr);
-        if (isNaN(defaultQty) || defaultQty <= 0) {
-            showToast('❌ 数量必须大于0！', true);
-            return;
-        }
-    }
-    
-    const priceStr = prompt(`请输入该笔量化订单 (用户 UID: ${order.userId}) 的手动平仓结算价格 (USDT):`);
-    if (priceStr === null) return;
-    const price = parseFloat(priceStr);
-    if (isNaN(price) || price <= 0) {
-        showToast('❌ 请输入合法的平仓结算价格！', true);
-        return;
-    }
-    
-    if (!confirm(`⚠️ 您确定要以 ${price} USDT 的平仓价格、${defaultQty.toFixed(4)} 的平仓数量对该笔量化订单执行 [强制平仓结算] 吗？系统将直接以该价格完成盈余清算，资金实时热转入用户余额，此操作不可撤回！`)) {
-        return;
-    }
-    
-    const instrumentId = order.instrumentId || '1126151490264633456';
-    const payload = {
-        orderId: orderId,
-        instrumentId: instrumentId,
-        price: price,
-        quantity: defaultQty
-    };
-    
-    showToast('⏳ 正在提交人工强平结算撮合指令...', false);
-    
-    try {
-        const res = await apiFetch('POST', '/trading/quant/trades/sell', payload, true);
-        if (res.code === 200) {
-            showToast(`✓ 人工强平结算成功！价格: ${price.toFixed(2)}, 数量: ${defaultQty.toFixed(4)}。本息与分红已实时到账。`, false);
-            loadDashboardStats();
-            if (activeTab === 'quant') loadQuantMonitor();
-            if (activeTab === 'quant-settle') loadQuantSettleList();
-        } else {
-            showToast(res.errorMessage || '强制平仓结算操作被后端拒绝！', true);
-        }
-    } catch (e) {
-        console.error(e);
-        showToast('❌ 强制结算指令下达网络异常！', true);
-    }
-}
-window.handleSingleQuantSettle = handleSingleQuantSettle;
+// handleSingleQuantSettle has been removed per user request
 
 // --- LEVEL 2 ORDER DETAIL & MULTI-TRADE OPERATIONAL CONTROL PANEL ---
 let currentDetailOrderId = null;
@@ -2659,6 +2594,7 @@ async function getTenantSettings() {
 
 export async function openQuantOrderDetailModal(orderId) {
     currentDetailOrderId = orderId;
+    window.hasDetailTradesChanged = false;
     const modal = document.getElementById('quant-order-detail-modal');
     if (!modal) return;
     
@@ -2703,9 +2639,14 @@ export function closeQuantOrderDetailModal() {
         modal.style.display = 'none';
         modal.classList.remove('active');
     }
-    if (activeTab === 'quant-settle') {
-        loadQuantSettleList();
+    if (window.hasDetailTradesChanged) {
+        if (activeTab === 'quant-settle') {
+            loadQuantSettleList();
+        } else if (activeTab === 'quant') {
+            loadQuantMonitor();
+        }
     }
+    window.hasDetailTradesChanged = false;
 }
 
 export async function refreshOrderDetailTrades() {
@@ -2884,6 +2825,7 @@ export async function submitDetailTradeControl(event) {
         const res = await apiFetch('POST', url, payload, true);
         if (res.code === 200) {
             showToast(`✓ AI量化物理【${action === 'buy' ? '买入' : '卖出'}】撮合操盘成功！已实时结算盈亏。`, false);
+            window.hasDetailTradesChanged = true;
             await refreshOrderDetailTrades();
             document.getElementById('qdetail-price').value = '';
             document.getElementById('qdetail-qty').value = '';
