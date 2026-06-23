@@ -270,7 +270,7 @@ export async function loadQuantMonitor() {
                 // Create solid status blocks to match the screenshot
                 let statusCellHtml = '';
                 if (o.status === 'PENDING') {
-                    statusCellHtml = `<div onclick="handleQuantReviewSubmit('${o.id}', 'approve')" style="background: rgba(245, 158, 11, 0.12); color: #D97706; font-weight: 700; font-size: 0.72rem; padding: 6px 12px; border-radius: 4px; text-align: center; border: 1.5px solid rgba(245, 158, 11, 0.25); cursor: pointer;" title="点击进行快捷审核确认">未审核</div>`;
+                    statusCellHtml = `<div style="background: rgba(245, 158, 11, 0.12); color: #D97706; font-weight: 700; font-size: 0.72rem; padding: 6px 12px; border-radius: 4px; text-align: center; border: 1.5px solid rgba(245, 158, 11, 0.25);">未审核</div>`;
                 } else if (o.status === 'ACTIVE') {
                     statusCellHtml = `<div style="background: rgba(16, 185, 129, 0.12); color: #059669; font-weight: 700; font-size: 0.72rem; padding: 6px 12px; border-radius: 4px; text-align: center; border: 1.5px solid rgba(16, 185, 129, 0.25);">运行中</div>`;
                 } else if (o.status === 'COMPLETED') {
@@ -333,7 +333,7 @@ export async function loadQuantMonitor() {
                         </td>
                         <td style="font-size: 0.72rem; line-height: 1.3; font-weight: 600;">${commissionRate}</td>
                         <td style="text-align: center;">${statusCellHtml}</td>
-                        <td style="text-align: center;">${actionHtml}</td>
+                        <td class="sticky-right" style="text-align: center;">${actionHtml}</td>
                     </tr>
                 `;
             }).join('');
@@ -1421,7 +1421,7 @@ function renderActiveSettleListHtml(paging = null, userPhoneMap = {}) {
                 <td style="font-weight: 600; font-family: 'Outfit';">${holdingQty.toFixed(4)}</td>
                 <td>${profitText}</td>
                 <td style="color: var(--text-muted); font-size: 0.72rem;">${date}</td>
-                <td style="text-align: center;">${actionBtnHtml}</td>
+                <td class="sticky-right" style="text-align: center;">${actionBtnHtml}</td>
             </tr>
         `;
     }).join('');
