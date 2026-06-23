@@ -337,9 +337,6 @@ export async function loadQuantMonitor() {
                     </tr>
                 `;
             }).join('');
-        } else {
-            showToast(res.errorMessage || '获取策略列表失败！', true);
-        }
     } catch(e) {
         console.error(e);
         showToast('获取量化量化订单列表网络异常！', true);
@@ -1309,12 +1306,6 @@ async function loadQuantSettleList() {
             
             activeSettleOrders = renderList;
             renderActiveSettleListHtml(pgInfo, userPhoneMap);
-        } else {
-            showToast(res.errorMessage || '获取结算量化列表失败！', true);
-            if (tbody) {
-                tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: #EF4444; padding: 30px 0;">❌ 加载失败: ${res.errorMessage || '未知接口错误'}</td></tr>`;
-            }
-        }
     } catch (err) {
         console.error('Error fetching trades traces:', err);
         showToast('获取成交明细异常！', true);
