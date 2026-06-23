@@ -615,17 +615,11 @@ export function copyToClipboard(text, msg = '复制成功！') {
 window.copyToClipboard = copyToClipboard;
 
 export async function viewProofImage(id) {
-    console.log('[viewProofImage] Clicked with ID:', id);
     const lightbox = document.getElementById('proof-lightbox-modal');
     const lightboxImg = document.getElementById('proof-lightbox-img');
     const errorDiv = document.getElementById('proof-lightbox-error');
     
-    console.log('[viewProofImage] Lightbox elements:', { lightbox, lightboxImg, errorDiv });
-    
-    if (!lightbox || !lightboxImg || !errorDiv) {
-        console.error('[viewProofImage] Aborting: Missing lightbox elements in DOM!');
-        return;
-    }
+    if (!lightbox || !lightboxImg || !errorDiv) return;
     
     // Revoke previous Object URL if any to prevent memory leaks
     if (window.currentProofObjectURL) {
@@ -636,6 +630,7 @@ export async function viewProofImage(id) {
     }
     
     lightbox.style.display = 'flex';
+    lightbox.classList.add('active');
     lightboxImg.style.display = 'none';
     errorDiv.style.display = 'none';
     

@@ -162,9 +162,7 @@ async function handleDepositReview(id, action) {
 
 // viewProofImage, handleProofImageError, and closeProofLightbox fallback implementations in finance.js
 export function viewProofImage(id) {
-    console.log('[finance.js viewProofImage] Clicked with ID:', id);
     if (window.viewProofImage && window.viewProofImage !== viewProofImage) {
-        console.log('[finance.js viewProofImage] Delegating to global viewProofImage');
         window.viewProofImage(id);
         return;
     }
@@ -173,11 +171,10 @@ export function viewProofImage(id) {
     const lightboxImg = document.getElementById('proof-lightbox-img');
     const errorDiv = document.getElementById('proof-lightbox-error');
     
-    console.log('[finance.js viewProofImage] Lightbox elements:', { lightbox, lightboxImg, errorDiv });
-    
     if (!lightbox || !lightboxImg || !errorDiv) return;
     
     lightbox.style.display = 'flex';
+    lightbox.classList.add('active');
     lightboxImg.style.display = 'none';
     errorDiv.style.display = 'none';
     lightboxImg.src = '';
