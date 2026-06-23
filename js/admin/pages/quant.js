@@ -1275,13 +1275,19 @@ export function openBatchBuyModal() {
     ensureInstrumentsLoaded().then(() => {
         populateInstrumentSelects();
         const modal = document.getElementById('selected-batch-buy-modal');
-        if (modal) modal.style.display = 'flex';
+        if (modal) {
+            modal.style.display = 'flex';
+            modal.classList.add('active');
+        }
     });
 }
 
 export function closeBatchBuyModal() {
     const modal = document.getElementById('selected-batch-buy-modal');
-    if (modal) modal.style.display = 'none';
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('active');
+    }
 }
 
 export function openBatchSellModal() {
@@ -1291,12 +1297,18 @@ export function openBatchSellModal() {
         return;
     }
     const modal = document.getElementById('selected-batch-sell-modal');
-    if (modal) modal.style.display = 'flex';
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.add('active');
+    }
 }
 
 export function closeBatchSellModal() {
     const modal = document.getElementById('selected-batch-sell-modal');
-    if (modal) modal.style.display = 'none';
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('active');
+    }
 }
 
 async function executeSelectedBatchSettleInternal(price, qty, buyInstrumentId, isSell) {
