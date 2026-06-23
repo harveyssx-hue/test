@@ -1305,7 +1305,16 @@ async function loadQuantSettleList() {
             const renderList = paginateList(resultList, 'quantSettle');
             
             activeSettleOrders = renderList;
-            renderActiveSettleListHtml(null, userPhoneMap);
+            
+            const totalItems = resultList.length;
+            const totalPages = Math.max(1, Math.ceil(totalItems / pageConf.size));
+            const paging = {
+                page: pageConf.current,
+                pageSize: pageConf.size,
+                pages: totalPages,
+                records: totalItems
+            };
+            renderActiveSettleListHtml(paging, userPhoneMap);
     } catch (err) {
         console.error('Error fetching trades traces:', err);
         showToast('获取成交明细异常！', true);

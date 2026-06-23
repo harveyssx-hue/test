@@ -621,7 +621,7 @@ export async function viewProofImage(id) {
     
     if (!lightbox || !lightboxImg || !errorDiv) return;
     
-    // Revoke previous Object URL to prevent memory leaks
+    // Revoke previous Object URL if any to prevent memory leaks
     if (window.currentProofObjectURL) {
         try {
             URL.revokeObjectURL(window.currentProofObjectURL);
@@ -637,44 +637,24 @@ export async function viewProofImage(id) {
     
     const list = window.cachedDeposits || [];
     const deposit = list.find(d => String(d.id) === String(id));
-    window.lastSelectedProofUrl = deposit ? deposit.paymentProof : '';
+    const proofUrl = deposit ? deposit.paymentProof : '';
+    window.lastSelectedProofUrl = proofUrl;
     
-    try {
-        const path = `/finance/proof/${id}`;
-        const realPath = path.startsWith('/api/v1') ? path : '/api/v1' + path;
-        
-        let baseUrl = CONFIG.APP_API_BASE;
-        const isAdminRequest = window.isAdminPanel === true || window.location.pathname.includes('admin') || realPath.startsWith('/api/v1/admin') || realPath.includes('audit') || realPath.includes('approve') || realPath.includes('reject');
-        const isCommonEndpoint = realPath.includes('/common/');
-        const isAdminPageContext = window.isAdminPanel === true || window.location.pathname.includes('admin');
-        const routeToAdmin = (isAdminPageContext || isAdminRequest) && !isCommonEndpoint;
-        if (routeToAdmin) {
-            baseUrl = CONFIG.ADMIN_API_BASE;
-        }
-        
-        const finalPath = (routeToAdmin && baseUrl === window.location.origin) ? '/admin-proxy' + realPath : realPath;
-        
-        const response = await fetch(baseUrl + finalPath, {
-            method: 'GET',
-            credentials: routeToAdmin ? 'include' : 'same-origin',
-            cache: 'no-store'
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-        
-        const blob = await response.blob();
-        const objectURL = URL.createObjectURL(blob);
-        window.currentProofObjectURL = objectURL;
-        lightboxImg.src = objectURL;
-        lightboxImg.style.display = 'block';
-    } catch (err) {
-        console.error('Error fetching proof image:', err);
+    if (!proofUrl) {
         lightboxImg.style.display = 'none';
         errorDiv.style.display = 'flex';
         handleProofImageError();
+        return;
     }
+    
+    let targetUrl = proofUrl;
+    const isLocalDev = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+    if (isLocalDev && (targetUrl.includes('storage.googleapis.com') || targetUrl.startsWith('http://') || targetUrl.startsWith('https://'))) {
+        targetUrl = '/download-gcs?url=' + encodeURIComponent(targetUrl);
+    }
+    
+    lightboxImg.src = targetUrl;
+    lightboxImg.style.display = 'block';
 }
 window.viewProofImage = viewProofImage;
 
