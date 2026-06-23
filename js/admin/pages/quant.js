@@ -74,6 +74,38 @@ export async function submitBatchOrderReview() {
 }
 window.submitBatchOrderReview = submitBatchOrderReview;
 
+export async function submitBatchOrderReject() {
+    const checkboxes = document.querySelectorAll('.order-select-checkbox:checked');
+    if (checkboxes.length === 0) {
+        showToast('❌ 请先勾选需要批量操作的待审核订单！', true);
+        return;
+    }
+    
+    const reason = prompt(`⚠️ 您确定要批量 [拒绝驳回] 这 ${checkboxes.length} 笔量化订单吗？请输入驳回原因:`, '不符合量化条件，风控驳回');
+    if (reason === null) return;
+    
+    const orderIds = Array.from(checkboxes).map(cb => cb.value);
+    showToast(`正在批量提交 ${checkboxes.length} 笔订单的拒绝决议...`, false);
+    
+    try {
+        const res = await apiFetch('POST', '/trading/quant/orders/batch-reject', { orderIds: orderIds, reason: reason || '管理员拒绝驳回' }, true);
+        
+        if (res.code === 200) {
+            showToast(`✓ 批量拒绝成功！已成功批量驳回拒绝 ${orderIds.length} 笔订单。`, false);
+            const masterCheckbox = document.getElementById('select-all-pending-orders-checkbox');
+            if (masterCheckbox) masterCheckbox.checked = false;
+            loadQuantMonitor();
+            loadDashboardStats();
+        } else {
+            showToast(res.errorMessage || `批量拒绝提交失败！`, true);
+        }
+    } catch(e) {
+        console.error(e);
+        showToast('批量拒绝接口网络异常！', true);
+    }
+}
+window.submitBatchOrderReject = submitBatchOrderReject;
+
 export function toggleSelectAllPendingOrders(master) {
     const checkboxes = document.querySelectorAll('.order-select-checkbox');
     checkboxes.forEach(cb => {
@@ -257,8 +289,9 @@ export async function loadQuantMonitor() {
                 let actionHtml = '';
                 if (o.status === 'PENDING') {
                     actionHtml = `
-                        <div style="display: flex; gap: 4px; justify-content: center;">
+                        <div style="display: flex; gap: 4px; justify-content: center; align-items: center; flex-wrap: wrap;">
                             <button class="action-btn" style="background: #28A745; color: #FFF; border: none; padding: 4px 8px; font-size: 0.7rem; border-radius: 4px; font-weight: 600; cursor: pointer; height: 26px; line-height: 1;" onclick="handleQuantReviewSubmit('${o.id}', 'approve')">通过</button>
+                            <button class="action-btn btn-reject" style="padding: 4px 8px; font-size: 0.7rem; font-weight: 600; border-radius: 4px; cursor: pointer; height: 26px; line-height: 1;" onclick="handleQuantReviewSubmit('${o.id}', 'reject')">拒绝</button>
                         </div>
                     `;
                 } else if (o.status === 'ACTIVE') {
@@ -364,25 +397,43 @@ async function submitAllOrderReview() {
 
 
 async function handleQuantReviewSubmit(orderId, action) {
-    if (action !== 'approve') return;
-    
-    if (!confirm(`⚠️ 您确定要对该未审核订单执行 [批准通过启动] 操作吗？`)) {
-        return;
-    }
-    
-    showToast(`正在提交策略审核决议 [批准]...`, false);
-    
-    try {
-        const res = await apiFetch('POST', `/trading/quant/orders/${orderId}/approve`, {}, true);
-        if (res.code === 200) {
-            showToast(`💼 策略审核处理成功：策略已批准启动 ✓`, false);
-            loadQuantMonitor();
-            loadDashboardStats();
-        } else {
-            showToast(res.errorMessage || '策略审核操作失败！', true);
+    if (action === 'approve') {
+        if (!confirm(`⚠️ 您确定要对该未审核订单执行 [批准通过启动] 操作吗？`)) {
+            return;
         }
-    } catch(e) {
-        showToast('策略审核提交网络异常！', true);
+        
+        showToast(`正在提交策略审核决议 [批准]...`, false);
+        
+        try {
+            const res = await apiFetch('POST', `/trading/quant/orders/${orderId}/approve`, {}, true);
+            if (res.code === 200) {
+                showToast(`💼 策略审核处理成功：策略已批准启动 ✓`, false);
+                loadQuantMonitor();
+                loadDashboardStats();
+            } else {
+                showToast(res.errorMessage || '策略审核操作失败！', true);
+            }
+        } catch(e) {
+            showToast('策略审核提交网络异常！', true);
+        }
+    } else if (action === 'reject') {
+        const reason = prompt(`⚠️ 您确定要对该未审核订单执行 [拒绝驳回] 操作吗？请输入驳回原因:`, '不符合量化条件，风控驳回');
+        if (reason === null) return;
+        
+        showToast(`正在提交策略审核决议 [拒绝]...`, false);
+        
+        try {
+            const res = await apiFetch('POST', `/trading/quant/orders/${orderId}/reject`, { reason: reason || '管理员拒绝驳回' }, true);
+            if (res.code === 200) {
+                showToast(`💼 策略审核处理成功：策略已被拒绝驳回 ✓`, false);
+                loadQuantMonitor();
+                loadDashboardStats();
+            } else {
+                showToast(res.errorMessage || '策略审核拒绝操作失败！', true);
+            }
+        } catch(e) {
+            showToast('策略审核拒绝提交网络异常！', true);
+        }
     }
 }
 
