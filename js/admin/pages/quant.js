@@ -143,47 +143,72 @@ export async function loadQuantMonitor() {
     }
     
     try {
-        const res = await apiFetch('GET', url, null, true);
+        let allOrders = [];
+        let currentPage = 1;
         
-        if (res.code === 200) {
-            const orders = res.result || res.data || [];
+        while (currentPage <= 10) {
+            let fetchUrl = `/trading/quant/orders?page=${currentPage}&pageSize=100`;
+            if (statusVal !== 'ALL') {
+                fetchUrl += `&status=${statusVal}`;
+            }
+            if (uidVal !== '' && /^\d+$/.test(uidVal) && uidVal.length >= 18) {
+                fetchUrl += `&userId=${uidVal}`;
+            }
             
-            // Sort: PENDING (未审核) orders first, then by createdAt descending (newest first)
-            orders.sort((a, b) => {
-                const priorityA = a.status === 'PENDING' ? 1 : 0;
-                const priorityB = b.status === 'PENDING' ? 1 : 0;
-                if (priorityA !== priorityB) {
-                    return priorityB - priorityA;
+            const res = await apiFetch('GET', fetchUrl, null, true);
+            if (res.code !== 200) {
+                showToast(res.errorMessage || '获取量化列表失败！', true);
+                if (tbody) {
+                    tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: #EF4444; padding: 30px 0;">❌ 加载失败: ${res.errorMessage || '未知接口错误'}</td></tr>`;
                 }
-                const timeA = parseInt(a.createdAt || 0);
-                const timeB = parseInt(b.createdAt || 0);
-                return timeB - timeA;
-            });
+                return;
+            }
             
-            window.cachedQuantOrders = orders;
+            const list = res.result || res.data || [];
+            allOrders = allOrders.concat(list);
             
-            // Reset master checkbox
-            const masterCheckbox = document.getElementById('select-all-pending-orders-checkbox');
-            if (masterCheckbox) masterCheckbox.checked = false;
+            const pg = res.paging || { page: currentPage, pageSize: 60, pages: 1, records: allOrders.length };
+            const totalRecords = pg.records || allOrders.length;
             
-            // Background stats update to avoid blocking table rendering
-            apiFetch('GET', '/trading/quant/orders?page=1&pageSize=1000', null, true).then(statsRes => {
-                if (statsRes.code === 200) {
-                    const allOrders = statsRes.result || statsRes.data || [];
-                    const activeCount = allOrders.filter(o => o.status === 'ACTIVE').length;
-                    const statActiveQuantEl = document.getElementById('stat-active-quant');
-                    if (statActiveQuantEl) statActiveQuantEl.innerText = activeCount;
-                    
-                    let valuation = 0;
-                    allOrders.forEach(o => {
-                        valuation += parseFloat(o.investAmount) || 0;
-                    });
-                    const statTotalValuationEl = document.getElementById('stat-total-valuation');
-                    if (statTotalValuationEl) {
-                        statTotalValuationEl.innerText = '$' + valuation.toLocaleString([], { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                    }
-                }
-            }).catch(err => console.error('Error loading background stats:', err));
+            if (allOrders.length >= totalRecords || list.length === 0 || currentPage >= pg.pages) {
+                break;
+            }
+            currentPage++;
+        }
+        
+        const orders = allOrders;
+        
+        // Sort: PENDING (未审核) orders first, then by createdAt descending (newest first)
+        orders.sort((a, b) => {
+            const priorityA = a.status === 'PENDING' ? 1 : 0;
+            const priorityB = b.status === 'PENDING' ? 1 : 0;
+            if (priorityA !== priorityB) {
+                return priorityB - priorityA;
+            }
+            const timeA = parseInt(a.createdAt || 0);
+            const timeB = parseInt(b.createdAt || 0);
+            return timeB - timeA;
+        });
+        
+        window.cachedQuantOrders = orders;
+        
+        // Reset master checkbox
+        const masterCheckbox = document.getElementById('select-all-pending-orders-checkbox');
+        if (masterCheckbox) masterCheckbox.checked = false;
+        
+        // Update stats directly using the fetched orders list to avoid duplicate requests and page size caps
+        const activeCount = orders.filter(o => o.status === 'ACTIVE').length;
+        const statActiveQuantEl = document.getElementById('stat-active-quant');
+        if (statActiveQuantEl) statActiveQuantEl.innerText = activeCount;
+        
+        let valuation = 0;
+        orders.forEach(o => {
+            valuation += parseFloat(o.investAmount) || 0;
+        });
+        const statTotalValuationEl = document.getElementById('stat-total-valuation');
+        if (statTotalValuationEl) {
+            statTotalValuationEl.innerText = '$' + valuation.toLocaleString([], { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
             
             // Apply filtering logic for partial UID search or orderNo search
             let filteredOrders = orders;
@@ -1191,12 +1216,34 @@ async function loadQuantSettleList() {
     }
     
     try {
-        // Unconditionally fetch all active records (up to 2000) for stable client-side pagination
-        const res = await apiFetch('GET', `/trading/quant/orders?status=ACTIVE&page=1&pageSize=2000`, null, true);
+        let allOrders = [];
+        let currentPage = 1;
         
-        if (res.code === 200) {
-            const orders = res.result || res.data || [];
-            const activeOrders = orders.filter(o => o.status === 'ACTIVE');
+        while (currentPage <= 10) {
+            const fetchUrl = `/trading/quant/orders?status=ACTIVE&page=${currentPage}&pageSize=100`;
+            const res = await apiFetch('GET', fetchUrl, null, true);
+            
+            if (res.code !== 200) {
+                showToast(res.errorMessage || '获取结算量化列表失败！', true);
+                if (tbody) {
+                    tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: #EF4444; padding: 30px 0;">❌ 加载失败: ${res.errorMessage || '未知接口错误'}</td></tr>`;
+                }
+                return;
+            }
+            
+            const list = res.result || res.data || [];
+            allOrders = allOrders.concat(list);
+            
+            const pg = res.paging || { page: currentPage, pageSize: 60, pages: 1, records: allOrders.length };
+            const totalRecords = pg.records || allOrders.length;
+            
+            if (allOrders.length >= totalRecords || list.length === 0 || currentPage >= pg.pages) {
+                break;
+            }
+            currentPage++;
+        }
+        
+        const activeOrders = allOrders.filter(o => o.status === 'ACTIVE');
             
             // Retrieve user phone map to support phone number display & search
             let userPhoneMap = {};
