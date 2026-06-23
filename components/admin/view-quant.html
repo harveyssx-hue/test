@@ -1,4 +1,4 @@
-            <div class="view-tab-content active" id="view-quant">
+﻿            <div class="view-tab-content active" id="view-quant">
                 <div class="glass-panel data-panel" style="padding: 18px;">
                     <!-- Advanced Query and Filter Panel (精简化顶部检索与分页) -->
                     <div style="border-bottom: 1.5px solid var(--border-light); padding-bottom: 15px; margin-bottom: 15px;">
@@ -6,8 +6,8 @@
                             <!-- Filter Inputs Left -->
                             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1;">
                                 <div style="display: flex; align-items: center; gap: 4px;">
-                                    <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">跟单用户 UID</span>
-                                    <input type="text" id="filter-quant-uid" placeholder="输入跟单用户UID" oninput="window.adminPages.quant.current=1; loadQuantMonitor()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 6px; width: 120px;">
+                                    <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">量化用户 UID</span>
+                                    <input type="text" id="filter-quant-uid" placeholder="输入量化用户UID" oninput="window.adminPages.quant.current=1; loadQuantMonitor()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 6px; width: 120px;">
                                 </div>
                                 <div style="display: flex; align-items: center; gap: 4px;">
                                     <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">订单号</span>
@@ -26,7 +26,7 @@
                                 <button class="action-btn" onclick="resetQuantFilters()" style="background: #E2E8F0; color: #475569; font-size: 0.72rem; padding: 4px 10px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 28px;">重置</button>
                                 <button class="action-btn" onclick="submitBatchOrderReview()" style="background: #1D4ED8; color: #FFF; font-size: 0.72rem; padding: 4px 10px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 28px;">批量通过</button>
                                 <button class="action-btn" onclick="submitAllOrderReview()" style="background: #15803D; color: #FFF; font-size: 0.72rem; padding: 4px 10px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 28px;">一键审核</button>
-                                <button class="action-btn" onclick="showToast('✓ 导出跟单流水报表成功！', false)" style="background: #0D9488; color: #FFF; font-size: 0.72rem; padding: 4px 10px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 28px;">导出</button>
+                                <button class="action-btn" onclick="showToast('✓ 导出量化流水报表成功！', false)" style="background: #0D9488; color: #FFF; font-size: 0.72rem; padding: 4px 10px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 28px;">导出</button>
                             </div>
                             
                             <!-- Pagination Controls Right -->
@@ -55,7 +55,7 @@
                                     </th>
                                     <th>交易日期/场次</th>
                                     <th>会员账号/UID</th>
-                                    <th>跟单类型</th>
+                                    <th>量化类型</th>
                                     <th>购买总额 (USDT)</th>
                                     <th>本金金额 (USDT)</th>
                                     <th>券金额 (USDT)</th>
@@ -84,7 +84,7 @@
                 </div>
             </div>
 
-            <!-- SECTION 10: FOLLOW ORDERS SETTLEMENT (跟单结算) -->
+            <!-- SECTION 10: FOLLOW ORDERS SETTLEMENT (量化结算) -->
     <!-- VIEW: QUANT CONTROL MODAL (Phase 19 Integration) -->
     <div id="quant-control-modal" class="overlay" style="display: none; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(15px); background: rgba(0,0,0,0.6);">
         <div class="glass-panel modal-content-payment" style="max-width: 480px; padding: 30px;">

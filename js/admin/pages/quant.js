@@ -21,6 +21,26 @@ function packStrategyStats(descText, yieldVal, winRateVal, followersVal) {
     return `${descText} [stats:${yieldVal || 0},${winRateVal || 0},${followersVal || 0}]`;
 }
 
+function getAlgoDisplayName(model) {
+    if (!model) return '神经网络高频量化';
+    if (typeof model === 'object') {
+        return model.displayName || model.name || '神经网络高频量化';
+    }
+    const modelStr = String(model).toUpperCase();
+    if (modelStr === 'MLP') return '多层感知机模型 (MLP)';
+    if (modelStr === 'LSTM') return '长短期记忆网络 (LSTM)';
+    if (modelStr === 'TRANSFORMER') return '自注意力机制模型 (Transformer)';
+    if (modelStr === 'XGBOOST') return '极速梯度提升树 (XGBoost)';
+    return model;
+}
+
+function getAlgoModelName(model) {
+    if (!model) return '';
+    if (typeof model === 'string') return model.toUpperCase();
+    if (typeof model === 'object') return (model.name || '').toUpperCase();
+    return '';
+}
+
 export async function submitBatchOrderReview() {
     const checkboxes = document.querySelectorAll('.order-select-checkbox:checked');
     if (checkboxes.length === 0) {
@@ -28,7 +48,7 @@ export async function submitBatchOrderReview() {
         return;
     }
     
-    if (!confirm(`⚠️ 您确定要批量 [批准启动] 这 ${checkboxes.length} 笔跟单订单吗？`)) {
+    if (!confirm(`⚠️ 您确定要批量 [批准启动] 这 ${checkboxes.length} 笔量化订单吗？`)) {
         return;
     }
     
@@ -95,7 +115,7 @@ export async function loadQuantMonitor() {
     
     const tbody = document.getElementById('quant-monitor-table-body');
     if (tbody) {
-        tbody.innerHTML = '<tr><td colspan="13" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">🔄 正在安全同步全站跟单量化订单列表...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="13" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">🔄 正在安全同步全站量化订单列表...</td></tr>';
     }
     
     try {
@@ -148,7 +168,7 @@ export async function loadQuantMonitor() {
             if (!tbody) return;
             
             if (filteredOrders.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; color: var(--text-muted); padding: 30px 0;">全站暂无符合筛选条件的跟单委托订单</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; color: var(--text-muted); padding: 30px 0;">全站暂无符合筛选条件的量化委托订单</td></tr>`;
                 
                 // Reset summary statistics to zero
                 document.getElementById('quant-total-buy-amount').innerText = '0.00 USDT';
@@ -198,7 +218,7 @@ export async function loadQuantMonitor() {
             
             tbody.innerHTML = renderList.map(o => {
                 const profit = parseFloat(o.actualProfit || '0');
-                const algoName = o.algorithmModel ? (o.algorithmModel.displayName || o.algorithmModel.name) : '神经网络高频量化';
+                const algoName = getAlgoDisplayName(o.algorithmModel);
                 
                 // Formulate dates and session
                 const dateObj = o.createdAt ? new Date(parseInt(o.createdAt)) : null;
@@ -265,7 +285,7 @@ export async function loadQuantMonitor() {
                             <div style="color: var(--text-muted); font-size: 0.68rem;">正式</div>
                         </td>
                         <td>
-                            <div style="font-weight: 600; color: var(--text-primary);">每日跟单</div>
+                            <div style="font-weight: 600; color: var(--text-primary);">每日量化</div>
                             <div style="color: var(--text-muted); font-size: 0.7rem;">${algoName}</div>
                         </td>
                         <td style="font-weight: 700; font-family: monospace;">${parseFloat(o.investAmount).toFixed(2)}</td>
@@ -289,7 +309,7 @@ export async function loadQuantMonitor() {
         }
     } catch(e) {
         console.error(e);
-        showToast('获取量化跟单订单列表网络异常！', true);
+        showToast('获取量化量化订单列表网络异常！', true);
     }
 }
 
@@ -310,16 +330,16 @@ function resetQuantFilters() {
 
 // Automatic review approval logic for all pending orders
 async function submitAllOrderReview() {
-    showToast('正在检索全站待审核跟单订单...', false);
+    showToast('正在检索全站待审核量化订单...', false);
     try {
         const res = await apiFetch('GET', '/trading/quant/orders?status=PENDING&page=1&pageSize=1000', null, true);
         if (res.code === 200) {
             const pendingOrders = res.result || res.data || [];
             if (pendingOrders.length === 0) {
-                showToast('❌ 当前全站无可审核的待处理跟单订单！', true);
+                showToast('❌ 当前全站无可审核的待处理量化订单！', true);
                 return;
             }
-            if (!confirm(`⚠️ 您确定要一键批准通过全站所有共 ${pendingOrders.length} 笔待审核跟单订单吗？`)) {
+            if (!confirm(`⚠️ 您确定要一键批准通过全站所有共 ${pendingOrders.length} 笔待审核量化订单吗？`)) {
                 return;
             }
             const orderIds = pendingOrders.map(o => o.id);
@@ -327,7 +347,7 @@ async function submitAllOrderReview() {
             
             const reviewRes = await apiFetch('POST', '/trading/quant/orders/batch-approve', { orderIds: orderIds }, true);
             if (reviewRes.code === 200) {
-                showToast(`✓ 已成功一键批准全站 ${orderIds.length} 笔跟单委托启动！`, false);
+                showToast(`✓ 已成功一键批准全站 ${orderIds.length} 笔量化委托启动！`, false);
                 loadQuantMonitor();
                 loadDashboardStats();
             } else {
@@ -1123,7 +1143,7 @@ window.closeQuantControlModal = closeQuantControlModal;
 window.toggleQctrlActionFields = toggleQctrlActionFields;
 window.submitQuantControl = submitQuantControl;
 
-export // --- FOLLOW ORDERS SETTLEMENT (跟单结算 - Phase 22 Integration) ---
+export // --- QUANT SETTLEMENT (量化结算 - Phase 22 Integration) ---
 let activeSettleOrders = []; // store in-memory for checkbox and selection operations!
 
 async function loadQuantSettleList() {
@@ -1136,7 +1156,7 @@ async function loadQuantSettleList() {
     
     const tbody = document.getElementById('quant-settle-table-body');
     if (tbody) {
-        tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">🔄 正在安全同步跟单结算订单列表...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">🔄 正在安全同步量化结算订单列表...</td></tr>';
     }
     
     try {
@@ -1158,7 +1178,7 @@ async function loadQuantSettleList() {
             }
             renderActiveSettleListHtml(pgInfo);
         } else {
-            showToast(res.errorMessage || '获取结算跟单列表失败！', true);
+            showToast(res.errorMessage || '获取结算量化列表失败！', true);
             if (tbody) {
                 tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: #EF4444; padding: 30px 0;">❌ 加载失败: ${res.errorMessage || '未知接口错误'}</td></tr>`;
             }
@@ -1180,7 +1200,7 @@ function renderActiveSettleListHtml(paging = null) {
     if (!tbody) return;
     
     if (activeSettleOrders.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 30px 0;">当前没有运行中 (ACTIVE) 的跟单委托订单需要结算</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 30px 0;">当前没有运行中 (ACTIVE) 的量化委托订单需要结算</td></tr>`;
         const indicator = document.getElementById(`quantSettle-page-indicator`);
         if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
         return;
@@ -1188,7 +1208,7 @@ function renderActiveSettleListHtml(paging = null) {
     
     // Server-side paginated list: render activeSettleOrders directly
     tbody.innerHTML = activeSettleOrders.map(o => {
-        const algoName = o.algorithmModel ? (o.algorithmModel.displayName || o.algorithmModel.name) : '神经网络高频量化';
+        const algoName = getAlgoDisplayName(o.algorithmModel);
         const date = o.createdAt ? new Date(parseInt(o.createdAt)).toLocaleString() : '--';
         const instrumentName = o.instrumentId ? translateInstrument(o.instrumentId) : '--';
         
@@ -1277,7 +1297,7 @@ function toggleBatchModeFields() {
 async function executeSelectedBatchSettle() {
     const checkboxes = document.querySelectorAll('.order-settle-checkbox:checked');
     if (checkboxes.length === 0) {
-        showToast('❌ 请先勾选需要批量操作的跟单订单！', true);
+        showToast('❌ 请先勾选需要批量操作的量化订单！', true);
         return;
     }
     
@@ -1307,7 +1327,7 @@ async function executeSelectedBatchSettle() {
         }
     }
     
-    if (!confirm(`⚠️ 您确定要对已勾选的 ${checkboxes.length} 笔跟单订单执行 [${actionStr}] 操作吗？`)) {
+    if (!confirm(`⚠️ 您确定要对已勾选的 ${checkboxes.length} 笔量化订单执行 [${actionStr}] 操作吗？`)) {
         return;
     }
     
@@ -1395,7 +1415,7 @@ async function executeSelectedBatchSettle() {
         const res = await apiFetch('POST', endpoint, requests, true);
         
         if (res.code === 200) {
-            showToast(`✓ 已成功执行 ${requests.length} 笔跟单的 [${actionStr}] 批量操盘！`, false);
+            showToast(`✓ 已成功执行 ${requests.length} 笔量化的 [${actionStr}] 批量操盘！`, false);
             document.getElementById('selected-batch-price').value = '';
             document.getElementById('selected-batch-qty').value = '';
             loadQuantSettleList();
@@ -1434,18 +1454,18 @@ async function submitStrategyBatchSettle() {
         targetOrders = activeSettleOrders.filter(o => o.status === 'ACTIVE');
     } else {
         targetOrders = activeSettleOrders.filter(o => {
-            const algoName = o.algorithmModel ? o.algorithmModel.name.toUpperCase() : '';
-            return o.status === 'ACTIVE' && algoName.includes(strategyModel);
+            const algoName = getAlgoModelName(o.algorithmModel);
+            return o.status === 'ACTIVE' && algoName.includes(strategyModel.toUpperCase());
         });
     }
     
     if (targetOrders.length === 0) {
-        showToast(`❌ 当前没有符合条件且处于运行中的跟单仓位！`, true);
+        showToast(`❌ 当前没有符合条件且处于运行中的量化仓位！`, true);
         return;
     }
     
     const actionStr = action === 'sell' ? '批量卖出' : '批量买入';
-    if (!confirm(`⚠️ 您确定要对 [${strategyModel}] 策略下的所有共 ${targetOrders.length} 笔运行中跟单执行 [${actionStr}] 操作吗？`)) {
+    if (!confirm(`⚠️ 您确定要对 [${strategyModel}] 策略下的所有共 ${targetOrders.length} 笔运行中量化执行 [${actionStr}] 操作吗？`)) {
         return;
     }
     
@@ -1466,7 +1486,7 @@ async function submitStrategyBatchSettle() {
         const res = await apiFetch('POST', endpoint, requests, true);
         
         if (res.code === 200) {
-            showToast(`✓ 已成功对 [${strategyModel}] 策略 of ${targetOrders.length} 笔跟单执行 [${actionStr}] 批量操盘！`, false);
+            showToast(`✓ 已成功对 [${strategyModel}] 策略 of ${targetOrders.length} 笔量化执行 [${actionStr}] 批量操盘！`, false);
             document.getElementById('batch-settle-price').value = '';
             document.getElementById('batch-settle-qty').value = '';
             loadQuantSettleList();
@@ -2395,7 +2415,7 @@ async function handleSingleQuantSettle(orderId) {
                  || (activeSettleOrders || []).find(o => String(o.id) === String(orderId));
                  
     if (!order) {
-        showToast('❌ 未找到该笔跟单订单数据！', true);
+        showToast('❌ 未找到该笔量化订单数据！', true);
         return;
     }
     
@@ -2434,7 +2454,7 @@ async function handleSingleQuantSettle(orderId) {
         return;
     }
     
-    if (!confirm(`⚠️ 您确定要以 ${price} USDT 的平仓价格、${defaultQty.toFixed(4)} 的平仓数量对该笔跟单订单执行 [强制平仓结算] 吗？系统将直接以该价格完成盈余清算，资金实时热转入用户余额，此操作不可撤回！`)) {
+    if (!confirm(`⚠️ 您确定要以 ${price} USDT 的平仓价格、${defaultQty.toFixed(4)} 的平仓数量对该笔量化订单执行 [强制平仓结算] 吗？系统将直接以该价格完成盈余清算，资金实时热转入用户余额，此操作不可撤回！`)) {
         return;
     }
     
@@ -2500,7 +2520,7 @@ export async function openQuantOrderDetailModal(orderId) {
                  || (activeSettleOrders || []).find(o => String(o.id) === String(orderId));
     
     if (!order) {
-        showToast('❌ 未找到该笔跟单订单数据！', true);
+        showToast('❌ 未找到该笔量化订单数据！', true);
         return;
     }
     currentDetailOrder = order;
@@ -2509,7 +2529,7 @@ export async function openQuantOrderDetailModal(orderId) {
     document.getElementById('qdet-order-no').innerText = order.orderNo;
     document.getElementById('qdet-user-uid').innerText = String(order.userId || '').substring(0, 12) + '...';
     document.getElementById('qdet-invest-amount').innerText = parseFloat(order.investAmount).toFixed(2);
-    document.getElementById('qdet-algo-model').innerText = order.algorithmModel ? (order.algorithmModel.displayName || order.algorithmModel.name) : '神经网络高频量化';
+    document.getElementById('qdet-algo-model').innerText = getAlgoDisplayName(order.algorithmModel);
     
     const settings = await getTenantSettings();
     const brokerageRate = order.brokerageRate || settings['quant.brokerage.rate'] || '0.05';

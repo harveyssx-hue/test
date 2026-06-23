@@ -37,14 +37,14 @@ const tabConfig = {
         init: () => window.loadRiskLevelsList()
     },
     'quant': {
-        title: '👥 全站 AI 量化跟单列表',
+        title: '👥 全站 AI 量化订单列表',
         desc: '审核与管理全站交易员的量化委托订单，批准启动或拒绝撤销',
         controller: 'quant',
         init: () => window.loadQuantMonitor()
     },
     'quant-settle': {
-        title: '⚡ AI 跟单交易结算中心',
-        desc: '对已被批准运行中 (ACTIVE) 的跟单委托订单进行单独、策略批量或多选批量价格操盘与盈亏结算',
+        title: '⚡ AI 量化交易结算中心',
+        desc: '对已被批准运行中 (ACTIVE) 的量化委托订单进行单独、策略批量或多选批量价格操盘与盈亏结算',
         controller: 'quant',
         init: () => window.loadQuantSettleList()
     },
@@ -496,10 +496,19 @@ export function dispatchAdminEvent(eventType, moduleName, data) {
         'deposit.created', 'deposit.approved', 'deposit.rejected',
         'withdrawal.created', 'withdrawal.approved', 'withdrawal.rejected',
         'kyc.submitted', 'kyc.approved', 'kyc.rejected',
-        'order.created', 'order.settled', 'order.cancelled'
+        'order.created', 'order.settled', 'order.cancelled',
+        'identity.kyc.status-changed.v1',
+        'finance.account.changed.v1',
+        'trading.quant.order.status-changed.v1'
     ];
     
-    if (autoReloadEvents.includes(eventType)) {
+    const eventTypeStr = String(eventType || '');
+    // Support exact matches as well as substring matching for robust real-time updates
+    const isReloadEvent = autoReloadEvents.includes(eventTypeStr) ||
+                          eventTypeStr.includes('status-changed') ||
+                          eventTypeStr.includes('account.changed');
+    
+    if (isReloadEvent) {
         triggerAdminDashboardReloadDebounced();
     }
 }

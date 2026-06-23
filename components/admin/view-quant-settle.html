@@ -1,9 +1,9 @@
-            <div class="view-tab-content active" id="view-quant-settle">
+﻿            <div class="view-tab-content active" id="view-quant-settle">
                 <div class="glass-panel data-panel" style="padding: 18px;">
                     <!-- Unified Title Header -->
                     <div class="data-panel-header" style="border-bottom: 1.5px solid var(--border-light); padding-bottom: 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
                         <div class="data-panel-title" style="font-size: 1.15rem; color: var(--primary); display: flex; align-items: center; gap: 6px; font-weight: bold;">
-                            ⚡ AI 跟单策略级清结算与操盘管理中心
+                            ⚡ AI 量化策略级清结算与操盘管理中心
                         </div>
                         <!-- Pagination Controls Right -->
                         <div style="display: flex; gap: 6px; align-items: center; background: rgba(255, 255, 255, 0.05); padding: 2px 8px; border-radius: 6px; border: 1.5px solid var(--border-light);">
@@ -26,7 +26,7 @@
                         </div>
                         <div class="form-grid-4">
                             <div class="auth-input-group" style="margin-bottom: 0;">
-                                <label style="font-weight: 600; font-size: 0.72rem; color: var(--text-secondary);">选择跟单策略模型</label>
+                                <label style="font-weight: 600; font-size: 0.72rem; color: var(--text-secondary);">选择量化策略模型</label>
                                 <select id="batch-settle-strategy" class="payment-add-select" style="height: 32px; border-radius: 6px; font-size: 0.75rem; padding: 0 8px; width: 100%;">
                                     <option value="ALL">✨ 全部策略 (ALL Strategies)</option>
                                     <option value="MLP">多层感知机模型 (MLP)</option>
@@ -66,7 +66,7 @@
                     <div style="border-top: 1.5px solid var(--border-light); padding-top: 15px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
                             <div style="font-size: 0.82rem; font-weight: bold; color: var(--primary); display: flex; align-items: center; gap: 4px;">
-                                👥 活动跟单明细与勾选操盘 (已选仓位批量/单笔结算)
+                                👥 活动量化明细与勾选操盘 (已选仓位批量/单笔结算)
                             </div>
                             <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
                                 <select id="selected-batch-mode" onchange="toggleBatchModeFields()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1.5px solid var(--border); padding: 0 4px; width: 90px; background: transparent; color: var(--text-primary); cursor: pointer; outline: none; font-weight: 600;">
@@ -88,8 +88,8 @@
                                 <thead>
                                     <tr>
                                         <th style="width: 45px; text-align: center;"><input type="checkbox" id="select-all-settle-orders" onchange="toggleSelectAllSettleOrders(this)"></th>
-                                        <th>跟单用户 UID</th>
-                                        <th>跟单策略</th>
+                                        <th>量化用户 UID</th>
+                                        <th>量化策略</th>
                                         <th>策略流水号</th>
                                         <th>投入资金</th>
                                         <th>当前品种</th>
