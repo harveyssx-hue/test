@@ -248,8 +248,9 @@ export async function switchAdminTab(tab, btnEl) {
         }
         
         // Load sub-controller with cache buster
-        const ctrl = tabConfig[tab].controller;
-        const module = await import(`./pages/${ctrl}.js?v=${ADMIN_APP_VERSION}`);
+        const moduleUrl = new URL(`./pages/${ctrl}.js?v=${ADMIN_APP_VERSION}`, import.meta.url).href;
+        const importModule = new Function('s', 'return import(s)');
+        const module = await importModule(moduleUrl);
         
         // Expose exported methods to window so inline event handlers work
         for (const [key, val] of Object.entries(module)) {
