@@ -128,19 +128,11 @@ export async function loadQuantMonitor() {
     const uidVal = document.getElementById('filter-quant-uid')?.value.trim() || '';
     const orderNoVal = document.getElementById('filter-quant-orderNo')?.value.trim().toLowerCase() || '';
     
-    // Hybrid pagination strategy: client side filter fallback if orderNo or partial UID search is active
-    const isSearchingOrderNo = orderNoVal !== '';
-    const isSearchingUidPartial = uidVal !== '' && (!/^\d+$/.test(uidVal) || uidVal.length < 18);
-    const isClientFallback = isSearchingOrderNo || isSearchingUidPartial;
-    
-    const apiPageSize = isClientFallback ? 1000 : pageSize;
-    const apiPage = isClientFallback ? 1 : page;
-    
-    let url = `/trading/quant/orders?page=${apiPage}&pageSize=${apiPageSize}`;
+    // Unconditionally fetch all records (up to 2000) for stable client-side sorting and pagination
+    let url = `/trading/quant/orders?page=1&pageSize=2000`;
     if (statusVal !== 'ALL') {
         url += `&status=${statusVal}`;
     }
-    // Only query server-side exact match if we have a full 18+ digit integer ID
     if (uidVal !== '' && /^\d+$/.test(uidVal) && uidVal.length >= 18) {
         url += `&userId=${uidVal}`;
     }
@@ -231,31 +223,8 @@ export async function loadQuantMonitor() {
             });
             document.getElementById('quant-total-principal-amount').innerText = sumBuyAmount.toFixed(2) + ' USDT';
             
-            // Paginate
-            let renderList = [];
-            
-            if (isClientFallback) {
-                renderList = paginateList(filteredOrders, 'quant');
-            } else {
-                renderList = filteredOrders;
-                const pgInfo = res.paging || { page: page, pageSize: pageSize, pages: 1, records: filteredOrders.length };
-                const totalPages = pgInfo.pages || Math.max(1, Math.ceil(pgInfo.records / pageSize));
-                pageConf.totalPages = totalPages;
-                
-                if (pageConf.current > totalPages && totalPages > 0) {
-                    pageConf.current = totalPages;
-                    loadQuantMonitor();
-                    return;
-                }
-                if (pageConf.current < 1) {
-                    pageConf.current = 1;
-                }
-                
-                const indicator = document.getElementById(`quant-page-indicator`);
-                if (indicator) {
-                    indicator.innerText = `第 ${pageConf.current} / ${totalPages} 页 (共 ${pgInfo.records} 条)`;
-                }
-            }
+            // Client-side pagination to support stable page-counts and cross-page sorting
+            const renderList = paginateList(filteredOrders, 'quant');
             
             tbody.innerHTML = renderList.map(o => {
                 const profit = parseFloat(o.actualProfit || '0');
@@ -1216,18 +1185,14 @@ async function loadQuantSettleList() {
     const orderNoFilter = document.getElementById('filter-settle-orderno')?.value.trim().toLowerCase() || '';
     const statusFilter = document.getElementById('filter-settle-status')?.value || 'ALL';
     
-    const isFiltering = uidFilter !== '' || orderNoFilter !== '' || statusFilter !== 'ALL';
-    
-    const apiPageSize = isFiltering ? 1000 : pageSize;
-    const apiPage = isFiltering ? 1 : page;
-    
     const tbody = document.getElementById('quant-settle-table-body');
     if (tbody) {
         tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">🔄 正在安全同步量化结算订单列表...</td></tr>';
     }
     
     try {
-        const res = await apiFetch('GET', `/trading/quant/orders?status=ACTIVE&page=${apiPage}&pageSize=${apiPageSize}`, null, true);
+        // Unconditionally fetch all active records (up to 2000) for stable client-side pagination
+        const res = await apiFetch('GET', `/trading/quant/orders?status=ACTIVE&page=1&pageSize=2000`, null, true);
         
         if (res.code === 200) {
             const orders = res.result || res.data || [];
@@ -1292,40 +1257,8 @@ async function loadQuantSettleList() {
                 });
             }
             
-            // Paginate
-            let renderList = [];
-            let pgInfo = null;
-            
-            if (isFiltering) {
-                const totalRecords = resultList.length;
-                const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
-                pageConf.totalPages = totalPages;
-                
-                if (pageConf.current > totalPages) pageConf.current = totalPages;
-                if (pageConf.current < 1) pageConf.current = 1;
-                
-                const start = (pageConf.current - 1) * pageSize;
-                const end = start + pageSize;
-                renderList = resultList.slice(start, end);
-                
-                pgInfo = { page: pageConf.current, pageSize: pageSize, pages: totalPages, records: totalRecords };
-            } else {
-                renderList = resultList;
-                const backendPg = res.paging || { page: page, pageSize: pageSize, pages: 1, records: resultList.length };
-                const totalPages = backendPg.pages || Math.max(1, Math.ceil(backendPg.records / pageSize));
-                pageConf.totalPages = totalPages;
-                
-                if (pageConf.current > totalPages && totalPages > 0) {
-                    pageConf.current = totalPages;
-                    loadQuantSettleList();
-                    return;
-                }
-                if (pageConf.current < 1) {
-                    pageConf.current = 1;
-                }
-                
-                pgInfo = { page: pageConf.current, pageSize: pageSize, pages: totalPages, records: backendPg.records };
-            }
+            // Client-side pagination to support stable page-counts and sorting
+            const renderList = paginateList(resultList, 'quantSettle');
             
             activeSettleOrders = renderList;
             renderActiveSettleListHtml(pgInfo, userPhoneMap);
