@@ -64,12 +64,15 @@ function renderHomeTrending(type = 'gainers') {
         const cleanSym = inst.symbol.toUpperCase().replace('.IN', '').replace('USDT', '');
         const fallbackSvg = getCoinFallbackSvg(inst.symbol, 32);
         
+        const isStock = inst.assetClass === 'STOCK' || !inst.symbol.toUpperCase().endsWith('USDT');
+        const quoteHtml = isStock ? '' : '<span style="font-size: 0.6rem; color: var(--text-muted); font-weight: 600;">/USDT</span>';
+        
         return `
             <div class="trending-stock-row" onclick="showMarketDetail('${inst.symbol}')" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: #FFF; border-radius: 16px; border: 1.5px solid var(--border-light); cursor: pointer; transition: var(--transition);">
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <img src="${inst.logo || ''}" onerror="this.onerror=null; this.src='${fallbackSvg}'" alt="${cleanSym}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: contain; background: #F8FAFC; border: 1px solid rgba(0,0,0,0.03);" />
                     <div style="text-align: left;">
-                        <div style="font-size: 0.8rem; font-weight: 750; color: var(--text-primary);">${cleanSym}<span style="font-size: 0.6rem; color: var(--text-muted); font-weight: 600;">/USDT</span></div>
+                        <div style="font-size: 0.8rem; font-weight: 750; color: var(--text-primary);">${cleanSym}${quoteHtml}</div>
                         <div style="font-size: 0.62rem; color: var(--text-muted); font-weight: 600; margin-top: 1px;">${shortenCompanyName(inst.name) || cleanSym}</div>
                     </div>
                 </div>

@@ -523,13 +523,16 @@ function renderMarketList() {
             const cleanSym = inst.symbol.toUpperCase().replace('.IN', '').replace('USDT', '');
             const fallbackSvg = getCoinFallbackSvg(inst.symbol, 32);
             
+            const isStock = inst.assetClass === 'STOCK' || !inst.symbol.toUpperCase().endsWith('USDT');
+            const quoteSymbolHtml = isStock ? '' : '<span class="quote-symbol">/USDT</span>';
+            
             return `
                 <div class="market-coin-row" onclick="showMarketDetail('${inst.symbol}')">
                     <div class="coin-left-col">
                         <img class="coin-row-logo" src="${inst.logo || ''}" onerror="this.onerror=null; this.src='${fallbackSvg}'" alt="${cleanSym}" />
                         <div class="coin-row-meta">
                             <div class="coin-row-symbol">
-                                ${cleanSym}<span class="quote-symbol">/USDT</span>
+                                ${cleanSym}${quoteSymbolHtml}
                             </div>
                             <span class="coin-row-name">${shortenCompanyName(inst.name) || cleanSym}</span>
                         </div>
@@ -746,7 +749,9 @@ function showMarketDetail(symbol) {
             logoEl.style.display = 'inline-block';
         }
         if (symbolEl) {
-            symbolEl.innerText = inst.symbol.replace('USDT', '') + ' / USDT';
+            const isStock = inst.assetClass === 'STOCK' || !inst.symbol.toUpperCase().endsWith('USDT');
+            const cleanSym = inst.symbol.toUpperCase().replace('.IN', '').replace('USDT', '');
+            symbolEl.innerText = isStock ? cleanSym : cleanSym + ' / USDT';
         }
         
         // Fetch initial Ticker snapshot from HTTP API
