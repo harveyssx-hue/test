@@ -653,23 +653,11 @@ async function loadStockRankings(type) {
         }
         
         if (type === 'stock-gainers') {
-            stockGainers = [...data].sort((a, b) => {
-                const aVal = parseFloat(a.ticker?.priceChangePercent) || 0;
-                const bVal = parseFloat(b.ticker?.priceChangePercent) || 0;
-                return bVal - aVal;
-            });
+            stockGainers = data;
         } else if (type === 'stock-losers') {
-            stockLosers = [...data].sort((a, b) => {
-                const aVal = parseFloat(a.ticker?.priceChangePercent) || 0;
-                const bVal = parseFloat(b.ticker?.priceChangePercent) || 0;
-                return aVal - bVal;
-            });
+            stockLosers = data;
         } else if (type === 'stock-turnover') {
-            stockTurnover = [...data].sort((a, b) => {
-                const aVal = parseFloat(a.ticker?.quoteVolume) || 0;
-                const bVal = parseFloat(b.ticker?.quoteVolume) || 0;
-                return bVal - aVal;
-            });
+            stockTurnover = data;
         }
         
         // Add loaded instruments to recommendedInstruments if missing
