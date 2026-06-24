@@ -235,7 +235,7 @@ async function loadMyInvitees() {
     }
     
     try {
-        const res = await apiFetch('GET', '/users/referrals', null, true);
+        const res = await apiFetch('GET', '/users/referrals?page=1&pageSize=1000', null, true);
         
         if (res.code === 200) {
             const list = res.result || res.data || [];

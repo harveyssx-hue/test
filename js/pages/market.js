@@ -243,10 +243,14 @@ async function initChart() {
     let inst = recommendedInstruments.find(i => i.symbol.toLowerCase() === activeSymbol);
     if (!inst) {
         const cleanSymbol = activeSymbol.toUpperCase();
-        const defaultExchangeId = recommendedInstruments.length > 0 ? recommendedInstruments[0].exchangeId : '1183071278383239173';
+        const isStockSymbol = cleanSymbol.endsWith('.IN') || !cleanSymbol.endsWith('USDT');
+        const defaultExchangeId = recommendedInstruments.length > 0 
+            ? (recommendedInstruments.find(r => (r.assetClass === 'STOCK' || r.symbol.toUpperCase().endsWith('.IN')) === isStockSymbol)?.exchangeId || recommendedInstruments[0].exchangeId)
+            : (isStockSymbol ? '1211226463185936384' : '1183071278383239173');
         inst = {
             symbol: cleanSymbol,
-            exchangeId: defaultExchangeId
+            exchangeId: defaultExchangeId,
+            assetClass: isStockSymbol ? 'STOCK' : 'CRYPTO'
         };
     }
     if (inst && inst.exchangeId) {
@@ -284,37 +288,22 @@ async function initChart() {
         }
     }
 
-    // Load initial visual data block (Fallback simulation if offline/failed)
-    const data = [];
-    const intervalSec = getIntervalSeconds(activeInterval);
-    let time = Math.floor(Date.now() / 1000) - 80 * intervalSec;
-    let basePrice = activeSymbol === 'btcusdt' ? 65000.00 : (activeSymbol === 'ethusdt' ? 3200.00 : (activeSymbol === 'solusdt' ? 145.00 : 0.52));
-    
-    for (let i = 0; i < 80; i++) {
-        const change = (Math.random() - 0.49) * (basePrice * 0.002);
-        const open = basePrice;
-        const close = basePrice + change;
-        const high = Math.max(open, close) + Math.random() * (basePrice * 0.001);
-        const low = Math.min(open, close) - Math.random() * (basePrice * 0.001);
-        
-        data.push({
-            time: time,
-            open: parseFloat(open.toFixed(4)),
-            high: parseFloat(high.toFixed(4)),
-            low: parseFloat(low.toFixed(4)),
-            close: parseFloat(close.toFixed(4))
-        });
-        
-        basePrice = close;
-        time += intervalSec;
+    // Enterprise-grade placeholder: if API fails or returns no data, clear the chart container and show a proper status message
+    const chartContainer = document.getElementById('kline-chart');
+    if (chartContainer) {
+        chartContainer.innerHTML = `
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); font-size: 0.8rem; gap: 8px; padding: 20px;">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.6;">
+                    <line x1="18" y1="20" x2="18" y2="10"></line>
+                    <line x1="12" y1="20" x2="12" y2="4"></line>
+                    <line x1="6" y1="20" x2="6" y2="14"></line>
+                </svg>
+                <span data-i18n="market_chart_no_data">Historical chart data is temporarily unavailable</span>
+            </div>
+        `;
     }
-    
-    candleSeries.setData(data);
-    if (data.length > 0) {
-        const lastBar = data[data.length - 1];
-        lastBarTime = lastBar.time;
-        currentBar = { ...lastBar };
-    }
+    currentChart = null;
+    candleSeries = null;
 }
 
 function relayoutTradingChart() {
@@ -449,12 +438,12 @@ async function loadRecommendedInstruments() {
         recommendedInstruments = [];
     }
     
-    // Initialize sparkline pools for recommended coins
+    // Initialize sparkline pools for recommended coins with a flat baseline of the current price (no fake price generation)
     recommendedInstruments.forEach(inst => {
         const symUpper = inst.symbol.toUpperCase();
         if (!sparklinePools[symUpper]) {
             const base = parseFloat(inst.ticker?.closePrice) || 1.0;
-            sparklinePools[symUpper] = Array.from({length: 12}, () => base + (Math.random() - 0.5) * base * 0.005);
+            sparklinePools[symUpper] = Array.from({length: 12}, () => base);
         }
     });
     
@@ -519,9 +508,23 @@ function renderMarketList() {
             return aVal - bVal;
         });
     } else if (currentMarketCategory === 'stock-gainers') {
-        list = [...stockGainers];
+        list = stockGainers.filter(inst => {
+            const chg = parseFloat(inst.ticker?.priceChangePercent) || 0;
+            return chg > 0;
+        }).sort((a, b) => {
+            const aChg = parseFloat(a.ticker?.priceChangePercent) || 0;
+            const bChg = parseFloat(b.ticker?.priceChangePercent) || 0;
+            return bChg - aChg;
+        });
     } else if (currentMarketCategory === 'stock-losers') {
-        list = [...stockLosers];
+        list = stockLosers.filter(inst => {
+            const chg = parseFloat(inst.ticker?.priceChangePercent) || 0;
+            return chg < 0;
+        }).sort((a, b) => {
+            const aChg = parseFloat(a.ticker?.priceChangePercent) || 0;
+            const bChg = parseFloat(b.ticker?.priceChangePercent) || 0;
+            return aChg - bChg;
+        });
     } else if (currentMarketCategory === 'stock-turnover') {
         list = [...stockTurnover];
     } else {
@@ -653,9 +656,23 @@ async function loadStockRankings(type) {
         }
         
         if (type === 'stock-gainers') {
-            stockGainers = data;
+            stockGainers = data.filter(inst => {
+                const chg = parseFloat(inst.ticker?.priceChangePercent) || 0;
+                return chg > 0;
+            }).sort((a, b) => {
+                const aChg = parseFloat(a.ticker?.priceChangePercent) || 0;
+                const bChg = parseFloat(b.ticker?.priceChangePercent) || 0;
+                return bChg - aChg;
+            });
         } else if (type === 'stock-losers') {
-            stockLosers = data;
+            stockLosers = data.filter(inst => {
+                const chg = parseFloat(inst.ticker?.priceChangePercent) || 0;
+                return chg < 0;
+            }).sort((a, b) => {
+                const aChg = parseFloat(a.ticker?.priceChangePercent) || 0;
+                const bChg = parseFloat(b.ticker?.priceChangePercent) || 0;
+                return aChg - bChg;
+            });
         } else if (type === 'stock-turnover') {
             stockTurnover = data;
         }
@@ -667,11 +684,11 @@ async function loadStockRankings(type) {
                     recommendedInstruments.push(inst);
                 }
                 
-                // Initialize dummy sparkline pools for stock symbols
+                // Initialize sparkline pools for stock symbols with a flat baseline of the current price (no fake price generation)
                 const symUpper = inst.symbol.toUpperCase();
                 if (!sparklinePools[symUpper]) {
                     const base = parseFloat(inst.ticker?.closePrice) || 1.0;
-                    sparklinePools[symUpper] = Array.from({length: 12}, () => base + (Math.random() - 0.5) * base * 0.005);
+                    sparklinePools[symUpper] = Array.from({length: 12}, () => base);
                 }
             }
         });
@@ -760,12 +777,17 @@ function showMarketDetail(symbol) {
     if (!inst) {
         // Fallback for custom/non-recommended symbols like SOLUSDT so that all details and snapshots still load
         const cleanSymbol = symbol.toUpperCase();
-        const defaultExchangeId = recommendedInstruments.length > 0 ? recommendedInstruments[0].exchangeId : '1183071278383239173';
+        const isStockSymbol = cleanSymbol.endsWith('.IN') || !cleanSymbol.endsWith('USDT');
+        const defaultExchangeId = recommendedInstruments.length > 0 
+            ? (recommendedInstruments.find(r => (r.assetClass === 'STOCK' || r.symbol.toUpperCase().endsWith('.IN')) === isStockSymbol)?.exchangeId || recommendedInstruments[0].exchangeId)
+            : (isStockSymbol ? '1211226463185936384' : '1183071278383239173');
+            
         inst = {
             symbol: cleanSymbol,
             logo: getCoinFallbackSvg(cleanSymbol, 20),
             exchangeId: defaultExchangeId,
-            name: cleanSymbol.replace('USDT', ''),
+            assetClass: isStockSymbol ? 'STOCK' : 'CRYPTO',
+            name: cleanSymbol.replace('.IN', '').replace('USDT', ''),
             ticker: {}
         };
         // Add it to recommendedInstruments so it is cached and doesn't get lost, and stays in the list of streams
@@ -1086,17 +1108,20 @@ function renderWatchlistModalItems() {
         const priceStr = priceVal !== null && !isNaN(priceVal) ? priceVal.toFixed(inst.symbol.toLowerCase() === 'xrpusdt' ? 4 : 2) : '--';
         
         const fallbackSvg = getCoinFallbackSvg(inst.symbol, 28);
+        const isStock = inst.assetClass === 'STOCK' || !inst.symbol.toUpperCase().endsWith('USDT');
+        const currencySymbol = isStock ? '₹' : '$';
+        const assetClassLabel = isStock ? (currentLocale === 'hi' ? 'स्टॉक एसेट' : 'Stock Asset') : (currentLocale === 'hi' ? 'क्रिप्टो एसेट' : 'Crypto Asset');
         return `
             <div class="notify-row" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 12px 10px; border-bottom: 1px solid var(--border-light);" onclick="switchActiveSymbol('${inst.symbol}'); closeWatchlistModal(); switchTab('market');">
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <img src="${inst.logo || ''}" onerror="this.onerror=null; this.src='${fallbackSvg}'" style="width: 28px; height: 28px; border-radius: 50%;" />
                     <div>
                         <h4 style="margin: 0; font-size: 0.9rem; color: var(--text-primary); font-weight: 600;">${inst.symbol}</h4>
-                        <span style="font-size: 0.7rem; color: var(--text-secondary);">${inst.name || 'Crypto Asset'}</span>
+                        <span style="font-size: 0.7rem; color: var(--text-secondary);">${inst.name || assetClassLabel}</span>
                     </div>
                 </div>
                 <div style="text-align: right;">
-                    <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary);">$${priceStr}</div>
+                    <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary);">${currencySymbol}${priceStr}</div>
                     <span class="${chgClass}" style="font-size: 0.75rem; font-weight: 600;">${chgStr}</span>
                 </div>
             </div>
@@ -1230,19 +1255,24 @@ function renderSearchResults(query, isHotDefault) {
             const chgStr = `${chgPercent >= 0 ? '+' : ''}${chgPercent.toFixed(2)}%`;
             const chgClass = chgPercent >= 0 ? 'green' : 'red';
             
+            const isStock = inst.assetClass === 'STOCK' || !inst.symbol.toUpperCase().endsWith('USDT');
+            const currencySymbol = isStock ? '₹' : '$';
+            const assetClassLabel = isStock ? (currentLocale === 'hi' ? 'लाइव स्टॉक एसेट' : 'Live Stock Asset') : (currentLocale === 'hi' ? 'लाइव क्रिप्टो एसेट' : 'Live Crypto Asset');
+            const iconChar = isStock ? '₹' : '$';
+            
             html += `
                 <div class="notify-row" style="padding: 10px; margin-bottom: 8px; border-radius: 10px; background: rgba(255,255,255,0.6); border: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s;" onclick="closeSearchModal(); switchActiveSymbol('${inst.symbol}'); switchTab('market');">
                     <div style="display: flex; align-items: center; gap: 10px; text-align: left;">
                         <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(16, 185, 129, 0.06); display: flex; align-items: center; justify-content: center; font-size: 0.9rem; font-weight: 700; color: var(--primary);">
-                            $
+                            ${iconChar}
                         </div>
                         <div>
                             <h4 style="margin: 0; font-size: 0.8rem; color: var(--text-primary); font-weight: 700;">${symUpper}</h4>
-                            <span style="font-size: 0.65rem; color: var(--text-muted); font-weight: 600;">Live Trading Asset</span>
+                            <span style="font-size: 0.65rem; color: var(--text-muted); font-weight: 600;">${assetClassLabel}</span>
                         </div>
                     </div>
                     <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;">
-                        <span class="${chgClass}" style="font-weight: 800; font-size: 0.85rem;">$${price.toFixed(2)} (${chgStr})</span>
+                        <span class="${chgClass}" style="font-weight: 800; font-size: 0.85rem;">${currencySymbol}${price.toFixed(2)} (${chgStr})</span>
                         <span style="font-size: 0.6rem; color: var(--text-secondary); text-decoration: underline; white-space: nowrap; font-weight: 600;">${t('search_click_to_trade')} ›</span>
                     </div>
                 </div>

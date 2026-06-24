@@ -76,8 +76,13 @@ function renderHomeTrending(type = 'gainers') {
         return;
     }
     
-    // 2. Sort copy of filtered list
-    const sorted = [...filtered].sort((a, b) => {
+    // 2. Filter by trend direction and sort copy of filtered list
+    const trendFiltered = filtered.filter(inst => {
+        const chg = parseFloat(inst.ticker?.priceChangePercent) || 0;
+        return type === 'gainers' ? chg > 0 : chg < 0;
+    });
+
+    const sorted = [...trendFiltered].sort((a, b) => {
         const aChg = parseFloat(a.ticker?.priceChangePercent) || 0;
         const bChg = parseFloat(b.ticker?.priceChangePercent) || 0;
         return type === 'gainers' ? bChg - aChg : aChg - bChg;
@@ -85,6 +90,12 @@ function renderHomeTrending(type = 'gainers') {
     
     // Take top 5
     const top5 = sorted.slice(0, 5);
+    
+    if (top5.length === 0) {
+        const emptyMsg = type === 'gainers' ? 'No gainers available.' : 'No losers available.';
+        listEl.innerHTML = `<div style="text-align: center; padding: 40px 10px; color: var(--text-muted); font-size: 0.8rem; font-weight: 600;">${emptyMsg}</div>`;
+        return;
+    }
     
     const shortenCompanyName = (name) => {
         if (!name) return '';

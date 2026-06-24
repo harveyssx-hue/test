@@ -102,7 +102,7 @@ async function loadQuantOrders() {
     }
     
     try {
-        const res = await apiFetch('GET', '/trading/quant/orders', null, true);
+        const res = await apiFetch('GET', '/trading/quant/orders?page=1&pageSize=1000', null, true);
         if (res.code === 200) {
             const orders = res.result || res.data || [];
             
@@ -465,7 +465,7 @@ async function renderFundDetailsItems() {
     
     try {
         const [res, depositsRes] = await Promise.all([
-            apiFetch('GET', '/finance/ledgers', null, true),
+            apiFetch('GET', '/finance/ledgers?page=1&pageSize=1000', null, true),
             apiFetch('GET', '/finance/deposits', null, true).catch(() => null)
         ]);
         
