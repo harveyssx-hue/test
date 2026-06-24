@@ -90,7 +90,7 @@ export async function loadUsersList() {
             if (rl.enabled) {
                 const opt = document.createElement('option');
                 opt.value = rl.id;
-                opt.textContent = `${rl.name} (${rl.code})`;
+                opt.textContent = `${rl.name} (等级 ${rl.level || 0})`;
                 filterRiskLevelSelect.appendChild(opt);
             }
         });
@@ -103,7 +103,7 @@ export async function loadUsersList() {
             if (rl.enabled) {
                 const opt = document.createElement('option');
                 opt.value = rl.id;
-                opt.textContent = `${rl.name} (${rl.code})`;
+                opt.textContent = `${rl.name} (等级 ${rl.level || 0})`;
                 groupModalSelect.appendChild(opt);
             }
         });
@@ -562,11 +562,13 @@ export async function loadRiskLevelsList() {
             
             window.cachedRiskLevels = list;
             
-            const pagingObj = res.paging || {
-                page: pageConf.current,
-                pageSize: pageConf.size,
-                records: list.length,
-                pages: 1
+            const totalRecords = (res.paging && res.paging.records > 0) ? res.paging.records : list.length;
+            const totalPages = (res.paging && res.paging.pages > 0) ? res.paging.pages : Math.max(1, Math.ceil(totalRecords / pageConf.size));
+            const pagingObj = {
+                page: (res.paging && res.paging.page) || pageConf.current,
+                pageSize: (res.paging && res.paging.pageSize) || pageConf.size,
+                records: totalRecords,
+                pages: totalPages
             };
             
             updateAdminPageIndicator('riskLevels', pagingObj);
@@ -584,7 +586,7 @@ export async function loadRiskLevelsList() {
                     <tr style="border-bottom: 1.5px solid var(--border-light);">
                         <td style="font-family: monospace; font-size: 0.8rem;">${item.id}</td>
                         <td style="font-weight: bold; color: var(--text-primary);">${item.name}</td>
-                        <td><code style="background: rgba(0,0,0,0.04); padding: 2px 6px; border-radius: 4px; font-family: monospace; font-weight: 600;">${item.code}</code></td>
+                        <td><code style="background: rgba(0,0,0,0.04); padding: 2px 6px; border-radius: 4px; font-family: monospace; font-weight: 600;">等级 ${item.level || 0}</code></td>
                         <td style="font-weight: 600; color: var(--text-primary);">${parseFloat(item.depositLimit || 0).toFixed(2)} USDT</td>
                         <td style="font-weight: 600; color: var(--text-primary);">${parseFloat(item.withdrawLimit || 0).toFixed(2)} USDT</td>
                         <td>${needAuditText}</td>
@@ -657,7 +659,7 @@ export function openRiskLevelModal(id = null) {
         const matched = (window.cachedRiskLevels || []).find(x => String(x.id) === String(id));
         if (matched) {
             nameEl.value = matched.name || '';
-            codeEl.value = matched.code || '';
+            codeEl.value = matched.level !== undefined ? matched.level : '';
             depositLimitEl.value = matched.depositLimit !== undefined ? matched.depositLimit : '';
             withdrawLimitEl.value = matched.withdrawLimit !== undefined ? matched.withdrawLimit : '';
             needAuditEl.value = matched.needAudit ? 'true' : 'false';
@@ -667,7 +669,7 @@ export function openRiskLevelModal(id = null) {
         titleEl.innerText = '🛡️ 新增风控层级';
         editIdEl.value = '';
         nameEl.value = '';
-        codeEl.value = '';
+        codeEl.value = '0';
         depositLimitEl.value = '0';
         withdrawLimitEl.value = '0';
         needAuditEl.value = 'true';
@@ -696,14 +698,14 @@ export async function submitRiskLevelForm(event) {
     
     const id = document.getElementById('risk-level-edit-id').value;
     const name = document.getElementById('risk-level-name').value.trim();
-    const code = document.getElementById('risk-level-code').value.trim().toUpperCase();
+    const level = parseInt(document.getElementById('risk-level-code').value.trim());
     const depositLimit = parseFloat(document.getElementById('risk-level-depositLimit').value) || 0;
     const withdrawLimit = parseFloat(document.getElementById('risk-level-withdrawLimit').value) || 0;
     const needAudit = document.getElementById('risk-level-needAudit').value === 'true';
     const remark = document.getElementById('risk-level-remark').value.trim();
     
-    if (!name || !code) {
-        showToast('层级名称和标识代码是必填字段！', true);
+    if (!name || isNaN(level)) {
+        showToast('层级名称和级别是必填字段！', true);
         return;
     }
     
@@ -711,7 +713,7 @@ export async function submitRiskLevelForm(event) {
     
     const payload = {
         name,
-        code,
+        level,
         depositLimit,
         withdrawLimit,
         needAudit,

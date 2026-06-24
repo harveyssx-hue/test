@@ -6,7 +6,7 @@ const ADMIN_APP_VERSION = Date.now();
 
 // Global variables
 window.currentAdmin = null;
-window.activeTab = 'overview';
+window.activeTab = 'welcome';
 window.bizWs = null;
 window.exchangeRatesList = [];
 window.userAccountCache = window.userAccountCache || {};
@@ -21,11 +21,11 @@ window.adminState = state;
 
 // Map tabs to their page sub-controllers and view titles
 const tabConfig = {
-    'overview': {
-        title: '控制中心大屏',
-        desc: '全站账户、资金合规审核与量化实时运行监控看板',
-        controller: 'overview',
-        init: () => window.loadDashboardStats()
+    'welcome': {
+        title: '控制中心',
+        desc: '欢迎使用 MATP CORE 审计管理系统',
+        controller: 'welcome',
+        init: () => {}
     },
     'kyc': {
         title: 'KYC 认证审核中心',
@@ -388,8 +388,8 @@ export async function checkAdminSession() {
             const nicknameEl = document.getElementById('admin-nickname');
             if (nicknameEl) nicknameEl.innerText = '系统审计员';
             
-            // Switch to initial tab (overview)
-            await switchAdminTab('overview', document.querySelector('.sidebar-menu .menu-item.active'));
+            // Switch to initial tab (welcome)
+            await switchAdminTab('welcome', document.querySelector('.sidebar-menu .menu-item.active'));
             
             listenToBizEvents();
         } else {
@@ -713,6 +713,9 @@ export function closeProofLightbox() {
     if (errorDiv) errorDiv.style.display = 'none';
 }
 window.closeProofLightbox = closeProofLightbox;
+
+// Stub for legacy dashboard stats reload calls
+window.loadDashboardStats = async () => {};
 
 // Initial start
 document.addEventListener('DOMContentLoaded', () => {

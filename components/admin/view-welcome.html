@@ -1,0 +1,48 @@
+<div class="view-tab-content active" id="view-welcome">
+    <div class="glass-panel" style="padding: 50px 40px; border-radius: 16px; text-align: center; background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)); border: 1px solid rgba(255,255,255,0.08); margin-top: 20px; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);">
+        <div style="font-size: 4.5rem; margin-bottom: 25px; filter: drop-shadow(0 0 20px var(--primary)); animation: float 3s ease-in-out infinite;">🚀</div>
+        <h2 style="font-size: 2.4rem; font-weight: 700; margin-bottom: 15px; background: linear-gradient(to right, #38BDF8, #A78BFA); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-family: 'Outfit', sans-serif;">
+            欢迎登录 MATP CORE 审计系统
+        </h2>
+        <p style="font-size: 1.05rem; color: var(--text-secondary); max-width: 650px; margin: 0 auto 35px; line-height: 1.7; letter-spacing: 0.5px;">
+            您已成功接入全站账户、资金合规审计与量化交易实时监控中心。请通过左侧导航菜单，开始对各项业务进行合规审计与运营管理。
+        </p>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; max-width: 800px; margin: 0 auto; text-align: left;">
+            <div class="glass-panel" style="padding: 22px; border-radius: 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); transition: all 0.3s ease; cursor: pointer;" onclick="document.getElementById('daily-report-menu-btn')?.click()">
+                <div style="font-size: 1.8rem; margin-bottom: 10px;">📊</div>
+                <h4 style="margin: 0 0 6px 0; color: var(--text-primary); font-size: 0.95rem;">数据运营日报</h4>
+                <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;">查看今日注册、充提等核心经营日报指标与统计。</p>
+            </div>
+            <div class="glass-panel" style="padding: 22px; border-radius: 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); transition: all 0.3s ease; cursor: pointer;" onclick="document.getElementById('kyc-menu-btn')?.click()">
+                <div style="font-size: 1.8rem; margin-bottom: 10px;">🛡️</div>
+                <h4 style="margin: 0 0 6px 0; color: var(--text-primary); font-size: 0.95rem;">KYC 审核中心</h4>
+                <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;">审计认证交易员身份，控制入场防洗钱及合规风险。</p>
+            </div>
+            <div class="glass-panel" style="padding: 22px; border-radius: 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); transition: all 0.3s ease; cursor: pointer;" onclick="document.getElementById('quant-menu-btn')?.click()">
+                <div style="font-size: 1.8rem; margin-bottom: 10px;">🤖</div>
+                <h4 style="margin: 0 0 6px 0; color: var(--text-primary); font-size: 0.95rem;">量化订单管理</h4>
+                <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;">监控并审核全站交易员的神经网络高频委托与结算单。</p>
+            </div>
+        </div>
+        
+        <div style="margin-top: 50px; font-size: 0.82rem; color: var(--text-muted); border-top: 1px solid rgba(255,255,255,0.05); padding-top: 25px; display: flex; justify-content: center; align-items: center; gap: 15px;">
+            <span>当前登录身份：<strong style="color: var(--text-primary);">系统审计员 (Super Auditor)</strong></span>
+            <span style="color: rgba(255, 255, 255, 0.1);">|</span>
+            <span>系统安全评级：<strong style="color: #10B981;">SECURE</strong></span>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+}
+.glass-panel:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    border-color: rgba(56, 189, 248, 0.3) !important;
+}
+</style>
