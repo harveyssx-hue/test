@@ -144,9 +144,12 @@
                         </div>
 
                         <!-- TRENDING STOCKS Section -->
-                        <div class="section-header" style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-                            <h3 style="font-size: 0.95rem; font-weight: 800; color: var(--text-primary); letter-spacing: 0.2px;" data-i18n="home_sec_trending">Trending Assets</h3>
-                            <span style="font-size: 0.85rem; color: var(--text-muted); cursor: pointer;" onclick="switchTab('market')">›</span>
+                        <div class="section-header" style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; padding: 0 4px;">
+                            <h3 id="home-trending-title" style="font-size: 0.95rem; font-weight: 800; color: var(--text-primary); letter-spacing: 0.2px; text-transform: uppercase;">Trending Crypto</h3>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <button id="btn-trending-class-toggle" onclick="toggleHomeTrendingClass()" style="padding: 4px 12px; border-radius: 16px; font-size: 0.65rem; font-weight: 700; background: #FFF; border: 1.5px solid var(--border-light); color: var(--text-secondary); cursor: pointer; transition: var(--transition); text-transform: uppercase; line-height: 1.2;">Stocks</button>
+                                <span style="font-size: 0.85rem; color: var(--text-muted); cursor: pointer;" onclick="switchTab('market')">›</span>
+                            </div>
                         </div>
                         
                         <!-- Filter tabs matching mockup -->

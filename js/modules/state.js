@@ -32,6 +32,7 @@ const state = {
     marketWsReconnectTimer: null,
     currentTrendingType: 'gainers',
     activeInterval: '1m',
+    homeTrendingClass: 'crypto',
     
     // Constant exchange rates
     PLATFORM_EXCHANGE_RATES: {
@@ -64,7 +65,7 @@ const globalVars = [
     'userUsdtBalance', 'isAssetValueVisible', 'assetPollInterval', 'assetDisplayCurrency', 'currentSelectedChannelIdx', 
     'activeTab', 'activeAssetFilter', 'activeStrategyFilter', 'isMarketDetailActive',
     'currentLocale', 'PLATFORM_EXCHANGE_RATES', 'sparklinePools',
-    'marketWsReconnectTimer', 'currentTrendingType', 'activeInterval'
+    'marketWsReconnectTimer', 'currentTrendingType', 'activeInterval', 'homeTrendingClass'
 ];
 
 globalVars.forEach(name => {
