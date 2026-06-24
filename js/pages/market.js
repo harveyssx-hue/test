@@ -31,6 +31,16 @@ function getIntervalSeconds(interval) {
     return 60;
 }
 
+function shortenCompanyName(name) {
+    if (!name) return '';
+    let clean = name.trim();
+    // Only filter out legal structure suffixes (case-insensitive)
+    clean = clean.replace(/\b(ltd|limited|co|co\.|corp|corporation|inc|incorporated|plc)\b/ig, '');
+    // Clean up trailing spaces, commas, dots, dashes
+    clean = clean.replace(/[\s,\.\-]+$/, '').trim();
+    return clean;
+}
+
 // Expose key functions to window immediately to avoid timing issues with inline event handlers
 window.switchActiveSymbol = switchActiveSymbol;
 window.loadRecommendedInstruments = loadRecommendedInstruments;
@@ -510,7 +520,7 @@ function renderMarketList() {
             const starChar = isWatched ? '\u2605' : '\u2606';
             const starColor = isWatched ? '#F59E0B' : 'var(--text-muted)';
             
-            const cleanSym = inst.symbol.toUpperCase().replace('USDT', '');
+            const cleanSym = inst.symbol.toUpperCase().replace('.IN', '').replace('USDT', '');
             const fallbackSvg = getCoinFallbackSvg(inst.symbol, 32);
             
             return `
@@ -521,7 +531,7 @@ function renderMarketList() {
                             <div class="coin-row-symbol">
                                 ${cleanSym}<span class="quote-symbol">/USDT</span>
                             </div>
-                            <span class="coin-row-name">${inst.name || cleanSym}</span>
+                            <span class="coin-row-name">${shortenCompanyName(inst.name) || cleanSym}</span>
                         </div>
                     </div>
                     

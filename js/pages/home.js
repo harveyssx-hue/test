@@ -38,6 +38,16 @@ function renderHomeTrending(type = 'gainers') {
     // Take top 4
     const top4 = sorted.slice(0, 4);
     
+    const shortenCompanyName = (name) => {
+        if (!name) return '';
+        let clean = name.trim();
+        // Only filter out legal structure suffixes (case-insensitive)
+        clean = clean.replace(/\b(ltd|limited|co|co\.|corp|corporation|inc|incorporated|plc)\b/ig, '');
+        // Clean up trailing spaces, commas, dots, dashes
+        clean = clean.replace(/[\s,\.\-]+$/, '').trim();
+        return clean;
+    };
+    
     listEl.innerHTML = top4.map(inst => {
         const symUpper = inst.symbol.toUpperCase();
         const ticker = inst.ticker || {};
@@ -51,7 +61,7 @@ function renderHomeTrending(type = 'gainers') {
         const chgBg = chgPercent >= 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)';
         const chgColor = chgPercent >= 0 ? '#10B981' : '#EF4444';
         
-        const cleanSym = inst.symbol.toUpperCase().replace('USDT', '');
+        const cleanSym = inst.symbol.toUpperCase().replace('.IN', '').replace('USDT', '');
         const fallbackSvg = getCoinFallbackSvg(inst.symbol, 32);
         
         return `
@@ -60,7 +70,7 @@ function renderHomeTrending(type = 'gainers') {
                     <img src="${inst.logo || ''}" onerror="this.onerror=null; this.src='${fallbackSvg}'" alt="${cleanSym}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: contain; background: #F8FAFC; border: 1px solid rgba(0,0,0,0.03);" />
                     <div style="text-align: left;">
                         <div style="font-size: 0.8rem; font-weight: 750; color: var(--text-primary);">${cleanSym}<span style="font-size: 0.6rem; color: var(--text-muted); font-weight: 600;">/USDT</span></div>
-                        <div style="font-size: 0.62rem; color: var(--text-muted); font-weight: 600; margin-top: 1px;">${inst.name || cleanSym}</div>
+                        <div style="font-size: 0.62rem; color: var(--text-muted); font-weight: 600; margin-top: 1px;">${shortenCompanyName(inst.name) || cleanSym}</div>
                     </div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 12px;">
