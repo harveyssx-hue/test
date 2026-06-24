@@ -50,63 +50,67 @@ function renderHomeTrending(type = 'gainers') {
     const listEl = document.getElementById('home-trending-stocks');
     if (!listEl) return;
     
-    // Sync Header Title & Toggle Button Text dynamically
     const titleEl = document.getElementById('home-trending-title');
     if (titleEl) {
-        titleEl.innerText = homeTrendingClass === 'stock' ? 'Trending Stocks' : 'Trending Crypto';
+        if (homeTrendingClass === 'stock') {
+            titleEl.innerText = currentLocale === 'hi' ? 'ट्रेंडिंग स्टॉक्स' : 'Trending Stocks';
+        } else {
+            titleEl.innerText = currentLocale === 'hi' ? 'ट्रेंडिंग क्रिप्टो' : 'Trending Crypto';
+        }
     }
+    
     const btnEl = document.getElementById('btn-trending-class-toggle');
     if (btnEl) {
-        btnEl.innerText = homeTrendingClass === 'stock' ? 'Crypto' : 'Stocks';
+        if (homeTrendingClass === 'stock') {
+            btnEl.innerText = currentLocale === 'hi' ? 'क्रिप्टो' : 'Crypto';
+        } else {
+            btnEl.innerText = currentLocale === 'hi' ? 'स्टॉक्स' : 'Stocks';
+        }
     }
 
     if (recommendedInstruments.length === 0) {
         listEl.innerHTML = `<div class="loading-state-mini">${t('loading_home_trending')}</div>`;
         return;
     }
-    
-    // 1. Separate stocks and crypto based on homeTrendingClass
-    const filtered = recommendedInstruments.filter(inst => {
+
+    const shortenCompanyName = (name) => {
+        if (!name) return '';
+        let clean = name.trim();
+        clean = clean.replace(/\b(ltd|limited|co|co\.|corp|corporation|inc|incorporated|plc)\b/ig, '');
+        clean = clean.replace(/[\s,\.\-]+$/, '').trim();
+        return clean;
+    };
+
+    // Filter by active class category first
+    const filteredByCategory = recommendedInstruments.filter(inst => {
         const isStock = inst.assetClass === 'STOCK' || !inst.symbol.toUpperCase().endsWith('USDT');
         return homeTrendingClass === 'stock' ? isStock : !isStock;
     });
 
-    if (filtered.length === 0) {
-        listEl.innerHTML = `<div class="loading-state-mini" style="padding: 20px 10px; color: var(--text-muted); font-size: 0.75rem; font-weight: 600;">No assets available in this category.</div>`;
-        return;
-    }
-    
-    // 2. Filter by trend direction and sort copy of filtered list
-    const trendFiltered = filtered.filter(inst => {
+    // Filter by trend direction
+    const trendFiltered = filteredByCategory.filter(inst => {
         const chg = parseFloat(inst.ticker?.priceChangePercent) || 0;
         return type === 'gainers' ? chg > 0 : chg < 0;
     });
 
+    // Sort
     const sorted = [...trendFiltered].sort((a, b) => {
         const aChg = parseFloat(a.ticker?.priceChangePercent) || 0;
         const bChg = parseFloat(b.ticker?.priceChangePercent) || 0;
         return type === 'gainers' ? bChg - aChg : aChg - bChg;
     });
     
-    // Take top 5
+    // Slice top 5
     const top5 = sorted.slice(0, 5);
     
     if (top5.length === 0) {
-        const emptyMsg = type === 'gainers' ? 'No gainers available.' : 'No losers available.';
-        listEl.innerHTML = `<div style="text-align: center; padding: 40px 10px; color: var(--text-muted); font-size: 0.8rem; font-weight: 600;">${emptyMsg}</div>`;
+        const emptyMsg = type === 'gainers' 
+            ? (currentLocale === 'hi' ? 'कोई बढ़त नहीं।' : 'No gainers available.') 
+            : (currentLocale === 'hi' ? 'कोई गिरावट नहीं।' : 'No losers available.');
+        listEl.innerHTML = `<div style="text-align: center; padding: 25px 10px; color: var(--text-muted); font-size: 0.75rem; font-weight: 600;">${emptyMsg}</div>`;
         return;
     }
-    
-    const shortenCompanyName = (name) => {
-        if (!name) return '';
-        let clean = name.trim();
-        // Only filter out legal structure suffixes (case-insensitive)
-        clean = clean.replace(/\b(ltd|limited|co|co\.|corp|corporation|inc|incorporated|plc)\b/ig, '');
-        // Clean up trailing spaces, commas, dots, dashes
-        clean = clean.replace(/[\s,\.\-]+$/, '').trim();
-        return clean;
-    };
-    
+
     listEl.innerHTML = top5.map(inst => {
         const symUpper = inst.symbol.toUpperCase();
         const ticker = inst.ticker || {};
@@ -119,7 +123,6 @@ function renderHomeTrending(type = 'gainers') {
         const isUp = chgPercent >= 0;
         const textColor = isUp ? 'var(--green)' : 'var(--red)';
         
-        // Calculate absolute change
         let absChg = parseFloat(ticker.priceChange || 0);
         if (!absChg && priceVal && chgPercent) {
             const openPrice = priceVal / (1 + chgPercent / 100);
@@ -128,8 +131,6 @@ function renderHomeTrending(type = 'gainers') {
         const absChgVal = absChg >= 0 ? `+${formatAbsChange(absChg, inst.symbol)}` : `${formatAbsChange(absChg, inst.symbol)}`;
         
         const isStock = inst.assetClass === 'STOCK' || !inst.symbol.toUpperCase().endsWith('USDT');
-        
-        // Symbol display clean up: stocks remove .IN and no USDT; cryptos show full symbol name
         const cleanSym = isStock ? symUpper.replace('.IN', '') : symUpper;
         const fallbackSvg = getCoinFallbackSvg(inst.symbol, 32);
         
@@ -188,7 +189,7 @@ function switchTrendingTab(type) {
 }
 
 function toggleHomeTrendingClass() {
-    homeTrendingClass = homeTrendingClass === 'crypto' ? 'stock' : 'crypto';
+    homeTrendingClass = homeTrendingClass === 'stock' ? 'crypto' : 'stock';
     renderHomeTrending(currentTrendingType);
 }
 
