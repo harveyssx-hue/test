@@ -854,9 +854,18 @@ button:active {
     padding: 3px;
     border-radius: 8px;
     border: 1px solid var(--border);
+    overflow-x: auto;
+    white-space: nowrap;
+    max-width: 100%;
+    scrollbar-width: none; /* Hide scrollbar on Firefox */
+}
+
+.chart-interval-tabs::-webkit-scrollbar {
+    display: none; /* Hide scrollbar on Chrome/Safari/Webkit */
 }
 
 .chart-interval-btn {
+    flex-shrink: 0;
     background: none;
     border: none;
     padding: 3px 8px;
@@ -877,6 +886,12 @@ button:active {
     background: var(--bg-card);
     color: var(--primary);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+@media (max-width: 768px) {
+    .chart-interval-tabs {
+        width: 100%;
+    }
 }
 
 /* Orderbook and trades Grid */

@@ -192,6 +192,9 @@ async function initChart() {
     container.innerHTML = '';
     
     currentChart = LightweightCharts.createChart(container, {
+        localization: {
+            locale: 'en-US'
+        },
         layout: {
             background: { type: 'solid', color: '#ffffff' }, // Elegant pure white chart background
             textColor: '#64748b', // Slate 500 text
