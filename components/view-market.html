@@ -33,37 +33,8 @@
                             </div>
 
                             <!-- Market Index Cards Slider (Concurrently feeds alongside Home indexes) -->
-                            <div class="home-ticker-slider" style="display: flex; gap: 12px; overflow-x: auto; padding: 4px 16px 12px; margin-bottom: 8px; scrollbar-width: none; -webkit-overflow-scrolling: touch;">
-                                <div class="ticker-card" onclick="switchActiveSymbol('BTCUSDT')" style="flex: 0 0 145px; background: #FFF; border-radius: 20px; padding: 14px 12px 0; box-shadow: var(--shadow); border: 1.5px solid var(--border-light); cursor: pointer; transition: var(--transition); display: flex; flex-direction: column; overflow: hidden; position: relative; height: 110px;">
-                                    <span style="font-size: 0.72rem; font-weight: 800; color: var(--text-primary); text-align: left;">BTCUSDT</span>
-                                    <div style="display: flex; align-items: baseline; justify-content: flex-start; gap: 6px; margin-top: 6px;">
-                                        <span id="m-idx-btc-price" style="font-size: 1.05rem; font-weight: 850; color: var(--green); font-family: 'Outfit';">--</span>
-                                        <span id="m-idx-btc-change-badge" style="font-size: 0.62rem; font-weight: 750; color: var(--green); background: var(--green-light); padding: 1px 5px; border-radius: 6px; font-family: 'Outfit'; display: flex; align-items: center; gap: 1px;">--</span>
-                                    </div>
-                                    <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 35px;">
-                                        <canvas class="sparkline-canvas" id="m-idx-btc-canvas" width="145" height="35" style="width: 100%; height: 100%; display: block;"></canvas>
-                                    </div>
-                                </div>
-                                <div class="ticker-card" onclick="switchActiveSymbol('SOLUSDT')" style="flex: 0 0 145px; background: #FFF; border-radius: 20px; padding: 14px 12px 0; box-shadow: var(--shadow); border: 1.5px solid var(--border-light); cursor: pointer; transition: var(--transition); display: flex; flex-direction: column; overflow: hidden; position: relative; height: 110px;">
-                                    <span style="font-size: 0.72rem; font-weight: 800; color: var(--text-primary); text-align: left;">SOLUSDT</span>
-                                    <div style="display: flex; align-items: baseline; justify-content: flex-start; gap: 6px; margin-top: 6px;">
-                                        <span id="m-idx-sol-price" style="font-size: 1.05rem; font-weight: 850; color: var(--green); font-family: 'Outfit';">--</span>
-                                        <span id="m-idx-sol-change-badge" style="font-size: 0.62rem; font-weight: 750; color: var(--green); background: var(--green-light); padding: 1px 5px; border-radius: 6px; font-family: 'Outfit'; display: flex; align-items: center; gap: 1px;">--</span>
-                                    </div>
-                                    <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 35px;">
-                                        <canvas class="sparkline-canvas" id="m-idx-sol-canvas" width="145" height="35" style="width: 100%; height: 100%; display: block;"></canvas>
-                                    </div>
-                                </div>
-                                <div class="ticker-card" onclick="switchActiveSymbol('ETHUSDT')" style="flex: 0 0 145px; background: #FFF; border-radius: 20px; padding: 14px 12px 0; box-shadow: var(--shadow); border: 1.5px solid var(--border-light); cursor: pointer; transition: var(--transition); display: flex; flex-direction: column; overflow: hidden; position: relative; height: 110px;">
-                                    <span style="font-size: 0.72rem; font-weight: 800; color: var(--text-primary); text-align: left;">ETHUSDT</span>
-                                    <div style="display: flex; align-items: baseline; justify-content: flex-start; gap: 6px; margin-top: 6px;">
-                                        <span id="m-idx-eth-price" style="font-size: 1.05rem; font-weight: 850; color: var(--green); font-family: 'Outfit';">--</span>
-                                        <span id="m-idx-eth-change-badge" style="font-size: 0.62rem; font-weight: 750; color: var(--green); background: var(--green-light); padding: 1px 5px; border-radius: 6px; font-family: 'Outfit'; display: flex; align-items: center; gap: 1px;">--</span>
-                                    </div>
-                                    <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 35px;">
-                                        <canvas class="sparkline-canvas" id="m-idx-eth-canvas" width="145" height="35" style="width: 100%; height: 100%; display: block;"></canvas>
-                                    </div>
-                                </div>
+                            <div id="market-ticker-slider" class="home-ticker-slider" style="display: flex; gap: 12px; overflow-x: auto; padding: 4px 16px 12px; margin-bottom: 8px; scrollbar-width: none; -webkit-overflow-scrolling: touch;">
+                                <div class="loading-state-mini" style="padding: 10px 16px;" data-i18n="loading_market_list">Fetching live market feeds...</div>
                             </div>
 
                             <!-- Plate Slider Tab Bar -->

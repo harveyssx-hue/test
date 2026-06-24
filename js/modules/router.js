@@ -40,6 +40,7 @@ const pageControllers = {
         if (window.checkAuthSession) window.checkAuthSession();
         if (window.initHomeProfitsRotator) window.initHomeProfitsRotator();
         if (window.renderHomeTrending) window.renderHomeTrending();
+        if (window.renderRecommendedIndexCards) window.renderRecommendedIndexCards();
     },
     initMarketPage() {
         if (window.pendingMarketDetailSymbol) {
@@ -49,6 +50,7 @@ const pageControllers = {
             if (window.hideMarketDetail) window.hideMarketDetail();
             if (window.renderMarketList) window.renderMarketList();
         }
+        if (window.renderRecommendedIndexCards) window.renderRecommendedIndexCards();
     },
     initFollowPage() {
         if (window.renderStrategyLobby) window.renderStrategyLobby();

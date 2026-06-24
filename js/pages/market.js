@@ -44,6 +44,7 @@ function shortenCompanyName(name) {
 // Expose key functions to window immediately to avoid timing issues with inline event handlers
 window.switchActiveSymbol = switchActiveSymbol;
 window.loadRecommendedInstruments = loadRecommendedInstruments;
+window.renderRecommendedIndexCards = renderRecommendedIndexCards;
 window.loadWatchlist = loadWatchlist;
 window.updateWatchlistUI = updateWatchlistUI;
 window.toggleWatchlist = toggleWatchlist;
@@ -359,6 +360,74 @@ function updateChartRealtime(price, timestamp) {
     }
 }
 
+function createCardHtml(inst, prefix) {
+    const symUpper = inst.symbol.toUpperCase();
+    const symLower = inst.symbol.toLowerCase();
+    const ticker = inst.ticker || {};
+    
+    const priceVal = parseFloat(ticker.closePrice || 0);
+    const priceStr = priceVal ? priceVal.toFixed(symLower === 'xrpusdt' ? 4 : 2) : '--';
+    
+    const chgPercent = parseFloat(ticker.priceChangePercent || 0);
+    const chgStr = `${chgPercent >= 0 ? '+' : ''}${chgPercent.toFixed(2)}%`;
+    const chgColor = chgPercent >= 0 ? 'var(--green)' : 'var(--red)';
+    const chgBg = chgPercent >= 0 ? 'var(--green-light)' : 'var(--red-light)';
+    
+    const cleanSym = inst.symbol.toUpperCase().replace('.IN', '').replace('USDT', '');
+    const isStock = inst.assetClass === 'STOCK' || !inst.symbol.toUpperCase().endsWith('USDT');
+    const quoteHtml = isStock ? '' : '<span style="font-size: 0.6rem; color: var(--text-muted); font-weight: 600;">/USDT</span>';
+    
+    return `
+        <div class="ticker-card" onclick="switchActiveSymbol('${inst.symbol}')" style="flex: 0 0 145px; background: #FFF; border-radius: 20px; padding: 14px 12px 0; box-shadow: var(--shadow); border: 1.5px solid var(--border-light); cursor: pointer; transition: var(--transition); display: flex; flex-direction: column; overflow: hidden; position: relative; height: 110px;">
+            <span style="font-size: 0.72rem; font-weight: 800; color: var(--text-primary); text-align: left;">${cleanSym}${quoteHtml}</span>
+            <div style="display: flex; align-items: baseline; justify-content: flex-start; gap: 6px; margin-top: 6px;">
+                <span id="${prefix}price-${symLower}" style="font-size: 1.05rem; font-weight: 850; color: ${chgColor}; font-family: 'Outfit';">${priceStr}</span>
+                <span id="${prefix}change-${symLower}" style="font-size: 0.62rem; font-weight: 750; color: ${chgColor}; background: ${chgBg}; padding: 1px 5px; border-radius: 6px; font-family: 'Outfit'; display: flex; align-items: center; gap: 1px;">${chgStr}</span>
+            </div>
+            <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 35px;">
+                <canvas class="sparkline-canvas" id="${prefix}canvas-${symLower}" width="145" height="35" style="width: 100%; height: 100%; display: block;"></canvas>
+            </div>
+        </div>
+    `;
+}
+
+function renderRecommendedIndexCards() {
+    const homeSlider = document.getElementById('home-ticker-slider');
+    const marketSlider = document.getElementById('market-ticker-slider');
+    
+    if (!homeSlider && !marketSlider) return;
+    if (!recommendedInstruments || recommendedInstruments.length === 0) return;
+    
+    const htmlHome = recommendedInstruments.map(inst => createCardHtml(inst, 'idx-')).join('');
+    const htmlMarket = recommendedInstruments.map(inst => createCardHtml(inst, 'm-idx-')).join('');
+    
+    if (homeSlider) {
+        homeSlider.innerHTML = htmlHome;
+    }
+    if (marketSlider) {
+        marketSlider.innerHTML = htmlMarket;
+    }
+    
+    // Draw initial sparklines
+    recommendedInstruments.forEach(inst => {
+        const symUpper = inst.symbol.toUpperCase();
+        const symLower = inst.symbol.toLowerCase();
+        const pool = sparklinePools[symUpper];
+        const ticker = inst.ticker || {};
+        const chgPercent = parseFloat(ticker.priceChangePercent || 0);
+        
+        if (pool && window.drawIndexSparkline) {
+            if (homeSlider) {
+                window.drawIndexSparkline(`idx-canvas-${symLower}`, pool, chgPercent >= 0);
+            }
+            if (marketSlider) {
+                window.drawIndexSparkline(`m-idx-canvas-${symLower}`, pool, chgPercent >= 0);
+            }
+        }
+    });
+}
+window.renderRecommendedIndexCards = renderRecommendedIndexCards;
+
 async function loadRecommendedInstruments() {
     if (!marketIntervals) {
         await loadMarketIntervals();
@@ -389,6 +458,14 @@ async function loadRecommendedInstruments() {
         }
     });
     
+    // Render dynamic index cards
+    renderRecommendedIndexCards();
+    
+    // Subscribe to recommended instruments on WS
+    if (window.subscribeNewInstruments && recommendedInstruments.length > 0) {
+        window.subscribeNewInstruments(recommendedInstruments);
+    }
+    
     // Render market list!
     renderMarketList();
     
@@ -400,43 +477,6 @@ async function loadRecommendedInstruments() {
     
     // Check watchlist status
     updateWatchlistUI();
-    
-    // Update home page static ticker elements immediately to eliminate initial loading delay
-    recommendedInstruments.forEach(inst => {
-        const symUpper = inst.symbol.toUpperCase();
-        if (symUpper === 'BTCUSDT' || symUpper === 'ETHUSDT' || symUpper === 'SOLUSDT') {
-            const idPrefix = symUpper === 'BTCUSDT' ? 'btc' : (symUpper === 'ETHUSDT' ? 'eth' : 'sol');
-            const ticker = inst.ticker || {};
-            const lastPrice = parseFloat(ticker.closePrice);
-            const chgPercent = parseFloat(ticker.priceChangePercent || 0);
-            
-            if (!isNaN(lastPrice)) {
-                const priceEl = document.getElementById(`idx-${idPrefix}-price`);
-                if (priceEl) priceEl.innerText = lastPrice.toFixed(2);
-                
-                const mPriceEl = document.getElementById(`m-idx-${idPrefix}-price`);
-                if (mPriceEl) mPriceEl.innerText = lastPrice.toFixed(2);
-            }
-            
-            if (ticker.priceChangePercent !== undefined) {
-                const chgStr = `${chgPercent >= 0 ? '+' : ''}${chgPercent.toFixed(2)}%`;
-                
-                const chgEl = document.getElementById(`idx-${idPrefix}-change-badge`);
-                if (chgEl) {
-                    chgEl.innerText = chgStr;
-                    chgEl.style.color = chgPercent >= 0 ? 'var(--green)' : 'var(--red)';
-                    chgEl.style.background = chgPercent >= 0 ? 'var(--green-light)' : 'var(--red-light)';
-                }
-                
-                const mChgEl = document.getElementById(`m-idx-${idPrefix}-change-badge`);
-                if (mChgEl) {
-                    mChgEl.innerText = chgStr;
-                    mChgEl.style.color = chgPercent >= 0 ? 'var(--green)' : 'var(--red)';
-                    mChgEl.style.background = chgPercent >= 0 ? 'var(--green-light)' : 'var(--red-light)';
-                }
-            }
-        }
-    });
     
     // Initialize home trending list
     if (typeof renderHomeTrending === 'function') {

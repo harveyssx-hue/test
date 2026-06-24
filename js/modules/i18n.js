@@ -869,20 +869,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Unconditional strategy configuration loading
     if (window.loadQuantConfig) window.loadQuantConfig();
-    
-    // Draw initial static sparklines for 首页 indices
-    setTimeout(() => {
-        if (window.drawIndexSparkline) {
-            window.drawIndexSparkline('idx-btc-canvas', sparklinePools['BTCUSDT'], true);
-            window.drawIndexSparkline('idx-eth-canvas', sparklinePools['ETHUSDT'], true);
-            window.drawIndexSparkline('idx-sol-canvas', sparklinePools['SOLUSDT'], true);
-            
-            // Duplicated Market Tab Indices
-            window.drawIndexSparkline('m-idx-btc-canvas', sparklinePools['BTCUSDT'], true);
-            window.drawIndexSparkline('m-idx-eth-canvas', sparklinePools['ETHUSDT'], true);
-            window.drawIndexSparkline('m-idx-sol-canvas', sparklinePools['SOLUSDT'], true);
-        }
-    }, 800);
 });
 
 // --- Dynamic Simulated Time in Phone Status Bar ---

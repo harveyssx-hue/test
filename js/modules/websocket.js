@@ -21,10 +21,11 @@ function connectMarketWS() {
             subscribedInterval = activeInterval;
             
             const unsubParams = [];
+            const isRecommended = recommendedInstruments.some(inst => inst.symbol.toLowerCase() === oldSym.toLowerCase());
             if (oldSym) {
                 unsubParams.push(`${oldSym}@trade`, `${oldSym}@kline_${oldInterval || '1m'}`, `${oldSym}@depth`);
-                // Do not unsubscribe from index card tickers (BTC, ETH, SOL)
-                if (oldSym !== 'btcusdt' && oldSym !== 'ethusdt' && oldSym !== 'solusdt') {
+                // Do not unsubscribe from index card tickers of recommended instruments
+                if (!isRecommended) {
                     unsubParams.push(`${oldSym}@ticker`);
                 }
             }
@@ -43,7 +44,7 @@ function connectMarketWS() {
                         params: unsubParams,
                         id: Date.now()
                     }));
-                    if (oldSym && oldSym !== 'btcusdt' && oldSym !== 'ethusdt' && oldSym !== 'solusdt') {
+                    if (oldSym && !isRecommended) {
                         window.subscribedTickers.delete(oldSym.toLowerCase());
                     }
                 } catch(e) {
@@ -87,12 +88,6 @@ function connectMarketWS() {
             `${activeSymbol}@kline_${activeInterval}`,
             `${activeSymbol}@depth`
         );
-        
-        // Always subscribe to BTC, ETH, and SOL tickers for home index cards
-        params.push('btcusdt@ticker', 'ethusdt@ticker', 'solusdt@ticker');
-        window.subscribedTickers.add('btcusdt');
-        window.subscribedTickers.add('ethusdt');
-        window.subscribedTickers.add('solusdt');
         
         // Subscribe to tickers for all recommended coins to keep listing alive
         if (recommendedInstruments.length > 0) {
@@ -191,39 +186,33 @@ function renderMarketTicker(data) {
         }
     }
     
-    // 2. Update home tab index cards
-    if (symUpper === 'BTCUSDT' || symUpper === 'ETHUSDT' || symUpper === 'SOLUSDT') {
-        const idPrefix = symUpper === 'BTCUSDT' ? 'btc' : (symUpper === 'ETHUSDT' ? 'eth' : 'sol');
-        
-        const priceEl = getCachedElement(`idx-${idPrefix}-price`);
-        if (priceEl) priceEl.innerText = lastPrice.toFixed(2);
-        
-        const chgEl = getCachedElement(`idx-${idPrefix}-change-badge`);
-        if (chgEl) {
-            chgEl.innerText = chgStr;
-            chgEl.style.color = chgPercent >= 0 ? 'var(--green)' : 'var(--red)';
-            chgEl.style.background = chgPercent >= 0 ? 'var(--green-light)' : 'var(--red-light)';
-        }
-        
-        // Update duplicated market tab index cards
-        const mPriceEl = getCachedElement(`m-idx-${idPrefix}-price`);
-        if (mPriceEl) mPriceEl.innerText = lastPrice.toFixed(2);
-        
-        const mChgEl = getCachedElement(`m-idx-${idPrefix}-change-badge`);
-        if (mChgEl) {
-            mChgEl.innerText = chgStr;
-            mChgEl.style.color = chgPercent >= 0 ? 'var(--green)' : 'var(--red)';
-            mChgEl.style.background = chgPercent >= 0 ? 'var(--green-light)' : 'var(--red-light)';
-        }
-        
-        // Push price to sparkline array history and redraw on canvas
-        const pool = sparklinePools[symUpper];
-        if (pool) {
-            pool.push(lastPrice);
-            if (pool.length > 15) pool.shift();
-            drawIndexSparklineThrottled(`idx-${idPrefix}-canvas`, pool, chgPercent >= 0, 300);
-            drawIndexSparklineThrottled(`m-idx-${idPrefix}-canvas`, pool, chgPercent >= 0, 300);
-        }
+    // 2. Update dynamic recommended index cards (Home and Market)
+    const symLower = data.symbol.toLowerCase();
+    
+    const priceEl = getCachedElement(`idx-price-${symLower}`);
+    if (priceEl) {
+        priceEl.innerText = lastPrice.toFixed(symUpper === 'XRPUSDT' ? 4 : 2);
+        priceEl.style.color = chgPercent >= 0 ? 'var(--green)' : 'var(--red)';
+    }
+    
+    const chgEl = getCachedElement(`idx-change-${symLower}`);
+    if (chgEl) {
+        chgEl.innerText = chgStr;
+        chgEl.style.color = chgPercent >= 0 ? 'var(--green)' : 'var(--red)';
+        chgEl.style.background = chgPercent >= 0 ? 'var(--green-light)' : 'var(--red-light)';
+    }
+    
+    const mPriceEl = getCachedElement(`m-idx-price-${symLower}`);
+    if (mPriceEl) {
+        mPriceEl.innerText = lastPrice.toFixed(symUpper === 'XRPUSDT' ? 4 : 2);
+        mPriceEl.style.color = chgPercent >= 0 ? 'var(--green)' : 'var(--red)';
+    }
+    
+    const mChgEl = getCachedElement(`m-idx-change-${symLower}`);
+    if (mChgEl) {
+        mChgEl.innerText = chgStr;
+        mChgEl.style.color = chgPercent >= 0 ? 'var(--green)' : 'var(--red)';
+        mChgEl.style.background = chgPercent >= 0 ? 'var(--green-light)' : 'var(--red-light)';
     }
     
     // 3. Update Market List Row inline elements dynamically
@@ -237,15 +226,26 @@ function renderMarketTicker(data) {
         rowChgEl.className = `coin-row-change-badge ${chgClass}`;
     }
     
-    // Push price to market list row sparkline history and update canvas
-    const rowPool = sparklinePools[symUpper];
-    if (rowPool) {
-        if (symUpper !== 'BTCUSDT' && symUpper !== 'ETHUSDT' && symUpper !== 'SOLUSDT') {
-            rowPool.push(lastPrice);
-            if (rowPool.length > 15) rowPool.shift();
+    // Push price to sparkline array history and update all active canvases (cards and lists)
+    const pool = sparklinePools[symUpper];
+    if (pool) {
+        pool.push(lastPrice);
+        if (pool.length > 15) pool.shift();
+        
+        // Draw top cards if they exist in DOM
+        const homeCanvasId = `idx-canvas-${symLower}`;
+        const marketCanvasId = `m-idx-canvas-${symLower}`;
+        if (getCachedElement(homeCanvasId)) {
+            drawIndexSparklineThrottled(homeCanvasId, pool, chgPercent >= 0, 300);
         }
-        if (!isMarketDetailActive) {
-            drawIndexSparklineThrottled(`row-canvas-${symUpper}`, rowPool, chgPercent >= 0, 300);
+        if (getCachedElement(marketCanvasId)) {
+            drawIndexSparklineThrottled(marketCanvasId, pool, chgPercent >= 0, 300);
+        }
+        
+        // Draw list row if it exists and detail view is not active
+        const rowCanvasId = `row-canvas-${symUpper}`;
+        if (getCachedElement(rowCanvasId) && !isMarketDetailActive) {
+            drawIndexSparklineThrottled(rowCanvasId, pool, chgPercent >= 0, 300);
         }
     }
     
