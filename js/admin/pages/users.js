@@ -305,9 +305,6 @@ export async function loadUsersList() {
     
     // Sync checkboxes and batch button count
     updateBatchActionBtnState();
-    } else {
-        showToast('获取用户列表失败！', true);
-    }
 }
 
 
