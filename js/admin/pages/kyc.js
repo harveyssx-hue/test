@@ -163,8 +163,6 @@ export async function loadKycList() {
     }).join('');
 }
 
-}
-
 export function openKycDrawer(kycId) {
     const apps = window.cachedKycApps || [];
     const a = apps.find(item => String(item.id) === String(kycId));
