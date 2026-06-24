@@ -2288,6 +2288,12 @@ button:active {
     gap: 10px;
 }
 
+@media (max-width: 480px) {
+    .market-list-container {
+        padding: 10px 10px 20px;
+    }
+}
+
 .market-list-header {
     display: flex;
     justify-content: space-between;
@@ -2310,6 +2316,12 @@ button:active {
     padding: 12px 14px;
     cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+@media (max-width: 480px) {
+    .market-coin-row {
+        padding: 12px 10px;
+    }
 }
 
 .market-coin-row:hover {
@@ -2366,11 +2378,10 @@ button:active {
 }
 
 .coin-sparkline-col {
-    flex: 0.8;
+    flex: 0 0 65px;
     display: flex;
     justify-content: center;
     align-items: center;
-    min-width: 0;
 }
 
 .coin-sparkline-canvas {
