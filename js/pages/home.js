@@ -78,8 +78,8 @@ function renderHomeTrending(type = 'gainers') {
     
     // 2. Sort copy of filtered list
     const sorted = [...filtered].sort((a, b) => {
-        const aChg = parseFloat(a.ticker?.priceChangePercent || 0);
-        const bChg = parseFloat(b.ticker?.priceChangePercent || 0);
+        const aChg = parseFloat(a.ticker?.priceChangePercent) || 0;
+        const bChg = parseFloat(b.ticker?.priceChangePercent) || 0;
         return type === 'gainers' ? bChg - aChg : aChg - bChg;
     });
     
