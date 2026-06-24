@@ -316,6 +316,19 @@ export function paginateList(list, type) {
 }
 window.paginateList = paginateList;
 
+export function updateAdminPageIndicator(type, paging) {
+    const pageConf = window.adminPages[type];
+    const totalItems = paging.records !== undefined ? paging.records : 0;
+    const totalPages = paging.pages !== undefined ? paging.pages : 1;
+    pageConf.current = paging.page || pageConf.current;
+    
+    const indicator = document.getElementById(`${type}-page-indicator`);
+    if (indicator) {
+        indicator.innerText = `第 ${pageConf.current} / ${totalPages} 页 (共 ${totalItems} 条)`;
+    }
+}
+window.updateAdminPageIndicator = updateAdminPageIndicator;
+
 export function changeAdminPage(type, delta) {
     window.adminPages[type].current += delta;
     if (typeof window.loadKycList === 'function' && type === 'kyc') window.loadKycList();

@@ -4,7 +4,7 @@ export async function loadKycList() {
     const filterEl = document.getElementById('kyc-status-filter');
     if (!filterEl) {
         if (!window.kycFetchPromise) {
-            window.kycFetchPromise = apiFetch('GET', '/users/kyc', null, true);
+            window.kycFetchPromise = apiFetch('GET', '/users/kyc?page=1&pageSize=10000', null, true);
         }
         const res = await window.kycFetchPromise;
         if (res.code === 200) {
@@ -35,105 +35,134 @@ export async function loadKycList() {
     const emailVal = document.getElementById('filter-kyc-email')?.value.trim().toLowerCase() || '';
     const nameVal = document.getElementById('filter-kyc-name')?.value.trim().toLowerCase() || '';
     
-    if (!window.kycFetchPromise) {
-        window.kycFetchPromise = apiFetch('GET', '/users/kyc', null, true);
-    }
-    const res = await window.kycFetchPromise;
+    const pageConf = window.adminPages.kyc;
+    const isFilterActive = (realFilter !== 'ALL' || uidVal !== '' || emailVal !== '' || nameVal !== '');
     
-    if (res.code === 200) {
-        const apps = res.result || res.data || [];
-        
-        // Dynamically update Pending KYC count on overview screen based on dataset!
-        const pendingCount = apps.filter(a => a.status === 'PENDING' || a.status === 'NOT_VERIFIED').length;
-        const statPendingKycEl = document.getElementById('stat-pending-kyc');
-        if (statPendingKycEl) statPendingKycEl.innerText = pendingCount;
-        
-        const badge = document.getElementById('kyc-pending-badge');
-        if (badge) {
-            if (pendingCount > 0) {
-                badge.style.display = 'inline-block';
-                badge.innerText = pendingCount;
-            } else {
-                badge.style.display = 'none';
-            }
-        }
-        
-        let phoneMap = {};
-        try {
-            phoneMap = await window.adminState.getUserPhoneMap();
-        } catch (phoneErr) {
-            console.error("Failed to load user phone map for KYC view:", phoneErr);
-        }
+    // Sync size select dropdown with current page size state
+    const kycSizeSelect = document.getElementById('kyc-size-select');
+    if (kycSizeSelect) {
+        kycSizeSelect.value = pageConf.size;
+    }
 
-        let filteredApps = apps;
-        if (realFilter !== 'ALL') {
-            filteredApps = filteredApps.filter(a => {
-                if (realFilter === 'PENDING' || realFilter === 'NOT_VERIFIED') {
-                    return a.status === 'PENDING' || a.status === 'NOT_VERIFIED';
-                }
-                return a.status === realFilter;
-            });
-        }
-        if (uidVal !== '') {
-            filteredApps = filteredApps.filter(a => {
-                const phone = phoneMap[String(a.userId)] || '';
-                return String(a.userId).toLowerCase().includes(uidVal) || phone.toLowerCase().includes(uidVal);
-            });
-        }
-        if (emailVal !== '') {
-            filteredApps = filteredApps.filter(a => a.email && String(a.email).toLowerCase().includes(emailVal));
-        }
-        if (nameVal !== '') {
-            filteredApps = filteredApps.filter(a => a.fullName && String(a.fullName).toLowerCase().includes(nameVal));
-        }
-        
-        window.cachedKycApps = filteredApps; // Cache globally for detail drawers
-        
-        const bodyEl = document.getElementById('kyc-table-body');
-        if (filteredApps.length === 0) {
-            bodyEl.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px 0;">该筛选条件下无实名申请记录</td></tr>`;
+    let apps = [];
+    let pagingObj = null;
+
+    let phoneMap = {};
+    try {
+        phoneMap = await window.adminState.getUserPhoneMap();
+    } catch (phoneErr) {
+        console.error("Failed to load user phone map for KYC view:", phoneErr);
+    }
+    
+    if (isFilterActive) {
+        // If filters are active, fetch all (up to 1000) to apply filters locally
+        const res = await apiFetch('GET', `/users/kyc?page=1&pageSize=1000`, null, true);
+        if (res.code === 200) {
+            let allApps = res.result || res.data || [];
             
-            // Update pagination indicator
-            const indicator = document.getElementById(`kyc-page-indicator`);
-            if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
+            if (realFilter !== 'ALL') {
+                allApps = allApps.filter(a => {
+                    if (realFilter === 'PENDING' || realFilter === 'NOT_VERIFIED') {
+                        return a.status === 'PENDING' || a.status === 'NOT_VERIFIED';
+                    }
+                    return a.status === realFilter;
+                });
+            }
+            if (uidVal !== '') {
+                allApps = allApps.filter(a => {
+                    const phone = phoneMap[String(a.userId)] || '';
+                    return String(a.userId).toLowerCase().includes(uidVal) || phone.toLowerCase().includes(uidVal);
+                });
+            }
+            if (emailVal !== '') {
+                allApps = allApps.filter(a => a.email && String(a.email).toLowerCase().includes(emailVal));
+            }
+            if (nameVal !== '') {
+                allApps = allApps.filter(a => a.fullName && String(a.fullName).toLowerCase().includes(nameVal));
+            }
+            
+            window.cachedKycApps = allApps; // Cache globally for detail drawers
+            
+            pagingObj = {
+                page: pageConf.current,
+                pageSize: pageConf.size,
+                records: allApps.length,
+                pages: Math.max(1, Math.ceil(allApps.length / pageConf.size))
+            };
+            
+            apps = paginateList(allApps, 'kyc');
+        } else {
+            showToast(res.errorMessage || '获取实名列表失败！', true);
             return;
         }
-        
-        // Paginate the filtered list
-        const paginatedApps = paginateList(filteredApps, 'kyc');
-        
-        bodyEl.innerHTML = paginatedApps.map(a => {
-            let actionHtml = '';
-            if (a.status === 'PENDING' || a.status === 'NOT_VERIFIED') {
-                actionHtml = `
-                    <div class="action-btn-group">
-                        <button class="action-btn btn-view" onclick="openKycDrawer('${a.id}')">🔎 审核材料</button>
-                    </div>
-                `;
-            } else {
-                actionHtml = `<span style="color: var(--text-muted); font-size: 0.8rem;">已审核完结</span>`;
-            }
-            
-            return `
-                <tr>
-                    <td>${phoneMap[String(a.userId)] || '--'}</td>
-                    <td>${a.email}</td>
-                    <td>${a.fullName}</td>
-                    <td>${translateIdType(a.idType)}</td>
-                    <td style="font-family: monospace;">${a.idNumber}</td>
-                    <td>
-                        <span class="badge badge-${a.status}">
-                            <span class="badge-status-dot"></span>
-                            ${a.status}
-                        </span>
-                    </td>
-                    <td>${actionHtml}</td>
-                </tr>
-            `;
-        }).join('');
     } else {
-        showToast(res.errorMessage || '获取实名列表失败！', true);
+        // No filter active: direct server-side pagination!
+        const res = await apiFetch('GET', `/users/kyc?page=${pageConf.current}&pageSize=${pageConf.size}`, null, true);
+        if (res.code === 200) {
+            apps = res.result || res.data || [];
+            pagingObj = res.paging || {
+                page: pageConf.current,
+                pageSize: pageConf.size,
+                records: apps.length,
+                pages: 1
+            };
+            window.cachedKycApps = apps;
+            updateAdminPageIndicator('kyc', pagingObj);
+        } else {
+            showToast(res.errorMessage || '获取实名列表失败！', true);
+            return;
+        }
     }
+    
+    // Update dashboard overview statistics using KYC status count
+    if (pagingObj && pagingObj.records !== undefined && !isFilterActive) {
+        const statPendingKycEl = document.getElementById('stat-pending-kyc');
+        // Overview count needs actual pending, which might require fetching all, so we fetch all in overview.
+    }
+    
+    const bodyEl = document.getElementById('kyc-table-body');
+    if (!bodyEl) return;
+    
+    if (apps.length === 0) {
+        bodyEl.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px 0;">该筛选条件下无实名申请记录</td></tr>`;
+        
+        // Update pagination indicator
+        const indicator = document.getElementById(`kyc-page-indicator`);
+        if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
+        return;
+    }
+    
+    bodyEl.innerHTML = apps.map(a => {
+        let actionHtml = '';
+        if (a.status === 'PENDING' || a.status === 'NOT_VERIFIED') {
+            actionHtml = `
+                <div class="action-btn-group">
+                    <button class="action-btn btn-view" onclick="openKycDrawer('${a.id}')">🔎 审核材料</button>
+                </div>
+            `;
+        } else {
+            actionHtml = `<span style="color: var(--text-muted); font-size: 0.8rem;">已审核完结</span>`;
+        }
+        
+        return `
+            <tr>
+                <td>${phoneMap[String(a.userId)] || '--'}</td>
+                <td>${a.email}</td>
+                <td>${a.fullName}</td>
+                <td>${translateIdType(a.idType)}</td>
+                <td style="font-family: monospace;">${a.idNumber}</td>
+                <td>
+                    <span class="badge badge-${a.status}">
+                        <span class="badge-status-dot"></span>
+                        ${a.status}
+                    </span>
+                </td>
+                <td>${actionHtml}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
 }
 
 export function openKycDrawer(kycId) {

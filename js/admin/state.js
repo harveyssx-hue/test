@@ -13,7 +13,7 @@ export const state = {
         
         this.usersPromise = (async () => {
             try {
-                const res = await window.apiFetch('GET', '/users', null, true);
+                const res = await window.apiFetch('GET', '/users?page=1&pageSize=10000', null, true);
                 if (res.code === 200) {
                     this.users = res.result || res.data || [];
                     return this.users;

@@ -8,10 +8,13 @@ async function loadDepositList() {
     const startDateVal = document.getElementById('filter-deposit-start-date')?.value || '';
     const endDateVal = document.getElementById('filter-deposit-end-date')?.value || '';
     
-    let url = '/finance/deposits?page=1&pageSize=1000';
-    if (filterStatus !== 'ALL') {
-        url += `&status=${filterStatus}`;
+    const pageConf = window.adminPages.deposit;
+    const sizeSelect = document.getElementById('deposit-size-select');
+    if (sizeSelect) {
+        sizeSelect.value = pageConf.size;
     }
+    
+    const isComplexFilter = (remittanceVal !== '' || startDateVal !== '' || endDateVal !== '');
     
     try {
         // Pre-fetch users list to map userId to registration phone number
@@ -22,7 +25,35 @@ async function loadDepositList() {
             console.error('Failed to pre-fetch users for deposit phone mapping:', e);
         }
 
-        const res = await apiFetch('GET', url, null, true);
+        let fetchUrl = '';
+        if (isComplexFilter) {
+            fetchUrl = '/finance/deposits?page=1&pageSize=1000';
+            if (filterStatus !== 'ALL') {
+                fetchUrl += `&status=${filterStatus}`;
+            }
+        } else {
+            fetchUrl = `/finance/deposits?page=${pageConf.current}&pageSize=${pageConf.size}`;
+            if (filterStatus !== 'ALL') {
+                fetchUrl += `&status=${filterStatus}`;
+            }
+            if (phoneVal !== '') {
+                const matchedUid = Object.keys(userPhoneMap).find(id => userPhoneMap[id].toLowerCase().includes(phoneVal));
+                if (matchedUid) {
+                    fetchUrl += `&userId=${matchedUid}`;
+                } else {
+                    // No user matches phone filter, display empty list immediately
+                    const bodyEl = document.getElementById('deposit-table-body');
+                    if (bodyEl) {
+                        bodyEl.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 30px 0;">暂无符合条件的充值记录</td></tr>`;
+                    }
+                    const indicator = document.getElementById(`deposit-page-indicator`);
+                    if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
+                    return;
+                }
+            }
+        }
+
+        const res = await apiFetch('GET', fetchUrl, null, true);
         if (res.code === 200) {
             const list = res.result || res.data || [];
             
@@ -45,42 +76,58 @@ async function loadDepositList() {
             const bodyEl = document.getElementById('deposit-table-body');
             if (!bodyEl) return;
             
-            // Apply local search filtering
-            let filteredList = list;
-            if (phoneVal !== '') {
-                filteredList = filteredList.filter(d => {
-                    const phone = userPhoneMap[String(d.userId)] || '';
-                    return phone.toLowerCase().includes(phoneVal);
-                });
-            }
-            if (remittanceVal !== '') {
-                filteredList = filteredList.filter(d => {
-                    const remittance = d.remittanceCode || '';
-                    return remittance.toLowerCase().includes(remittanceVal);
-                });
-            }
-            if (startDateVal !== '') {
-                const startMs = new Date(startDateVal + 'T00:00:00').getTime();
-                filteredList = filteredList.filter(d => parseInt(d.createdAt || 0) >= startMs);
-            }
-            if (endDateVal !== '') {
-                const endMs = new Date(endDateVal + 'T23:59:59').getTime();
-                filteredList = filteredList.filter(d => parseInt(d.createdAt || 0) <= endMs);
-            }
+            let renderList = list;
+            let pagingObj = null;
             
-            if (filteredList.length === 0) {
-                bodyEl.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 30px 0;">暂无符合条件的充值记录</td></tr>`;
+            if (isComplexFilter) {
+                // Apply local search filtering
+                let filteredList = list;
+                if (phoneVal !== '') {
+                    filteredList = filteredList.filter(d => {
+                        const phone = userPhoneMap[String(d.userId)] || '';
+                        return phone.toLowerCase().includes(phoneVal);
+                    });
+                }
+                if (remittanceVal !== '') {
+                    filteredList = filteredList.filter(d => {
+                        const remittance = d.remittanceCode || '';
+                        return remittance.toLowerCase().includes(remittanceVal);
+                    });
+                }
+                if (startDateVal !== '') {
+                    const startMs = new Date(startDateVal + 'T00:00:00').getTime();
+                    filteredList = filteredList.filter(d => parseInt(d.createdAt || 0) >= startMs);
+                }
+                if (endDateVal !== '') {
+                    const endMs = new Date(endDateVal + 'T23:59:59').getTime();
+                    filteredList = filteredList.filter(d => parseInt(d.createdAt || 0) <= endMs);
+                }
                 
-                // Update pagination indicator
-                const indicator = document.getElementById(`deposit-page-indicator`);
-                if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
-                return;
+                if (filteredList.length === 0) {
+                    bodyEl.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 30px 0;">暂无符合条件的充值记录</td></tr>`;
+                    const indicator = document.getElementById(`deposit-page-indicator`);
+                    if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
+                    return;
+                }
+                
+                pagingObj = {
+                    page: pageConf.current,
+                    pageSize: pageConf.size,
+                    records: filteredList.length,
+                    pages: Math.max(1, Math.ceil(filteredList.length / pageConf.size))
+                };
+                renderList = paginateList(filteredList, 'deposit');
+            } else {
+                pagingObj = res.paging || {
+                    page: pageConf.current,
+                    pageSize: pageConf.size,
+                    records: list.length,
+                    pages: 1
+                };
+                updateAdminPageIndicator('deposit', pagingObj);
             }
             
-            // Paginate the filtered list
-            const paginatedList = paginateList(filteredList, 'deposit');
-            
-            bodyEl.innerHTML = paginatedList.map(d => {
+            bodyEl.innerHTML = renderList.map(d => {
                 const date = d.createdAt ? new Date(parseInt(d.createdAt)).toLocaleString() : '--';
                 const proofLink = d.paymentProof ? `<a href="javascript:void(0)" onclick="viewProofImage('${d.id}')" style="color: var(--primary); font-weight: 600; text-decoration: underline;">查看凭证 🔗</a>` : '无';
                 
@@ -225,10 +272,13 @@ async function loadWithdrawList() {
     const startDateVal = document.getElementById('filter-withdraw-start-date')?.value || '';
     const endDateVal = document.getElementById('filter-withdraw-end-date')?.value || '';
     
-    let url = '/finance/withdrawals?page=1&pageSize=1000';
-    if (filterStatus !== 'ALL') {
-        url += `&status=${filterStatus}`;
+    const pageConf = window.adminPages.withdraw;
+    const sizeSelect = document.getElementById('withdraw-size-select');
+    if (sizeSelect) {
+        sizeSelect.value = pageConf.size;
     }
+    
+    const isComplexFilter = (idVal !== '' || startDateVal !== '' || endDateVal !== '');
     
     try {
         // Pre-fetch users list to map userId to registration phone number
@@ -239,7 +289,35 @@ async function loadWithdrawList() {
             console.error('Failed to pre-fetch users for withdraw phone mapping:', e);
         }
 
-        const res = await apiFetch('GET', url, null, true);
+        let fetchUrl = '';
+        if (isComplexFilter) {
+            fetchUrl = '/finance/withdrawals?page=1&pageSize=1000';
+            if (filterStatus !== 'ALL') {
+                fetchUrl += `&status=${filterStatus}`;
+            }
+        } else {
+            fetchUrl = `/finance/withdrawals?page=${pageConf.current}&pageSize=${pageConf.size}`;
+            if (filterStatus !== 'ALL') {
+                fetchUrl += `&status=${filterStatus}`;
+            }
+            if (phoneVal !== '') {
+                const matchedUid = Object.keys(userPhoneMap).find(id => userPhoneMap[id].toLowerCase().includes(phoneVal));
+                if (matchedUid) {
+                    fetchUrl += `&userId=${matchedUid}`;
+                } else {
+                    // No user matches phone filter, display empty list immediately
+                    const bodyEl = document.getElementById('withdraw-table-body');
+                    if (bodyEl) {
+                        bodyEl.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 30px 0;">暂无符合条件的提现记录</td></tr>`;
+                    }
+                    const indicator = document.getElementById(`withdraw-page-indicator`);
+                    if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
+                    return;
+                }
+            }
+        }
+
+        const res = await apiFetch('GET', fetchUrl, null, true);
         if (res.code === 200) {
             const list = res.result || res.data || [];
             
@@ -261,39 +339,55 @@ async function loadWithdrawList() {
             const bodyEl = document.getElementById('withdraw-table-body');
             if (!bodyEl) return;
             
-            // Apply local search filtering
-            let filteredList = list;
-            if (phoneVal !== '') {
-                filteredList = filteredList.filter(w => {
-                    const phone = userPhoneMap[String(w.userId)] || '';
-                    return phone.toLowerCase().includes(phoneVal);
-                });
-            }
-            if (idVal !== '') {
-                filteredList = filteredList.filter(w => String(w.id).toLowerCase().includes(idVal));
-            }
-            if (startDateVal !== '') {
-                const startMs = new Date(startDateVal + 'T00:00:00').getTime();
-                filteredList = filteredList.filter(w => parseInt(w.createdAt || 0) >= startMs);
-            }
-            if (endDateVal !== '') {
-                const endMs = new Date(endDateVal + 'T23:59:59').getTime();
-                filteredList = filteredList.filter(w => parseInt(w.createdAt || 0) <= endMs);
-            }
+            let renderList = list;
+            let pagingObj = null;
             
-            if (filteredList.length === 0) {
-                bodyEl.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 30px 0;">暂无符合条件的提现记录</td></tr>`;
+            if (isComplexFilter) {
+                // Apply local search filtering
+                let filteredList = list;
+                if (phoneVal !== '') {
+                    filteredList = filteredList.filter(w => {
+                        const phone = userPhoneMap[String(w.userId)] || '';
+                        return phone.toLowerCase().includes(phoneVal);
+                    });
+                }
+                if (idVal !== '') {
+                    filteredList = filteredList.filter(w => String(w.id).toLowerCase().includes(idVal));
+                }
+                if (startDateVal !== '') {
+                    const startMs = new Date(startDateVal + 'T00:00:00').getTime();
+                    filteredList = filteredList.filter(w => parseInt(w.createdAt || 0) >= startMs);
+                }
+                if (endDateVal !== '') {
+                    const endMs = new Date(endDateVal + 'T23:59:59').getTime();
+                    filteredList = filteredList.filter(w => parseInt(w.createdAt || 0) <= endMs);
+                }
                 
-                // Update pagination indicator
-                const indicator = document.getElementById(`withdraw-page-indicator`);
-                if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
-                return;
+                if (filteredList.length === 0) {
+                    bodyEl.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 30px 0;">暂无符合条件的提现记录</td></tr>`;
+                    const indicator = document.getElementById(`withdraw-page-indicator`);
+                    if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
+                    return;
+                }
+                
+                pagingObj = {
+                    page: pageConf.current,
+                    pageSize: pageConf.size,
+                    records: filteredList.length,
+                    pages: Math.max(1, Math.ceil(filteredList.length / pageConf.size))
+                };
+                renderList = paginateList(filteredList, 'withdraw');
+            } else {
+                pagingObj = res.paging || {
+                    page: pageConf.current,
+                    pageSize: pageConf.size,
+                    records: list.length,
+                    pages: 1
+                };
+                updateAdminPageIndicator('withdraw', pagingObj);
             }
             
-            // Paginate the filtered list
-            const paginatedList = paginateList(filteredList, 'withdraw');
-            
-            bodyEl.innerHTML = paginatedList.map(w => {
+            bodyEl.innerHTML = renderList.map(w => {
                 const date = w.createdAt ? new Date(parseInt(w.createdAt)).toLocaleString() : '--';
                 const userPhone = userPhoneMap[String(w.userId)] || '--';
                 
@@ -447,8 +541,10 @@ async function loadPaymentChannels() {
     
     tableBody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 50px 0;">🔄 正在拉取平台支付通道列表...</td></tr>`;
     
+    const pageConf = window.adminPages.payment;
+    
     try {
-        const res = await apiFetch('GET', '/finance/payment-methods', null, true);
+        const res = await apiFetch('GET', `/finance/payment-methods?page=${pageConf.current}&pageSize=${pageConf.size}`, null, true);
         if (res.code === 200) {
             const list = res.result || res.data || [];
             cachedPaymentChannels = list; // Cache for edit lookup
@@ -459,8 +555,15 @@ async function loadPaymentChannels() {
                 return;
             }
             
-            const paginatedList = paginateList(list, 'payment');
-            tableBody.innerHTML = paginatedList.map(m => {
+            const pagingObj = res.paging || {
+                page: pageConf.current,
+                pageSize: pageConf.size,
+                records: list.length,
+                pages: 1
+            };
+            updateAdminPageIndicator('payment', pagingObj);
+            
+            tableBody.innerHTML = list.map(m => {
                 const statusBadge = m.enabled 
                     ? `<span class="kyc-badge-status kyc-status-APPROVED" style="font-size:0.75rem; padding: 2px 8px; border-radius: 4px;">已启用</span>`
                     : `<span class="kyc-badge-status kyc-status-NONE" style="font-size:0.75rem; padding: 2px 8px; border-radius: 4px;">已禁用</span>`;
@@ -472,13 +575,13 @@ async function loadPaymentChannels() {
                 const configBtn = `<button class="action-btn btn-view" onclick="openReceivingConfigDrawer('${m.id}', '${m.name.replace(/'/g, "\\'")}', '${m.assetClass}')" style="padding: 4px 8px; font-size: 0.72rem; margin-left: 5px; cursor: pointer; background: rgba(91,81,249,0.08); color: var(--primary);">⚙️ 收款配置</button>`;
                 
                 const editBtn = `<button class="action-btn btn-view" onclick="openPaymentEditModal('${m.id}')" style="padding: 4px 8px; font-size: 0.72rem; margin-left: 5px; cursor: pointer; background: rgba(59, 130, 246, 0.08); color: var(--blue);">📝 编辑</button>`;
-
+ 
                 const deleteBtn = `<button class="action-btn btn-reject" onclick="deletePaymentChannel('${m.id}')" style="padding: 4px 8px; font-size: 0.72rem; background: rgba(239, 68, 68, 0.08); color: var(--red); margin-left: 5px; cursor: pointer;">删除</button>`;
                 
                 const iconHtml = m.iconUrl 
                     ? `<img src="${m.iconUrl}" style="max-height: 24px; max-width: 24px; border-radius: 4px; object-fit: contain;" onerror="this.onerror=null; this.src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';">`
                     : `<span style="font-size:1.1rem;">💳</span>`;
-
+ 
                 return `
                     <tr>
                         <td style="font-family: monospace; font-size: 0.8rem;">${m.id}</td>
@@ -1100,8 +1203,10 @@ async function loadExchangeRatesList() {
     
     tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 20px; color: var(--text-secondary);">🔄 正在调取全站结算汇率配置...</td></tr>`;
     
+    const pageConf = window.adminPages.rates;
+    
     try {
-        const res = await apiFetch('GET', '/asset-exchange-rates?page=1&pageSize=1000', null, true);
+        const res = await apiFetch('GET', `/asset-exchange-rates?page=${pageConf.current}&pageSize=${pageConf.size}`, null, true);
         if (res && res.code === 200) {
             const rates = res.result || res.data || [];
             exchangeRatesList = rates; // Cache globally
@@ -1124,8 +1229,15 @@ async function loadExchangeRatesList() {
                 '1126151490264633456': 'INR'
             };
             
-            const paginatedList = paginateList(rates, 'rates');
-            tableBody.innerHTML = paginatedList.map(r => {
+            const pagingObj = res.paging || {
+                page: pageConf.current,
+                pageSize: pageConf.size,
+                records: rates.length,
+                pages: 1
+            };
+            updateAdminPageIndicator('rates', pagingObj);
+            
+            tableBody.innerHTML = rates.map(r => {
                 const baseName = symbolMap[String(r.baseAssetId || '')] || `Asset (${r.baseAssetId})`;
                 const quoteName = symbolMap[String(r.quoteAssetId || '')] || `Asset (${r.quoteAssetId})`;
                 
@@ -1389,11 +1501,15 @@ async function loadManualFundingList() {
         const typeVal = document.getElementById('filter-manual-type').value;
         const statusVal = document.getElementById('filter-manual-status').value;
         
+        const pageConf = window.adminPages.manualFunding;
+        
         let queryParams = [];
         if (uidVal) queryParams.push(`userId=${uidVal}`);
         if (subjectIdVal !== 'ALL') queryParams.push(`subjectId=${subjectIdVal}`);
         if (typeVal !== 'ALL') queryParams.push(`type=${typeVal}`);
         if (statusVal !== 'ALL') queryParams.push(`status=${statusVal}`);
+        queryParams.push(`page=${pageConf.current}`);
+        queryParams.push(`pageSize=${pageConf.size}`);
         
         const queryString = queryParams.length > 0 ? '?' + queryParams.join('&') : '';
         const res = await apiFetch('GET', '/finance/manual-fund-orders' + queryString, null, true);
@@ -1405,16 +1521,25 @@ async function loadManualFundingList() {
                 return aId > bId ? -1 : (aId < bId ? 1 : 0);
             });
             
-            const paginated = paginateList(list, 'manualFunding');
             const tbody = document.getElementById('manual-funding-table-body');
             if (!tbody) return;
             
-            if (paginated.length === 0) {
+            if (list.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 30px 0;">\u65e0\u6570\u636e</td></tr>`;
+                const indicator = document.getElementById(`manualFunding-page-indicator`);
+                if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
                 return;
             }
             
-            tbody.innerHTML = paginated.map(o => {
+            const pagingObj = res.paging || {
+                page: pageConf.current,
+                pageSize: pageConf.size,
+                records: list.length,
+                pages: 1
+            };
+            updateAdminPageIndicator('manualFunding', pagingObj);
+            
+            tbody.innerHTML = list.map(o => {
                 const statusColor = o.status === 'PENDING' ? '#F59E0B' : (o.status === 'APPROVED' ? '#10B981' : '#EF4444');
                 const statusName = o.status === 'PENDING' ? '\u5f85\u5ba1\u6838' : (o.status === 'APPROVED' ? '\u5df2\u901a\u8fc7' : '\u5df2\u62d2\u7edd');
                 const typeColor = o.type === 'DEPOSIT' ? '#10B981' : '#EF4444';
@@ -1616,30 +1741,52 @@ window.handleManualFundingReview = handleManualFundingReview;
 
 async function loadManualSubjectsList() {
     showToast('\u6b63\u5728\u52a0\u8f7d\u4f1a\u8ba1\u79d1\u76ee\u5217\u8868...', false);
+    
+    const pageConf = window.adminPages.manualSubjects;
+    
     try {
-        const res = await apiFetch('GET', '/finance/manual-fund-subjects', null, true);
+        // Fetch all to populate the filter select dropdown
+        try {
+            const allRes = await apiFetch('GET', '/finance/manual-fund-subjects?page=1&pageSize=1000', null, true);
+            if (allRes.code === 200) {
+                const allList = allRes.result || allRes.data || [];
+                const filterSelect = document.getElementById('filter-manual-subject');
+                if (filterSelect) {
+                    const currentVal = filterSelect.value;
+                    filterSelect.innerHTML = '<option value="ALL">全部科目</option>' +
+                        allList.filter(s => s.enabled).map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+                    filterSelect.value = currentVal;
+                }
+            }
+        } catch (err) {
+            console.error("Failed to load all manual subjects for filter dropdown:", err);
+        }
+
+        // Fetch paginated subjects for the table
+        const res = await apiFetch('GET', `/finance/manual-fund-subjects?page=${pageConf.current}&pageSize=${pageConf.size}`, null, true);
         if (res.code === 200) {
             const list = res.result || res.data || [];
             list.sort((a, b) => (b.priority || 0) - (a.priority || 0));
             
-            const filterSelect = document.getElementById('filter-manual-subject');
-            if (filterSelect) {
-                const currentVal = filterSelect.value;
-                filterSelect.innerHTML = '<option value="ALL">\u5168\u90e8\u79d1\u76ee</option>' +
-                    list.filter(s => s.enabled).map(s => `<option value="${s.id}">${s.name}</option>`).join('');
-                filterSelect.value = currentVal;
-            }
-            
-            const paginated = paginateList(list, 'manualSubjects');
             const tbody = document.getElementById('manual-subjects-table-body');
             if (!tbody) return;
             
-            if (paginated.length === 0) {
+            if (list.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px 0;">\u65e0\u6570\u636e</td></tr>`;
+                const indicator = document.getElementById(`manualSubjects-page-indicator`);
+                if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
                 return;
             }
             
-            tbody.innerHTML = paginated.map(s => {
+            const pagingObj = res.paging || {
+                page: pageConf.current,
+                pageSize: pageConf.size,
+                records: list.length,
+                pages: 1
+            };
+            updateAdminPageIndicator('manualSubjects', pagingObj);
+            
+            tbody.innerHTML = list.map(s => {
                 const statusColor = s.enabled ? '#10B981' : '#EF4444';
                 const statusName = s.enabled ? '\u5df2\u542f\u7528' : '\u5df2\u7981\u7528';
                 const statusActionText = s.enabled ? '\u7981\u7528' : '\u542f\u7528';

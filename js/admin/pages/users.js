@@ -114,143 +114,197 @@ export async function loadUsersList() {
     const statusFilter = document.getElementById('filter-users-status')?.value || 'ALL';
     const riskLevelFilter = document.getElementById('filter-users-risk-level')?.value || 'ALL';
     
-    const users = await window.adminState.getUsers(true);
-    if (users) {
-        window.cachedUsersList = users;
-        
-        let kycMap = {};
-        try {
-            if (!window.kycFetchPromise) {
-                window.kycFetchPromise = apiFetch('GET', '/users/kyc', null, true);
+    const pageConf = window.adminPages.users;
+    const isFilterActive = (searchVal !== '' || kycFilter !== 'ALL' || statusFilter !== 'ALL' || riskLevelFilter !== 'ALL');
+    
+    let users = [];
+    let pagingObj = null;
+    
+    if (isFilterActive) {
+        // If filters are active, fetch all users from cache or full endpoint, filter locally and page
+        const allUsers = await window.adminState.getUsers(true);
+        if (allUsers) {
+            let filteredUsers = allUsers;
+            if (searchVal !== '') {
+                filteredUsers = filteredUsers.filter(u => 
+                    String(u.uid).includes(searchVal) || 
+                    (u.username && u.username.toLowerCase().includes(searchVal)) || 
+                    (u.email && u.email.toLowerCase().includes(searchVal)) ||
+                    (u.nickname && u.nickname.toLowerCase().includes(searchVal))
+                );
             }
-            const kycRes = await window.kycFetchPromise;
-            if (kycRes.code === 200) {
-                const kycList = kycRes.result || kycRes.data || [];
-                kycList.forEach(a => {
-                    kycMap[String(a.userId)] = a.status;
+            
+            // Sync KYC status map
+            let kycMap = {};
+            try {
+                if (!window.kycFetchPromise) {
+                    window.kycFetchPromise = apiFetch('GET', '/users/kyc?page=1&pageSize=1000', null, true);
+                }
+                const kycRes = await window.kycFetchPromise;
+                if (kycRes.code === 200) {
+                    const kycList = kycRes.result || kycRes.data || [];
+                    kycList.forEach(a => {
+                        kycMap[String(a.userId)] = a.status;
+                    });
+                }
+            } catch (e) {
+                console.error('Failed to pre-fetch KYC list for users list mapping:', e);
+            }
+            filteredUsers.forEach(u => {
+                u.kycStatus = kycMap[String(u.id)] || 'NOT_VERIFIED';
+            });
+            
+            if (kycFilter !== 'ALL') {
+                filteredUsers = filteredUsers.filter(u => u.kycStatus === kycFilter);
+            }
+            if (statusFilter !== 'ALL') {
+                filteredUsers = filteredUsers.filter(u => {
+                    const s = u.status || 'ENABLED';
+                    return s === statusFilter;
                 });
             }
-        } catch (e) {
-            console.error('Failed to pre-fetch KYC list for users list mapping:', e);
-        }
-        
-        users.forEach(u => {
-            u.kycStatus = kycMap[String(u.id)] || 'NOT_VERIFIED';
-        });
-        
-        // Dynamically update total user count on screen!
-        const statTotalUsers = document.getElementById('stat-total-users');
-        if (statTotalUsers) statTotalUsers.innerText = users.length;
-        
-        let filteredUsers = users;
-        if (searchVal !== '') {
-            filteredUsers = filteredUsers.filter(u => 
-                String(u.uid).includes(searchVal) || 
-                (u.username && u.username.toLowerCase().includes(searchVal)) || 
-                (u.email && u.email.toLowerCase().includes(searchVal)) ||
-                (u.nickname && u.nickname.toLowerCase().includes(searchVal))
-            );
-        }
-        if (kycFilter !== 'ALL') {
-            filteredUsers = filteredUsers.filter(u => u.kycStatus === kycFilter);
-        }
-        if (statusFilter !== 'ALL') {
-            filteredUsers = filteredUsers.filter(u => {
-                const s = u.status || 'ENABLED';
-                return s === statusFilter;
-            });
-        }
-        if (riskLevelFilter !== 'ALL') {
-            filteredUsers = filteredUsers.filter(u => {
-                return String(u.riskLevelId || '') === String(riskLevelFilter);
-            });
-        }
-        
-        const bodyEl = document.getElementById('users-table-body');
-        if (filteredUsers.length === 0) {
-            bodyEl.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 30px 0;">未搜索到符合条件的交易员用户</td></tr>`;
+            if (riskLevelFilter !== 'ALL') {
+                filteredUsers = filteredUsers.filter(u => {
+                    return String(u.riskLevelId || '') === String(riskLevelFilter);
+                });
+            }
             
-            // Update pagination indicator
-            const indicator = document.getElementById(`users-page-indicator`);
-            if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
+            window.cachedUsersList = filteredUsers;
+            
+            pagingObj = {
+                page: pageConf.current,
+                pageSize: pageConf.size,
+                records: filteredUsers.length,
+                pages: Math.max(1, Math.ceil(filteredUsers.length / pageConf.size))
+            };
+            
+            users = paginateList(filteredUsers, 'users');
+        }
+    } else {
+        // No filter active: direct native server-side pagination!
+        const res = await apiFetch('GET', `/users?page=${pageConf.current}&pageSize=${pageConf.size}`, null, true);
+        if (res.code === 200) {
+            users = res.result || res.data || [];
+            
+            // Sync KYC status map for the returned page
+            let kycMap = {};
+            try {
+                if (!window.kycFetchPromise) {
+                    window.kycFetchPromise = apiFetch('GET', '/users/kyc?page=1&pageSize=1000', null, true);
+                }
+                const kycRes = await window.kycFetchPromise;
+                if (kycRes.code === 200) {
+                    const kycList = kycRes.result || kycRes.data || [];
+                    kycList.forEach(a => {
+                        kycMap[String(a.userId)] = a.status;
+                    });
+                }
+            } catch (e) {
+                console.error('Failed to pre-fetch KYC list for users list mapping:', e);
+            }
+            users.forEach(u => {
+                u.kycStatus = kycMap[String(u.id)] || 'NOT_VERIFIED';
+            });
+            
+            window.cachedUsersList = users;
+            
+            pagingObj = res.paging || {
+                page: pageConf.current,
+                pageSize: pageConf.size,
+                records: users.length,
+                pages: 1
+            };
+            updateAdminPageIndicator('users', pagingObj);
+        } else {
+            showToast(res.errorMessage || '获取用户列表失败！', true);
             return;
         }
+    }
+    
+    // Dynamically update total user count on screen!
+    if (pagingObj && pagingObj.records !== undefined && !isFilterActive) {
+        const statTotalUsers = document.getElementById('stat-total-users');
+        if (statTotalUsers) statTotalUsers.innerText = pagingObj.records;
+    }
+    
+    const bodyEl = document.getElementById('users-table-body');
+    if (!bodyEl) return;
+    
+    if (users.length === 0) {
+        bodyEl.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 30px 0;">未搜索到符合条件的交易员用户</td></tr>`;
         
-        // Paginate the list
-        const paginatedUsers = paginateList(filteredUsers, 'users');
+        // Update pagination indicator
+        const indicator = document.getElementById(`users-page-indicator`);
+        if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
+        return;
+    }
+    
+    window.selectedUserIds = window.selectedUserIds || {};
+    
+    bodyEl.innerHTML = users.map(u => {
+        const date = u.createdAt ? new Date(parseInt(u.createdAt)).toLocaleDateString() : '--';
         
-        window.selectedUserIds = window.selectedUserIds || {};
+        const kycBadgeType = u.kycStatus === 'APPROVED' ? 'APPROVED' : (u.kycStatus === 'PENDING' ? 'PENDING' : 'REJECTED');
+        const statusBadgeType = u.status === 'ENABLED' || !u.status ? 'APPROVED' : (u.status === 'FROZEN' ? 'PENDING' : 'REJECTED');
         
-        bodyEl.innerHTML = paginatedUsers.map(u => {
-            const date = u.createdAt ? new Date(parseInt(u.createdAt)).toLocaleDateString() : '--';
+        const riskLevelText = u.userRisk && u.userRisk.name
+            ? `<span style="font-weight: 600; color: #38BDF8;">${u.userRisk.name}</span>`
+            : `<span style="color: var(--text-secondary);">未分组</span>`;
             
-            const kycBadgeType = u.kycStatus === 'APPROVED' ? 'APPROVED' : (u.kycStatus === 'PENDING' ? 'PENDING' : 'REJECTED');
-            const statusBadgeType = u.status === 'ENABLED' || !u.status ? 'APPROVED' : (u.status === 'FROZEN' ? 'PENDING' : 'REJECTED');
-            
-            const matchedLevel = (window.cachedRiskLevels || []).find(x => String(x.id) === String(u.riskLevelId || ''));
-            const riskLevelText = matchedLevel 
-                ? `<span style="font-weight: 600; color: #38BDF8;">${matchedLevel.name}</span>`
-                : `<span style="color: var(--text-secondary);">未分组</span>`;
-                
-            const isChecked = window.selectedUserIds[u.id] ? 'checked' : '';
-            
-            return `
-                <tr>
-                    <td style="text-align: center;">
-                        <input type="checkbox" class="user-select-checkbox" value="${u.id}" ${isChecked} onchange="updateBatchActionBtnState()" style="cursor: pointer;">
-                    </td>
-                    <td>${u.uid || '--'}</td>
-                    <td>${u.username || '--'}</td>
-                    <td>${u.email || '--'}</td>
-                    <td>${u.nickname}</td>
-                    <td>
-                        <span class="badge badge-${kycBadgeType}" style="margin-bottom: 4px; display: inline-flex;">
-                            <span class="badge-status-dot"></span>
-                            KYC: ${u.kycStatus}
-                        </span>
-                        <br>
-                        <span class="badge badge-${statusBadgeType}" style="display: inline-flex;">
-                            <span class="badge-status-dot"></span>
-                            账号: ${u.status || 'ENABLED'}
-                        </span>
-                    </td>
-                    <td>${riskLevelText}</td>
-                    <td style="font-weight: 600;" id="user-balance-${u.id}">读取中...</td>
-                    <td style="color: var(--text-muted);">${date}</td>
-                    <td class="sticky-right" style="text-align: center;">
-                        <div class="action-dropdown-container">
-                            <button class="action-btn btn-approve" onclick="toggleUserActionDropdown(event, '${u.id}')" style="padding: 4px 10px; font-size: 0.72rem; font-weight: 600; background: var(--primary); color: white; border: none; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; height: 26px;">
-                                操作 ▾
-                            </button>
-                            <div class="action-dropdown-menu" id="dropdown-menu-${u.id}">
-                                ${u.status === 'BLOCKED' || u.status === 'FROZEN' 
-                                    ? `<a class="dropdown-item" onclick="toggleUserStatus('${u.id}', 'ENABLED')">✓ 启用账号</a>`
-                                    : `
-                                        <a class="dropdown-item" onclick="toggleUserStatus('${u.id}', 'FROZEN')">❄️ 冻结账号</a>
-                                        <a class="dropdown-item" onclick="toggleUserStatus('${u.id}', 'BLOCKED')">✕ 封禁账号</a>
-                                      `
-                                }
-                                <a class="dropdown-item" onclick="showUserReferralsTree('${u.id}', '${u.nickname || u.uid}')">🌳 邀请树</a>
-                                <a class="dropdown-item" onclick="openUpdateReferralModal('${u.id}', '${u.nickname || u.uid}')">🔗 变更推荐人</a>
-                                <a class="dropdown-item" onclick="openSingleGroupModal('${u.id}', '${u.nickname || u.uid}')">🏷️ 分组设置</a>
-                            </div>
+        const isChecked = window.selectedUserIds[u.id] ? 'checked' : '';
+        
+        const balanceVal = u.defaultBalance ? parseFloat(u.defaultBalance.total) : 0;
+        const balanceSymbol = u.defaultBalance ? u.defaultBalance.assetSymbol : 'USDT';
+        const balanceText = `${balanceVal.toFixed(2)} ${balanceSymbol}`;
+        
+        return `
+            <tr>
+                <td style="text-align: center;">
+                    <input type="checkbox" class="user-select-checkbox" value="${u.id}" ${isChecked} onchange="updateBatchActionBtnState()" style="cursor: pointer;">
+                </td>
+                <td>${u.uid || '--'}</td>
+                <td>${u.username || '--'}</td>
+                <td>${u.email || '--'}</td>
+                <td>${u.nickname}</td>
+                <td>
+                    <span class="badge badge-${kycBadgeType}" style="margin-bottom: 4px; display: inline-flex;">
+                        <span class="badge-status-dot"></span>
+                        KYC: ${u.kycStatus}
+                    </span>
+                    <br>
+                    <span class="badge badge-${statusBadgeType}" style="display: inline-flex;">
+                        <span class="badge-status-dot"></span>
+                        账号: ${u.status || 'ENABLED'}
+                    </span>
+                </td>
+                <td>${riskLevelText}</td>
+                <td style="font-weight: 600;">${balanceText}</td>
+                <td style="color: var(--text-muted);">${date}</td>
+                <td class="sticky-right" style="text-align: center;">
+                    <div class="action-dropdown-container">
+                        <button class="action-btn btn-approve" onclick="toggleUserActionDropdown(event, '${u.id}')" style="padding: 4px 10px; font-size: 0.72rem; font-weight: 600; background: var(--primary); color: white; border: none; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; height: 26px;">
+                            操作 ▾
+                        </button>
+                        <div class="action-dropdown-menu" id="dropdown-menu-${u.id}">
+                            ${u.status === 'BLOCKED' || u.status === 'FROZEN' 
+                                ? `<a class="dropdown-item" onclick="toggleUserStatus('${u.id}', 'ENABLED')">✓ 启用账号</a>`
+                                : `
+                                    <a class="dropdown-item" onclick="toggleUserStatus('${u.id}', 'FROZEN')">❄️ 冻结账号</a>
+                                    <a class="dropdown-item" onclick="toggleUserStatus('${u.id}', 'BLOCKED')">✕ 封禁账号</a>
+                                  `
+                            }
+                            <a class="dropdown-item" onclick="showUserReferralsTree('${u.id}', '${u.nickname || u.uid}')">🌳 邀请树</a>
+                            <a class="dropdown-item" onclick="openUpdateReferralModal('${u.id}', '${u.nickname || u.uid}')">🔗 变更推荐人</a>
+                            <a class="dropdown-item" onclick="openSingleGroupModal('${u.id}', '${u.nickname || u.uid}')">🏷️ 分组设置</a>
                         </div>
-                    </td>
-                </tr>
-            `;
-        }).join('');
-
-        // Asynchronously load the balances for each user on the current page
-        paginatedUsers.forEach(async (u) => {
-            const balance = await fetchUserUsdtBalance(u.id);
-            const el = document.getElementById(`user-balance-${u.id}`);
-            if (el) {
-                el.innerHTML = balance;
-            }
-        });
-        
-        // Sync checkboxes and batch button count
-        updateBatchActionBtnState();
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+    
+    // Sync checkboxes and batch button count
+    updateBatchActionBtnState();
     } else {
         showToast('获取用户列表失败！', true);
     }
@@ -497,7 +551,8 @@ export async function loadRiskLevelsList() {
     tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">🔄 正在安全调取用户风控层级列表...</td></tr>';
     
     try {
-        const res = await apiFetch('GET', '/users/risk-levels', null, true);
+        const pageConf = window.adminPages.riskLevels;
+        const res = await apiFetch('GET', `/users/risk-levels?page=${pageConf.current}&pageSize=${pageConf.size}`, null, true);
         if (res.code === 200) {
             const list = res.result || res.data || [];
             
@@ -509,14 +564,22 @@ export async function loadRiskLevelsList() {
             });
             
             window.cachedRiskLevels = list;
-            const paginated = paginateList(list, 'riskLevels');
             
-            if (paginated.length === 0) {
+            const pagingObj = res.paging || {
+                page: pageConf.current,
+                pageSize: pageConf.size,
+                records: list.length,
+                pages: 1
+            };
+            
+            updateAdminPageIndicator('riskLevels', pagingObj);
+            
+            if (list.length === 0) {
                 tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">📭 暂无匹配的用户风控层级记录</td></tr>';
                 return;
             }
             
-            tableBody.innerHTML = paginated.map(item => {
+            tableBody.innerHTML = list.map(item => {
                 const enabledChecked = item.enabled ? 'checked' : '';
                 const needAuditText = item.needAudit ? '<span style="color: var(--red); font-weight: bold;">⚠️ 需要审核</span>' : '<span style="color: var(--green); font-weight: bold;">✓ 免审核</span>';
                 

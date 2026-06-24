@@ -120,8 +120,6 @@ export async function loadQuantMonitor() {
     await ensureInstrumentsLoaded();
     
     const pageConf = window.adminPages.quant;
-    const page = pageConf.current;
-    const pageSize = pageConf.size;
     
     // Extract filter values
     const statusEl = document.getElementById('filter-quant-status');
@@ -129,57 +127,46 @@ export async function loadQuantMonitor() {
     const uidVal = document.getElementById('filter-quant-uid')?.value.trim() || '';
     const orderNoVal = document.getElementById('filter-quant-orderNo')?.value.trim().toLowerCase() || '';
     
-    // Unconditionally fetch all records (up to 2000) for stable client-side sorting and pagination
-    let url = `/trading/quant/orders?page=1&pageSize=2000`;
-    if (statusVal !== 'ALL') {
-        url += `&status=${statusVal}`;
-    }
-    if (uidVal !== '' && /^\d+$/.test(uidVal) && uidVal.length >= 18) {
-        url += `&userId=${uidVal}`;
-    }
-    
     const tbody = document.getElementById('quant-monitor-table-body');
     if (tbody) {
         tbody.innerHTML = '<tr><td colspan="13" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">🔄 正在安全同步全站量化订单列表...</td></tr>';
     }
     
     try {
-        let allOrders = [];
-        let currentPage = 1;
-        
-        while (currentPage <= 50) {
-            let fetchUrl = `/trading/quant/orders?page=${currentPage}&pageSize=60`;
-            if (statusVal !== 'ALL') {
-                fetchUrl += `&status=${statusVal}`;
-            }
-            if (uidVal !== '' && /^\d+$/.test(uidVal) && uidVal.length >= 18) {
-                fetchUrl += `&userId=${uidVal}`;
-            }
-            
-            const res = await apiFetch('GET', fetchUrl, null, true);
-            if (res.code !== 200) {
-                showToast(res.errorMessage || '获取量化列表失败！', true);
-                if (tbody) {
-                    tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: #EF4444; padding: 30px 0;">❌ 加载失败: ${res.errorMessage || '未知接口错误'}</td></tr>`;
-                }
-                return;
-            }
-            
-            const list = res.result || res.data || [];
-            allOrders = allOrders.concat(list);
-            
-            const pg = res.paging || { page: currentPage, pageSize: 60, pages: 1, records: allOrders.length };
-            const totalRecords = pg.records || allOrders.length;
-            
-            if (allOrders.length >= totalRecords || list.length === 0) {
-                break;
-            }
-            currentPage++;
+        let fetchUrl = `/trading/quant/orders?page=${pageConf.current}&pageSize=${pageConf.size}`;
+        if (statusVal !== 'ALL') {
+            fetchUrl += `&status=${statusVal}`;
         }
         
-        const orders = allOrders;
+        // Coordinated search by user phone number or full userId
+        if (uidVal !== '') {
+            let matchedUserId = uidVal;
+            if (!/^\d{18,}$/.test(uidVal)) {
+                try {
+                    const userPhoneMap = await window.adminState.getUserPhoneMap();
+                    const matchedUid = Object.keys(userPhoneMap).find(id => userPhoneMap[id].toLowerCase().includes(uidVal.toLowerCase()));
+                    if (matchedUid) {
+                        matchedUserId = matchedUid;
+                    }
+                } catch(e) {
+                    console.error("Failed to map user phone for quant orders filter:", e);
+                }
+            }
+            fetchUrl += `&userId=${matchedUserId}`;
+        }
+
+        const res = await apiFetch('GET', fetchUrl, null, true);
+        if (res.code !== 200) {
+            showToast(res.errorMessage || '获取量化列表失败！', true);
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: #EF4444; padding: 30px 0;">❌ 加载失败: ${res.errorMessage || '未知接口错误'}</td></tr>`;
+            }
+            return;
+        }
         
-        // Sort by createdAt descending (newest first)
+        const orders = res.result || res.data || [];
+        
+        // Sort by createdAt descending
         orders.sort((a, b) => {
             const timeA = parseInt(a.createdAt || 0);
             const timeB = parseInt(b.createdAt || 0);
@@ -192,62 +179,55 @@ export async function loadQuantMonitor() {
         const masterCheckbox = document.getElementById('select-all-pending-orders-checkbox');
         if (masterCheckbox) masterCheckbox.checked = false;
         
-        // Update stats directly using the fetched orders list to avoid duplicate requests and page size caps
-        const activeCount = orders.filter(o => o.status === 'ACTIVE').length;
-        const statActiveQuantEl = document.getElementById('stat-active-quant');
-        if (statActiveQuantEl) statActiveQuantEl.innerText = activeCount;
+        // Update stats
+        const pg = res.paging || { page: pageConf.current, pageSize: pageConf.size, pages: 1, records: orders.length };
+        updateAdminPageIndicator('quant', pg);
         
-        let valuation = 0;
-        orders.forEach(o => {
-            valuation += parseFloat(o.investAmount) || 0;
-        });
-        const statTotalValuationEl = document.getElementById('stat-total-valuation');
-        if (statTotalValuationEl) {
-            statTotalValuationEl.innerText = '$' + valuation.toLocaleString([], { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        }
-            
-            // Apply filtering logic for partial UID search or orderNo search
-            let filteredOrders = orders;
-            if (uidVal !== '') {
-                filteredOrders = filteredOrders.filter(o => {
-                    const userUidStr = String(o.userId || '');
-                    const userAccount = '133' + userUidStr.substring(0, 4) + '1300';
-                    const shortUidStr = userUidStr.substring(0, 8);
-                    
-                    return userUidStr.toLowerCase().includes(uidVal.toLowerCase()) ||
-                           userAccount.toLowerCase().includes(uidVal.toLowerCase()) ||
-                           shortUidStr.toLowerCase().includes(uidVal.toLowerCase());
+        // System-wide active count and valuation calculation
+        try {
+            const activeRes = await apiFetch('GET', '/trading/quant/orders?status=ACTIVE&page=1&pageSize=1000', null, true);
+            if (activeRes.code === 200) {
+                const activeList = activeRes.result || activeRes.data || [];
+                const activeCount = activeRes.paging?.records !== undefined ? activeRes.paging.records : activeList.length;
+                const statActiveQuantEl = document.getElementById('stat-active-quant');
+                if (statActiveQuantEl) statActiveQuantEl.innerText = activeCount;
+                
+                let valuation = 0;
+                activeList.forEach(o => {
+                    valuation += parseFloat(o.investAmount) || 0;
                 });
+                const statTotalValuationEl = document.getElementById('stat-total-valuation');
+                if (statTotalValuationEl) {
+                    statTotalValuationEl.innerText = '$' + valuation.toLocaleString([], { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                }
             }
-            if (orderNoVal !== '') {
-                filteredOrders = filteredOrders.filter(o => String(o.orderNo).toLowerCase().includes(orderNoVal));
-            }
-            
-            if (!tbody) return;
-            
-            if (filteredOrders.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--text-muted); padding: 30px 0;">全站暂无符合筛选条件的量化委托订单</td></tr>`;
-                
-                // Reset summary statistics to zero
-                document.getElementById('quant-total-principal-amount').innerText = '0.00 USDT';
-                
-                // Update pagination indicator
-                const indicator = document.getElementById(`quant-page-indicator`);
-                if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
-                return;
-            }
-            
-            // Calculate filtered sums for the table footer statistics (computed over current page/filtered list)
-            let sumBuyAmount = 0;
-            filteredOrders.forEach(o => {
-                sumBuyAmount += parseFloat(o.investAmount || 0);
-            });
-            document.getElementById('quant-total-principal-amount').innerText = sumBuyAmount.toFixed(2) + ' USDT';
-            
-            // Client-side pagination to support stable page-counts and cross-page sorting
-            const renderList = paginateList(filteredOrders, 'quant');
-            
-            tbody.innerHTML = renderList.map(o => {
+        } catch (statsErr) {
+            console.error("Failed to update dashboard quant stats:", statsErr);
+        }
+        
+        // Local filtering for orderNo
+        let filteredOrders = orders;
+        if (orderNoVal !== '') {
+            filteredOrders = filteredOrders.filter(o => String(o.orderNo).toLowerCase().includes(orderNoVal));
+        }
+        
+        if (!tbody) return;
+        
+        if (filteredOrders.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--text-muted); padding: 30px 0;">全站暂无符合筛选条件的量化委托订单</td></tr>`;
+            document.getElementById('quant-total-principal-amount').innerText = '0.00 USDT';
+            return;
+        }
+        
+        let sumBuyAmount = 0;
+        filteredOrders.forEach(o => {
+            sumBuyAmount += parseFloat(o.investAmount || 0);
+        });
+        document.getElementById('quant-total-principal-amount').innerText = sumBuyAmount.toFixed(2) + ' USDT';
+        
+        const renderList = filteredOrders;
+        
+        tbody.innerHTML = renderList.map(o => {
                 const profit = parseFloat(o.actualProfit || '0');
                 const algoName = getAlgoDisplayName(o.algorithmModel);
                 
@@ -1210,8 +1190,6 @@ async function loadQuantSettleList() {
     await ensureInstrumentsLoaded();
     
     const pageConf = window.adminPages.quantSettle;
-    const page = pageConf.current;
-    const pageSize = pageConf.size;
     
     // Extract filter values
     const uidFilter = document.getElementById('filter-settle-uid')?.value.trim().toLowerCase() || '';
@@ -1224,108 +1202,96 @@ async function loadQuantSettleList() {
     }
     
     try {
-        let allOrders = [];
-        let currentPage = 1;
+        let fetchUrl = `/trading/quant/orders?status=ACTIVE&page=${pageConf.current}&pageSize=${pageConf.size}`;
         
-        while (currentPage <= 50) {
-            const fetchUrl = `/trading/quant/orders?status=ACTIVE&page=${currentPage}&pageSize=60`;
-            const res = await apiFetch('GET', fetchUrl, null, true);
-            
-            if (res.code !== 200) {
-                showToast(res.errorMessage || '获取结算量化列表失败！', true);
-                if (tbody) {
-                    tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: #EF4444; padding: 30px 0;">❌ 加载失败: ${res.errorMessage || '未知接口错误'}</td></tr>`;
+        // Coordinated search by user phone number or full userId
+        if (uidFilter !== '') {
+            let matchedUserId = uidFilter;
+            if (!/^\d{18,}$/.test(uidFilter)) {
+                try {
+                    const userPhoneMap = await window.adminState.getUserPhoneMap();
+                    const matchedUid = Object.keys(userPhoneMap).find(id => userPhoneMap[id].toLowerCase().includes(uidFilter));
+                    if (matchedUid) {
+                        matchedUserId = matchedUid;
+                    }
+                } catch(e) {
+                    console.error("Failed to map user phone for quant settle filter:", e);
                 }
-                return;
             }
-            
-            const list = res.result || res.data || [];
-            allOrders = allOrders.concat(list);
-            
-            const pg = res.paging || { page: currentPage, pageSize: 60, pages: 1, records: allOrders.length };
-            const totalRecords = pg.records || allOrders.length;
-            
-            if (allOrders.length >= totalRecords || list.length === 0) {
-                break;
-            }
-            currentPage++;
+            fetchUrl += `&userId=${matchedUserId}`;
         }
         
-        const activeOrders = allOrders.filter(o => o.status === 'ACTIVE');
-            
-            // Retrieve user phone map to support phone number display & search
-            let userPhoneMap = {};
+        const res = await apiFetch('GET', fetchUrl, null, true);
+        if (res.code !== 200) {
+            showToast(res.errorMessage || '获取结算量化列表失败！', true);
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: #EF4444; padding: 30px 0;">❌ 加载失败: ${res.errorMessage || '未知接口错误'}</td></tr>`;
+            }
+            return;
+        }
+        
+        const activeOrders = res.result || res.data || [];
+        
+        // Retrieve user phone map to support phone number display & search
+        let userPhoneMap = {};
+        try {
+            userPhoneMap = await window.adminState.getUserPhoneMap();
+        } catch(e) {
+            console.error(e);
+        }
+        
+        // Concurrently fetch trades ONLY for the paginated page size (max 10 items) rather than the entire collection!
+        const ordersWithTrades = await Promise.all(activeOrders.map(async (o) => {
+            let trades = [];
             try {
-                userPhoneMap = await window.adminState.getUserPhoneMap();
-            } catch(e) {
-                console.error(e);
-            }
-            
-            // Fetch trades list for all fetched active orders concurrently
-            const ordersWithTrades = await Promise.all(activeOrders.map(async (o) => {
-                let trades = [];
-                try {
-                    const tradesRes = await apiFetch('GET', `/trading/quant/orders/${o.id}/trades`, null, true);
-                    if (tradesRes.code === 200) {
-                        trades = tradesRes.result || tradesRes.data || [];
-                    }
-                } catch(err) {
-                    console.error(`Failed to fetch trades for order ${o.id}:`, err);
+                const tradesRes = await apiFetch('GET', `/trading/quant/orders/${o.id}/trades`, null, true);
+                if (tradesRes.code === 200) {
+                    trades = tradesRes.result || tradesRes.data || [];
                 }
-                return { ...o, trades };
-            }));
-            
-            // Filter client-side
-            let resultList = ordersWithTrades;
-            if (uidFilter !== '') {
-                resultList = resultList.filter(o => {
-                    const uidStr = String(o.userId || '').toLowerCase();
-                    const phoneStr = String(userPhoneMap[String(o.userId)] || '').toLowerCase();
-                    return uidStr.includes(uidFilter) || phoneStr.includes(uidFilter);
-                });
+            } catch(err) {
+                console.error(`Failed to fetch trades for order ${o.id}:`, err);
             }
-            if (orderNoFilter !== '') {
-                resultList = resultList.filter(o => {
-                    return String(o.orderNo || '').toLowerCase().includes(orderNoFilter);
+            return { ...o, trades };
+        }));
+        
+        // Local filtering for orderNo and statusFilter (holding status)
+        let resultList = ordersWithTrades;
+        if (orderNoFilter !== '') {
+            resultList = resultList.filter(o => String(o.orderNo || '').toLowerCase().includes(orderNoFilter));
+        }
+        if (statusFilter !== 'ALL') {
+            resultList = resultList.filter(o => {
+                const trades = o.trades || [];
+                let boughtQty = 0;
+                let soldQty = 0;
+                trades.forEach(t => {
+                    const q = parseFloat(t.quantity || 0);
+                    if (t.tradeType === 'BUY') boughtQty += q;
+                    else if (t.tradeType === 'SELL') soldQty += q;
                 });
-            }
-            if (statusFilter !== 'ALL') {
-                resultList = resultList.filter(o => {
-                    const trades = o.trades || [];
-                    let boughtQty = 0;
-                    let soldQty = 0;
-                    trades.forEach(t => {
-                        const q = parseFloat(t.quantity || 0);
-                        if (t.tradeType === 'BUY') boughtQty += q;
-                        else if (t.tradeType === 'SELL') soldQty += q;
-                    });
-                    const holdingQty = boughtQty - soldQty;
-                    
-                    if (statusFilter === 'BOUGHT') {
-                        return holdingQty > 0;
-                    } else if (statusFilter === 'SOLD') {
-                        return holdingQty === 0 && trades.length > 0;
-                    } else if (statusFilter === 'PENDING') {
-                        return holdingQty === 0 && trades.length === 0;
-                    }
-                    return true;
-                });
-            }
-            
-            // Client-side pagination to support stable page-counts and sorting
-            const renderList = paginateList(resultList, 'quantSettle');
-            
-            activeSettleOrders = renderList;
-            
-            const totalItems = resultList.length;
-            const totalPages = Math.max(1, Math.ceil(totalItems / pageConf.size));
-            const paging = {
-                page: pageConf.current,
-                pageSize: pageConf.size,
-                pages: totalPages,
-                records: totalItems
-            };
-            renderActiveSettleListHtml(paging, userPhoneMap);
+                const holdingQty = boughtQty - soldQty;
+                
+                if (statusFilter === 'BOUGHT') {
+                    return holdingQty > 0;
+                } else if (statusFilter === 'SOLD') {
+                    return holdingQty === 0 && trades.length > 0;
+                } else if (statusFilter === 'PENDING') {
+                    return holdingQty === 0 && trades.length === 0;
+                }
+                return true;
+            });
+        }
+        
+        activeSettleOrders = resultList;
+        
+        const pagingObj = res.paging || {
+            page: pageConf.current,
+            pageSize: pageConf.size,
+            records: resultList.length,
+            pages: 1
+        };
+        
+        renderActiveSettleListHtml(pagingObj, userPhoneMap);
     } catch (err) {
         console.error('Error fetching trades traces:', err);
         showToast('获取成交明细异常！', true);

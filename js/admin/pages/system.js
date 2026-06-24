@@ -1039,12 +1039,25 @@ async function loadAppVersionsList() {
     
     tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">🔄 正在调取 APP 版本更新列表...</td></tr>';
     
+    const pageConf = window.adminPages.versions;
+    const sizeSelect = document.getElementById('versions-size-select');
+    if (sizeSelect) {
+        sizeSelect.value = pageConf.size;
+    }
+    
+    const platform = document.getElementById('versions-platform-filter')?.value || '';
+    
     try {
-        const res = await apiFetch('GET', '/app-versions', null, true);
-        const dataList = res.result || res.data || [];
+        let fetchUrl = '';
+        if (platform) {
+            fetchUrl = '/app-versions?page=1&pageSize=1000';
+        } else {
+            fetchUrl = `/app-versions?page=${pageConf.current}&pageSize=${pageConf.size}`;
+        }
+        
+        const res = await apiFetch('GET', fetchUrl, null, true);
         if (res.code === 200) {
-            // Apply filtering locally
-            const platform = document.getElementById('versions-platform-filter')?.value || '';
+            const dataList = res.result || res.data || [];
             
             let filteredList = dataList;
             if (platform) {
@@ -1053,15 +1066,34 @@ async function loadAppVersionsList() {
             
             cachedAppVersionsList = filteredList;
             
-            const paginated = paginateList(filteredList, 'versions');
+            let renderList = filteredList;
+            let pagingObj = null;
             
-            if (paginated.length === 0) {
+            if (platform) {
+                pagingObj = {
+                    page: pageConf.current,
+                    pageSize: pageConf.size,
+                    records: filteredList.length,
+                    pages: Math.max(1, Math.ceil(filteredList.length / pageConf.size))
+                };
+                renderList = paginateList(filteredList, 'versions');
+            } else {
+                pagingObj = res.paging || {
+                    page: pageConf.current,
+                    pageSize: pageConf.size,
+                    records: dataList.length,
+                    pages: 1
+                };
+                updateAdminPageIndicator('versions', pagingObj);
+            }
+            
+            if (renderList.length === 0) {
                 tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">📭 暂无 APP 版本记录</td></tr>';
                 return;
             }
             
             let html = '';
-            paginated.forEach(v => {
+            renderList.forEach(v => {
                 const forceBadge = v.forceUpgrade ? 
                     `<span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: rgba(239, 68, 68, 0.1); color: #EF4444; font-weight: bold;">是 (Force)</span>` : 
                     `<span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: rgba(148, 163, 184, 0.1); color: #94A3B8; font-weight: bold;">否</span>`;
