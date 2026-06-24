@@ -2323,6 +2323,7 @@ button:active {
     align-items: center;
     gap: 12px;
     flex: 1.2;
+    min-width: 0;
 }
 
 .coin-row-logo {
@@ -2338,6 +2339,7 @@ button:active {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    min-width: 0;
 }
 
 .coin-row-symbol {
@@ -2358,6 +2360,9 @@ button:active {
 .coin-row-name {
     font-size: 0.68rem;
     color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .coin-sparkline-col {
@@ -2365,11 +2370,18 @@ button:active {
     display: flex;
     justify-content: center;
     align-items: center;
+    min-width: 0;
 }
 
 .coin-sparkline-canvas {
-    width: 70px;
+    width: 60px;
     height: 24px;
+}
+
+@media (max-width: 360px) {
+    .coin-sparkline-col {
+        display: none;
+    }
 }
 
 .coin-right-col {
@@ -2378,6 +2390,7 @@ button:active {
     flex-direction: column;
     align-items: flex-end;
     gap: 2px;
+    flex-shrink: 0;
 }
 
 .coin-row-price {
