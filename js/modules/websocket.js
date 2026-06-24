@@ -3,6 +3,7 @@ import { state } from './state.js?v=2.2.0';
 import { showToast } from './ui.js?v=2.2.0';
 
 let subscribedSymbol = null;
+let subscribedInterval = null;
 window.subscribedTickers = window.subscribedTickers || new Set();
 
 function connectMarketWS() {
@@ -13,13 +14,15 @@ function connectMarketWS() {
     
     // Dynamic Symbol Subscription Switching over existing connection
     if (marketWs && marketWs.readyState === WebSocket.OPEN) {
-        if (subscribedSymbol !== activeSymbol) {
+        if (subscribedSymbol !== activeSymbol || subscribedInterval !== activeInterval) {
             const oldSym = subscribedSymbol;
+            const oldInterval = subscribedInterval;
             subscribedSymbol = activeSymbol;
+            subscribedInterval = activeInterval;
             
             const unsubParams = [];
             if (oldSym) {
-                unsubParams.push(`${oldSym}@trade`, `${oldSym}@kline_1m`, `${oldSym}@depth`);
+                unsubParams.push(`${oldSym}@trade`, `${oldSym}@kline_${oldInterval || '1m'}`, `${oldSym}@depth`);
                 // Do not unsubscribe from index card tickers (BTC, ETH, SOL)
                 if (oldSym !== 'btcusdt' && oldSym !== 'ethusdt' && oldSym !== 'solusdt') {
                     unsubParams.push(`${oldSym}@ticker`);
@@ -28,7 +31,7 @@ function connectMarketWS() {
             
             const subParams = [
                 `${activeSymbol}@trade`,
-                `${activeSymbol}@kline_1m`,
+                `${activeSymbol}@kline_${activeInterval}`,
                 `${activeSymbol}@depth`,
                 `${activeSymbol}@ticker`
             ];
@@ -75,12 +78,13 @@ function connectMarketWS() {
     
     ws.onopen = () => {
         subscribedSymbol = activeSymbol; // Sync subscription record
+        subscribedInterval = activeInterval;
         window.subscribedTickers.clear();
         const params = [];
         // Subscribe to active coin detail streams
         params.push(
             `${activeSymbol}@trade`,
-            `${activeSymbol}@kline_1m`,
+            `${activeSymbol}@kline_${activeInterval}`,
             `${activeSymbol}@depth`
         );
         
@@ -135,7 +139,7 @@ function connectMarketWS() {
                     renderMarketTicker(data);
                 } else if (stream && stream.endsWith('@trade')) {
                     renderMarketTrade(data);
-                } else if (stream && stream.endsWith('@kline_1m')) {
+                } else if (stream && stream.includes('@kline_')) {
                     renderMarketKline(data);
                 } else if (stream && stream.endsWith('@depth')) {
                     renderMarketDepth(data);

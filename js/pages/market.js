@@ -1,6 +1,36 @@
 // Market Page View Controller
 import { state } from '../modules/state.js?v=2.2.0';
 
+let marketIntervals = null;
+async function loadMarketIntervals() {
+    try {
+        const res = await apiFetch('GET', '/market/intervals', null, false);
+        if (res && res.code === 200) {
+            marketIntervals = res.result || res.data;
+        }
+    } catch (e) {
+        console.warn('Failed to load market intervals:', e);
+    }
+    if (!marketIntervals) {
+        marketIntervals = {
+            stock: ["1m", "5m", "15m", "30m", "1h", "1d", "1w", "1M"],
+            crypto: ["1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d", "3d", "1w", "1M"]
+        };
+    }
+}
+
+function getIntervalSeconds(interval) {
+    if (!interval) return 60;
+    const unit = interval.slice(-1);
+    const val = parseInt(interval.slice(0, -1), 10) || 1;
+    if (unit === 'm') return val * 60;
+    if (unit === 'h') return val * 3600;
+    if (unit === 'd') return val * 86400;
+    if (unit === 'w') return val * 604800;
+    if (unit === 'M') return val * 2592000;
+    return 60;
+}
+
 // Expose key functions to window immediately to avoid timing issues with inline event handlers
 window.switchActiveSymbol = switchActiveSymbol;
 window.loadRecommendedInstruments = loadRecommendedInstruments;
@@ -207,7 +237,7 @@ async function initChart() {
     }
     if (inst && inst.exchangeId) {
         try {
-            const res = await apiFetch('GET', `/market/klines?exchangeId=${inst.exchangeId}&symbol=${inst.symbol.toUpperCase()}&interval=1m&limit=80`, null, false);
+            const res = await apiFetch('GET', `/market/klines?exchangeId=${inst.exchangeId}&symbol=${inst.symbol.toUpperCase()}&interval=${activeInterval}&limit=80`, null, false);
             const klines = res ? (res.result || res.data || []) : [];
             if (klines.length > 0) {
                 const chartData = klines.map(k => ({
@@ -242,7 +272,8 @@ async function initChart() {
 
     // Load initial visual data block (Fallback simulation if offline/failed)
     const data = [];
-    let time = Math.floor(Date.now() / 1000) - 80 * 60;
+    const intervalSec = getIntervalSeconds(activeInterval);
+    let time = Math.floor(Date.now() / 1000) - 80 * intervalSec;
     let basePrice = activeSymbol === 'btcusdt' ? 65000.00 : (activeSymbol === 'ethusdt' ? 3200.00 : (activeSymbol === 'solusdt' ? 145.00 : 0.52));
     
     for (let i = 0; i < 80; i++) {
@@ -261,7 +292,7 @@ async function initChart() {
         });
         
         basePrice = close;
-        time += 60;
+        time += intervalSec;
     }
     
     candleSeries.setData(data);
@@ -288,18 +319,19 @@ function updateChartRealtime(price, timestamp) {
     if (!candleSeries) return;
     try {
         const timeSec = Math.floor(timestamp / 1000);
-        const minuteBlock = Math.floor(timeSec / 60) * 60;
+        const intervalSec = getIntervalSeconds(activeInterval);
+        const intervalBlock = Math.floor(timeSec / intervalSec) * intervalSec;
         const p = parseFloat(price);
         
-        if (minuteBlock < lastBarTime) return; // Prevent crashes due to client lag
+        if (intervalBlock < lastBarTime) return; // Prevent crashes due to client lag
         
-        if (currentBar && currentBar.time === minuteBlock) {
+        if (currentBar && currentBar.time === intervalBlock) {
             currentBar.high = Math.max(currentBar.high, p);
             currentBar.low = Math.min(currentBar.low, p);
             currentBar.close = p;
         } else {
             currentBar = {
-                time: minuteBlock,
+                time: intervalBlock,
                 open: currentBar ? currentBar.close : p,
                 high: p,
                 low: p,
@@ -308,13 +340,16 @@ function updateChartRealtime(price, timestamp) {
         }
         
         candleSeries.update(currentBar);
-        lastBarTime = Math.max(lastBarTime, minuteBlock);
+        lastBarTime = Math.max(lastBarTime, intervalBlock);
     } catch(e) {
         console.warn('TV lightweight charts update skipped safely:', e);
     }
 }
 
 async function loadRecommendedInstruments() {
+    if (!marketIntervals) {
+        await loadMarketIntervals();
+    }
     let success = false;
     try {
         const res = await apiFetch('GET', '/instruments/recommended', null, false);
@@ -634,6 +669,7 @@ window.renderMarketTickerData = renderMarketTickerData;
 function showMarketDetail(symbol) {
     activeSymbol = symbol.toLowerCase();
     isMarketDetailActive = true;
+    activeInterval = '1m'; // Default interval on detail view open
     
     // Instantly clear out old symbol elements to prevent visual sticking
     const priceEl = document.getElementById('market-last-price');
@@ -754,10 +790,59 @@ function showMarketDetail(symbol) {
     }
     
     updateWatchlistUI();
+    renderChartIntervalSelector(inst);
     initChart();
     connectMarketWS();
     setTimeout(relayoutTradingChart, 150);
 }
+
+function renderChartIntervalSelector(inst) {
+    const selectorEl = document.getElementById('chart-interval-selector');
+    if (!selectorEl) return;
+    
+    const isStock = inst && (inst.assetClass === 'STOCK' || (inst.symbol && !inst.symbol.toUpperCase().endsWith('USDT')));
+    const category = isStock ? 'stock' : 'crypto';
+    const intervals = (marketIntervals && marketIntervals[category]) || (isStock ? ["1m", "5m", "15m", "30m", "1h", "1d", "1w", "1M"] : ["1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d", "3d", "1w", "1M"]);
+    
+    if (!intervals.includes(activeInterval)) {
+        activeInterval = intervals[0] || '1m';
+    }
+    
+    selectorEl.innerHTML = intervals.map(interval => {
+        const activeClass = interval === activeInterval ? 'active' : '';
+        return `<button class="chart-interval-btn ${activeClass}" onclick="switchChartInterval('${interval}')">${interval}</button>`;
+    }).join('');
+    
+    updateChartTitleText();
+}
+
+function updateChartTitleText() {
+    const titleEl = document.querySelector('.chart-title');
+    if (titleEl) {
+        const intervalStr = activeInterval.toUpperCase();
+        titleEl.innerText = `${intervalStr} ${t('market_chart_title')}`;
+    }
+}
+
+window.switchChartInterval = async function(interval) {
+    if (activeInterval === interval) return;
+    activeInterval = interval;
+    
+    const btns = document.querySelectorAll('.chart-interval-btn');
+    btns.forEach(btn => {
+        if (btn.innerText === interval) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+    
+    updateChartTitleText();
+    await initChart();
+    if (window.connectMarketWS) {
+        window.connectMarketWS();
+    }
+};
 
 function hideMarketDetail() {
     isMarketDetailActive = false;

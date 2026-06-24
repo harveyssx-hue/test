@@ -135,7 +135,10 @@
 
                             <!-- Lightweight Chart Container -->
                             <div class="chart-outer-container">
-                                <div class="chart-title" data-i18n="market_chart_title">1M Live Trend Candlestick Chart</div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                                    <div class="chart-title" style="margin-bottom: 0;" data-i18n="market_chart_title">Live Trend Candlestick Chart</div>
+                                    <div id="chart-interval-selector" class="chart-interval-tabs"></div>
+                                </div>
                                 <div class="kline-chart-element" id="kline-chart"></div>
                             </div>
 

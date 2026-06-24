@@ -31,6 +31,7 @@ const state = {
     currentLocale: localStorage.getItem('ait_app_locale') || 'en',
     marketWsReconnectTimer: null,
     currentTrendingType: 'gainers',
+    activeInterval: '1m',
     
     // Constant exchange rates
     PLATFORM_EXCHANGE_RATES: {
@@ -63,7 +64,7 @@ const globalVars = [
     'userUsdtBalance', 'isAssetValueVisible', 'assetPollInterval', 'assetDisplayCurrency', 'currentSelectedChannelIdx', 
     'activeTab', 'activeAssetFilter', 'activeStrategyFilter', 'isMarketDetailActive',
     'currentLocale', 'PLATFORM_EXCHANGE_RATES', 'sparklinePools',
-    'marketWsReconnectTimer', 'currentTrendingType'
+    'marketWsReconnectTimer', 'currentTrendingType', 'activeInterval'
 ];
 
 globalVars.forEach(name => {
