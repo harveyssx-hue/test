@@ -35,14 +35,7 @@ const state = {
     homeTrendingClass: 'crypto',
     
     // Constant exchange rates
-    PLATFORM_EXCHANGE_RATES: {
-        'USDT': 83.00,
-        'HKD': 14.16,
-        'USD': 83.00,
-        'EUR': 96.31,
-        'BTC': 5395000.00,
-        'ETH': 265600.00
-    },
+    PLATFORM_EXCHANGE_RATES: {},
     
     // Index sparkline memory pools
     sparklinePools: {

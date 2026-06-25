@@ -39,6 +39,11 @@ if (window.currentUser && window.listenToBizEvents) {
     window.listenToBizEvents();
 }
 
+// Sync platform exchange rates on startup
+if (window.syncExchangeRates) {
+    window.syncExchangeRates();
+}
+
 // Fire initial routing check
 handleRouting();
 

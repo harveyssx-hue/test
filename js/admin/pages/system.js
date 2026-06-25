@@ -287,11 +287,13 @@ export async function loadDailyReport() {
     showToast('\u6b63\u5728\u5b9e\u65f6\u540c\u6b65\u5e76\u591a\u7ef4\u5ea6\u8ba1\u7b97\u8fd0\u8425\u6570\u636e\u65e5\u62a5\u5386\u53f2\u8bb0\u5f55...', false);
     
     try {
-        const [rawUsers, depositsRes, withdrawalsRes, ordersRes] = await Promise.all([
+        const [rawUsers, depositsRes, withdrawalsRes, ordersRes, rateRes, recRes] = await Promise.all([
             window.adminState.getUsers(),
             apiFetch('GET', '/finance/deposits?page=1&pageSize=5000', null, true),
             apiFetch('GET', '/finance/withdrawals?page=1&pageSize=5000', null, true),
-            apiFetch('GET', '/trading/quant/orders', null, true)
+            apiFetch('GET', '/trading/quant/orders', null, true),
+            apiFetch('GET', '/market/exchange-rate?from=USDT', null, true),
+            apiFetch('GET', '/instruments/recommended', null, true)
         ]);
         const usersRes = { code: 200, result: rawUsers };
         
@@ -300,6 +302,24 @@ export async function loadDailyReport() {
             return;
         }
         
+        let exchangeRate = 1.0;
+        let btcPrice = 1.0;
+        let ethPrice = 1.0;
+        
+        if (rateRes && rateRes.code === 200) {
+            const data = rateRes.result || rateRes.data;
+            if (data && data.rate) {
+                exchangeRate = parseFloat(data.rate) || 1.0;
+            }
+        }
+        if (recRes && recRes.code === 200) {
+            const list = recRes.result || recRes.data || [];
+            const btc = list.find(i => i.symbol.toUpperCase() === 'BTCUSDT');
+            if (btc) btcPrice = parseFloat(btc.ticker?.closePrice || btc.ticker?.lastPrice || btc.price || 0.0) || 1.0;
+            const eth = list.find(i => i.symbol.toUpperCase() === 'ETHUSDT');
+            if (eth) ethPrice = parseFloat(eth.ticker?.closePrice || eth.ticker?.lastPrice || eth.price || 0.0) || 1.0;
+        }
+
         const users = usersRes.result || usersRes.data || [];
         const deposits = depositsRes.result || depositsRes.data || [];
         const withdrawals = withdrawalsRes.result || withdrawalsRes.data || [];
@@ -324,11 +344,11 @@ export async function loadDailyReport() {
                         currentTotalBalance += total;
                         currentFrozenBalance += frozen;
                     } else if (isBtc) {
-                        rate = 68000.0;
+                        rate = btcPrice;
                         currentTotalBalance += total * rate;
                         currentFrozenBalance += frozen * rate;
                     } else if (isEth) {
-                        rate = 3500.0;
+                        rate = ethPrice;
                         currentTotalBalance += total * rate;
                         currentFrozenBalance += frozen * rate;
                     } else {
@@ -348,7 +368,7 @@ export async function loadDailyReport() {
             return `${y}-${m}-${d}`;
         };
         
-        const rate = 83.00;
+        const rate = exchangeRate;
         const getWithdrawUsdtAmount = (w) => {
             const isNewRecord = w.createdAt && parseInt(w.createdAt) > 1779700000000;
             return isNewRecord ? (parseFloat(w.amount || 0) / rate) : parseFloat(w.amount || 0);

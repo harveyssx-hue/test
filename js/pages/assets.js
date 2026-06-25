@@ -54,18 +54,27 @@ async function loadUserAssets() {
                     if (inrBal) {
                         const inrAvailable = parseFloat(inrBal.available) || 0.00;
                         const inrTotal = parseFloat(inrBal.total) || 0.00;
-                        // Convert INR to USDT/USD (using the platform rate 83.00)
+                        // Convert INR to USDT/USD (using the platform rate)
+                        const usdtRate = (state.PLATFORM_EXCHANGE_RATES && state.PLATFORM_EXCHANGE_RATES['USDT']) || 1.0;
                         if (!hasUSDT || userUsdtBalance === 0) {
-                            userUsdtBalance = inrAvailable / 83.00;
+                            userUsdtBalance = inrAvailable / usdtRate;
                         }
-                        totalVal += inrTotal / 83.00;
+                        totalVal += inrTotal / usdtRate;
                     }
                     
                     const btcBal = balances.find(b => (b.asset && b.asset.symbol === 'BTC') || String(b.assetId) === '1183348576642666496');
-                    if (btcBal) totalVal += (parseFloat(btcBal.total) || 0.00) * 65000;
+                    if (btcBal) {
+                        const btcInst = state.recommendedInstruments.find(i => i.symbol.toUpperCase() === 'BTCUSDT');
+                        const btcPrice = btcInst ? parseFloat(btcInst.ticker?.closePrice || btcInst.ticker?.lastPrice || btcInst.price || 0.00) : 0.00;
+                        totalVal += (parseFloat(btcBal.total) || 0.00) * btcPrice;
+                    }
                     
                     const ethBal = balances.find(b => (b.asset && b.asset.symbol === 'ETH') || String(b.assetId) === '1183348576630083584');
-                    if (ethBal) totalVal += (parseFloat(ethBal.total) || 0.00) * 3200;
+                    if (ethBal) {
+                        const ethInst = state.recommendedInstruments.find(i => i.symbol.toUpperCase() === 'ETHUSDT');
+                        const ethPrice = ethInst ? parseFloat(ethInst.ticker?.closePrice || ethInst.ticker?.lastPrice || ethInst.price || 0.00) : 0.00;
+                        totalVal += (parseFloat(ethBal.total) || 0.00) * ethPrice;
+                    }
                     
                     // Cache values globally to support state-based currency toggles
                     window.cachedTotalVal = totalVal;
@@ -309,7 +318,7 @@ async function renderTxRecordsItems() {
                 
                 // If it is a crypto withdrawal, convert the backend INR amount to USDT
                 if (w.withdrawType === 'CRYPTO') {
-                    const rate = (state.PLATFORM_EXCHANGE_RATES && state.PLATFORM_EXCHANGE_RATES['USDT']) || 83.00;
+                    const rate = (state.PLATFORM_EXCHANGE_RATES && state.PLATFORM_EXCHANGE_RATES['USDT']) || 1.0;
                     displayAmount = displayAmount / rate;
                     displaySymbol = 'USDT';
                 } else if (w.withdrawType === 'FIAT') {
@@ -594,11 +603,13 @@ function applyFundDetailsFilter() {
             } else {
                 // Fallback: intelligent approximation using platform exchange rates
                 const rawAmt = parseFloat(l.changeAmount);
+                const usdtRate = (state.PLATFORM_EXCHANGE_RATES && state.PLATFORM_EXCHANGE_RATES['USDT']) || 1.0;
+                const hkdRate = (state.PLATFORM_EXCHANGE_RATES && state.PLATFORM_EXCHANGE_RATES['HKD']) || 1.0;
                 if (l.bizType === 'DEPOSIT_CRYPTO') {
-                    const approxUsdt = rawAmt / 83.00;
+                    const approxUsdt = rawAmt / usdtRate;
                     originalInfoHtml = `<div style="font-size: 0.68rem; color: var(--text-muted); font-weight: 600; margin-top: 1px;">(approx. ${signText}${approxUsdt.toFixed(2)} USDT)</div>`;
                 } else if (l.bizType === 'DEPOSIT_FIAT') {
-                    const approxHkd = rawAmt / 14.16;
+                    const approxHkd = rawAmt / hkdRate;
                     originalInfoHtml = `<div style="font-size: 0.68rem; color: var(--text-muted); font-weight: 600; margin-top: 1px;">(approx. ${signText}${approxHkd.toFixed(2)} HKD)</div>`;
                 }
             }
@@ -644,37 +655,60 @@ function updateTotalValDisplay() {
     if (elTotalSymbol) elTotalSymbol.innerText = currencySymbol;
     if (elAvailSymbol) elAvailSymbol.innerText = currencySymbol;
     
+    const usdtRate = (state.PLATFORM_EXCHANGE_RATES && state.PLATFORM_EXCHANGE_RATES['USDT']);
+    
     if (assetDisplayCurrency === 'INR') {
-        const inrVal = totalVal * 83.00;
-        const inrSub = totalVal;
-        
-        if (elHomeLabel) elHomeLabel.innerText = currentLocale === 'hi' ? 'कुल संपत्ति (INR)' : 'Total Assets (INR)';
-        if (isAssetValueVisible) {
-            if (elHomeVal) elHomeVal.innerText = inrVal.toFixed(2);
-            if (elHomeSub) elHomeSub.innerText = `≈ ${inrSub.toFixed(2)} USDT`;
-            if (elAvailVal) elAvailVal.innerText = (userUsdtBalance * 83.00).toFixed(2);
-            if (elAvailSub) elAvailSub.innerText = `≈ ${userUsdtBalance.toFixed(2)} USDT`;
+        if (!usdtRate) {
+            if (elHomeLabel) elHomeLabel.innerText = currentLocale === 'hi' ? 'कुल संपत्ति (INR)' : 'Total Assets (INR)';
+            if (isAssetValueVisible) {
+                if (elHomeVal) elHomeVal.innerText = '...';
+                if (elHomeSub) elHomeSub.innerText = `≈ ${totalVal.toFixed(2)} USDT`;
+                if (elAvailVal) elAvailVal.innerText = '...';
+                if (elAvailSub) elAvailSub.innerText = `≈ ${userUsdtBalance.toFixed(2)} USDT`;
+            } else {
+                if (elHomeVal) elHomeVal.innerText = '****';
+                if (elHomeSub) elHomeSub.innerText = '≈ **** USDT';
+                if (elAvailVal) elAvailVal.innerText = '****';
+                if (elAvailSub) elAvailSub.innerText = '≈ **** USDT';
+            }
+            if (window.syncExchangeRates) {
+                window.syncExchangeRates().then(() => updateTotalValDisplay());
+            }
         } else {
-            if (elHomeVal) elHomeVal.innerText = '****';
-            if (elHomeSub) elHomeSub.innerText = '≈ **** USDT';
-            if (elAvailVal) elAvailVal.innerText = '****';
-            if (elAvailSub) elAvailSub.innerText = '≈ **** USDT';
+            const inrVal = totalVal * usdtRate;
+            const inrSub = totalVal;
+            
+            if (elHomeLabel) elHomeLabel.innerText = currentLocale === 'hi' ? 'कुल संपत्ति (INR)' : 'Total Assets (INR)';
+            if (isAssetValueVisible) {
+                if (elHomeVal) elHomeVal.innerText = inrVal.toFixed(2);
+                if (elHomeSub) elHomeSub.innerText = `≈ ${inrSub.toFixed(2)} USDT`;
+                if (elAvailVal) elAvailVal.innerText = (userUsdtBalance * usdtRate).toFixed(2);
+                if (elAvailSub) elAvailSub.innerText = `≈ ${userUsdtBalance.toFixed(2)} USDT`;
+            } else {
+                if (elHomeVal) elHomeVal.innerText = '****';
+                if (elHomeSub) elHomeSub.innerText = '≈ **** USDT';
+                if (elAvailVal) elAvailVal.innerText = '****';
+                if (elAvailSub) elAvailSub.innerText = '≈ **** USDT';
+            }
         }
     } else {
         const usdtVal = totalVal;
-        const usdtSub = totalVal * 83.00;
+        const usdtSub = usdtRate ? totalVal * usdtRate : null;
         
         if (elHomeLabel) elHomeLabel.innerText = currentLocale === 'hi' ? 'कुल संपत्ति (USDT)' : 'Total Assets (USDT)';
         if (isAssetValueVisible) {
             if (elHomeVal) elHomeVal.innerText = usdtVal.toFixed(2);
-            if (elHomeSub) elHomeSub.innerText = `≈ ${usdtSub.toFixed(2)} INR`;
+            if (elHomeSub) elHomeSub.innerText = usdtSub !== null ? `≈ ${usdtSub.toFixed(2)} INR` : `≈ ... INR`;
             if (elAvailVal) elAvailVal.innerText = userUsdtBalance.toFixed(2);
-            if (elAvailSub) elAvailSub.innerText = `≈ ${(userUsdtBalance * 83.00).toFixed(2)} INR`;
+            if (elAvailSub) elAvailSub.innerText = usdtRate ? `≈ ${(userUsdtBalance * usdtRate).toFixed(2)} INR` : `≈ ... INR`;
         } else {
             if (elHomeVal) elHomeVal.innerText = '****';
             if (elHomeSub) elHomeSub.innerText = '≈ **** INR';
             if (elAvailVal) elAvailVal.innerText = '****';
             if (elAvailSub) elAvailSub.innerText = '≈ **** INR';
+        }
+        if (!usdtRate && window.syncExchangeRates) {
+            window.syncExchangeRates().then(() => updateTotalValDisplay());
         }
     }
     
@@ -684,7 +718,7 @@ function updateTotalValDisplay() {
         if (el !== elHomeVal) {
             if (isAssetValueVisible) {
                 if (assetDisplayCurrency === 'INR') {
-                    el.innerText = (totalVal * 83.00).toFixed(2);
+                    el.innerText = usdtRate ? (totalVal * usdtRate).toFixed(2) : '...';
                 } else {
                     el.innerText = totalVal.toFixed(2);
                 }
@@ -700,7 +734,7 @@ function updateTotalValDisplay() {
         if (el !== elAvailVal) {
             if (isAssetValueVisible) {
                 if (assetDisplayCurrency === 'INR') {
-                    el.innerText = (userUsdtBalance * 83.00).toFixed(2);
+                    el.innerText = usdtRate ? (userUsdtBalance * usdtRate).toFixed(2) : '...';
                 } else {
                     el.innerText = userUsdtBalance.toFixed(2);
                 }
@@ -739,9 +773,28 @@ function updateQuantOrdersDisplay() {
     const profitSign = profitSum >= 0 ? '+' : '';
     const profitClass = profitSum >= 0 ? 'inner-val-profit green' : 'inner-val-profit red';
     
+    const usdtRate = (state.PLATFORM_EXCHANGE_RATES && state.PLATFORM_EXCHANGE_RATES['USDT']);
+    
     if (assetDisplayCurrency === 'INR') {
-        const investInr = investSum * 83.00;
-        const profitInr = profitSum * 83.00;
+        if (!usdtRate) {
+            if (elInvestLabel) elInvestLabel.innerText = currentLocale === 'hi' ? 'कुल निवेश राशि (INR)' : 'Total Invested (INR)';
+            if (elInvestVal) elInvestVal.innerText = '...';
+            if (elInvestSub) elInvestSub.innerText = `≈ ${investSum.toFixed(2)} USDT`;
+            
+            if (elProfitLabel) elProfitLabel.innerText = currentLocale === 'hi' ? 'कुल लाभ (INR)' : 'Total Earnings (INR)';
+            if (elProfitVal) {
+                elProfitVal.innerText = '...';
+                elProfitVal.className = profitClass;
+            }
+            if (elProfitSub) elProfitSub.innerText = `≈ ${profitSign}${profitSum.toFixed(2)} USDT`;
+            
+            if (window.syncExchangeRates) {
+                window.syncExchangeRates().then(() => updateQuantOrdersDisplay());
+            }
+            return;
+        }
+        const investInr = investSum * usdtRate;
+        const profitInr = profitSum * usdtRate;
         
         if (elInvestLabel) elInvestLabel.innerText = currentLocale === 'hi' ? 'कुल निवेश राशि (INR)' : 'Total Invested (INR)';
         if (elInvestVal) elInvestVal.innerText = investInr.toFixed(2);
@@ -756,14 +809,18 @@ function updateQuantOrdersDisplay() {
     } else {
         if (elInvestLabel) elInvestLabel.innerText = currentLocale === 'hi' ? 'कुल निवेश राशि (USDT)' : 'Total Invested (USDT)';
         if (elInvestVal) elInvestVal.innerText = investSum.toFixed(2);
-        if (elInvestSub) elInvestSub.innerText = `≈ ${(investSum * 83.00).toFixed(2)} INR`;
+        if (elInvestSub) elInvestSub.innerText = usdtRate ? `≈ ${(investSum * usdtRate).toFixed(2)} INR` : `≈ ... INR`;
         
         if (elProfitLabel) elProfitLabel.innerText = currentLocale === 'hi' ? 'कुल लाभ (USDT)' : 'Total Earnings (USDT)';
         if (elProfitVal) {
             elProfitVal.innerText = `${profitSign}$${profitSum.toFixed(2)}`;
             elProfitVal.className = profitClass;
         }
-        if (elProfitSub) elProfitSub.innerText = `≈ ${profitSign}${(profitSum * 83.00).toFixed(2)} INR`;
+        if (elProfitSub) elProfitSub.innerText = usdtRate ? `≈ ${profitSign}${(profitSum * usdtRate).toFixed(2)} INR` : `≈ ${profitSign}... INR`;
+        
+        if (!usdtRate && window.syncExchangeRates) {
+            window.syncExchangeRates().then(() => updateQuantOrdersDisplay());
+        }
     }
 }
 

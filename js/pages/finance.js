@@ -730,9 +730,13 @@ async function syncWithdrawMinLimit() {
 function calculateWithdrawFee() {
     const amt = parseFloat(document.getElementById('withdraw-amount').value) || 0;
     const activeTab = document.getElementById('current-withdraw-tab').value;
-    let rate = PLATFORM_EXCHANGE_RATES['USDT'] || 83.00;
+    let rate = PLATFORM_EXCHANGE_RATES['USDT'];
     
     const balEl = document.getElementById('withdraw-available-balance');
+    if (!rate) {
+        if (balEl) balEl.innerText = activeTab === 'crypto' ? `$${userUsdtBalance.toFixed(5)}` : '正在同步汇率...';
+        return;
+    }
     if (balEl) {
         if (activeTab === 'crypto') {
             balEl.innerText = `$${userUsdtBalance.toFixed(5)}`;
@@ -1183,7 +1187,11 @@ async function handleWithdrawFormSubmit(event) {
     }
     
     const activeTab = document.getElementById('current-withdraw-tab').value;
-    let rate = PLATFORM_EXCHANGE_RATES['USDT'] || 83.00;
+    let rate = PLATFORM_EXCHANGE_RATES['USDT'];
+    if (!rate) {
+        showToast(currentLocale === 'hi' ? '⚠️ विनिमय दर अभी सिंक नहीं हुई है, कृपया पुनः प्रयास करें!' : '⚠️ Exchange rate not synced yet, please retry later!', true);
+        return;
+    }
     
     const baseMinLimit = (window.withdrawMinLimit !== null && window.withdrawMinLimit !== undefined) 
         ? window.withdrawMinLimit 
@@ -1291,15 +1299,36 @@ function calculateDepositConversion() {
     
     const symbol = m.asset?.symbol || 'USDT';
     
-    // Find rate in local platform exchange rates mapping constant
-    let rate = PLATFORM_EXCHANGE_RATES[symbol] || (symbol === 'USDT' || symbol === 'USD' ? 83.00 : (symbol === 'HKD' ? 14.16 : 1.0));
+    if (symbol === 'USDT' || symbol === 'USD') {
+        const isHi = currentLocale === 'hi';
+        tipEl.innerHTML = isHi 
+            ? `वर्तमान दर: 1 USDT ≈ 1.00 USDT (अनुमानित क्रेडिट: <span class="green" style="font-weight: 700;">${amt.toFixed(2)} USDT</span>)`
+            : `Current Rate: 1 USDT ≈ 1.00 USDT (Expected Credit: <span class="green" style="font-weight: 700;">${amt.toFixed(2)} USDT</span>)`;
+        return;
+    }
     
-    const convertedAmt = amt * rate;
-    let template = t('deposit_rate_tip_template');
-    template = template.replace('{symbol}', symbol)
-                       .replace('{rate}', rate.toFixed(2))
-                       .replace('{converted}', convertedAmt.toFixed(2));
-    tipEl.innerHTML = template;
+    // Find rate in local platform exchange rates mapping constant
+    let rate = PLATFORM_EXCHANGE_RATES[symbol];
+    const usdtRate = PLATFORM_EXCHANGE_RATES['USDT'];
+    
+    const submitBtn = document.getElementById('deposit-submit-btn');
+    if (!rate || !usdtRate) {
+        tipEl.innerHTML = currentLocale === 'hi'
+            ? `सुरक्षित रूप से रीयल-टाइम विनिमय दर सिंक की जा रही है, कृपया प्रतीक्षा करें...`
+            : `Syncing real-time exchange rates, please wait...`;
+        if (submitBtn) submitBtn.disabled = true;
+        return;
+    }
+    if (submitBtn) submitBtn.disabled = false;
+    
+    // 1 USDT = usdtRate / rate
+    const usdtToFiatRate = usdtRate / rate;
+    const requiredFiat = amt * usdtToFiatRate;
+    
+    const isHi = currentLocale === 'hi';
+    tipEl.innerHTML = isHi
+        ? `वर्तमान दर: 1 USDT ≈ <b>${usdtToFiatRate.toFixed(4)} ${symbol}</b> (आवश्यक भुगतान: <span class="green" style="font-weight: 700;">${requiredFiat.toFixed(2)} ${symbol}</span>)`
+        : `Current Rate: 1 USDT ≈ <b>${usdtToFiatRate.toFixed(4)} ${symbol}</b> (Required Payment: <span class="green" style="font-weight: 700;">${requiredFiat.toFixed(2)} ${symbol}</span>)`;
 }
 
 window.calculateDepositConversion = calculateDepositConversion;

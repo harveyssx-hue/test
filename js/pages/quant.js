@@ -147,6 +147,7 @@ async function loadQuantConfig() {
         const classTags = ['hot', 'stable', 'high'];
         
         const isInr = assetDisplayCurrency === 'INR';
+        const usdtRate = (state.PLATFORM_EXCHANGE_RATES && state.PLATFORM_EXCHANGE_RATES['USDT']) || 1.0;
         
         const labelYield30d = currentLocale === 'hi' ? '30-दिन की उपज' : '30d Yield';
         const labelWinRate = currentLocale === 'hi' ? 'जीत दर' : 'Win Rate';
@@ -173,7 +174,7 @@ async function loadQuantConfig() {
                 }
             }
             
-            const featMinText = isInr ? `${labelMinShort} \u20b9${(strategyMinInvest * 83.00).toFixed(0)}` : `${labelMinShort} $${strategyMinInvest.toFixed(0)}`;
+            const featMinText = isInr ? `${labelMinShort} \u20b9${(strategyMinInvest * usdtRate).toFixed(0)}` : `${labelMinShort} $${strategyMinInvest.toFixed(0)}`;
             return `
                 <div class="feat-strat-card" onclick="window.pendingFollowModelId = '${m.id}'; switchTab('follow');">
                     <span class="feat-tag tag-${classTags[idx]}">${tags[idx]}</span>
@@ -243,6 +244,7 @@ function renderStrategyLobby() {
     const classTags = ['pop', 'rec', 'high', 'rec'];
     
     const isInr = assetDisplayCurrency === 'INR';
+    const usdtRate = (state.PLATFORM_EXCHANGE_RATES && state.PLATFORM_EXCHANGE_RATES['USDT']) || 1.0;
     
     const labelWinRate = currentLocale === 'hi' ? 'जीत दर' : 'Win Rate';
     const labelFollowers = currentLocale === 'hi' ? 'अनुयायी' : 'Followers';
@@ -271,7 +273,7 @@ function renderStrategyLobby() {
             }
         }
         
-        const lobbyMinText = isInr ? `${labelMin} <span>\u20b9${(strategyMinInvest * 83.00).toFixed(0)}</span>` : `${labelMin} <span>$${strategyMinInvest.toFixed(0)}</span>`;
+        const lobbyMinText = isInr ? `${labelMin} <span>\u20b9${(strategyMinInvest * usdtRate).toFixed(0)}</span>` : `${labelMin} <span>$${strategyMinInvest.toFixed(0)}</span>`;
         
         return `
             <div class="strat-card-big" onclick="openOrderDrawer('${m.id}')">
@@ -351,8 +353,9 @@ function openOrderDetailsDrawer(orderId) {
     document.getElementById('detail-order-no').innerText = `${currentLocale === 'hi' ? 'ऑर्डर नंबर:' : 'Order No:'} ${order.orderNo}`;
     
     const isInr = assetDisplayCurrency === 'INR';
+    const usdtRate = (state.PLATFORM_EXCHANGE_RATES && state.PLATFORM_EXCHANGE_RATES['USDT']) || 1.0;
     const amountVal = parseFloat(order.investAmount) || 0.00;
-    const displayAmountStr = isInr ? `\u20b9${(amountVal * 83.00).toFixed(2)}` : `$${amountVal.toFixed(2)} USDT`;
+    const displayAmountStr = isInr ? `\u20b9${(amountVal * usdtRate).toFixed(2)}` : `$${amountVal.toFixed(2)} USDT`;
     document.getElementById('detail-invest-amount').innerText = displayAmountStr;
     
     // Status badge
@@ -377,7 +380,7 @@ function openOrderDetailsDrawer(orderId) {
     
     // Profit and Rate
     const profitVal = parseFloat(order.actualProfit) || 0.00;
-    const displayProfitStr = isInr ? `${profitVal >= 0 ? '+' : ''}\u20b9${(profitVal * 83.00).toFixed(2)}` : `${profitVal >= 0 ? '+' : ''}$${profitVal.toFixed(2)} USDT`;
+    const displayProfitStr = isInr ? `${profitVal >= 0 ? '+' : ''}\u20b9${(profitVal * usdtRate).toFixed(2)}` : `${profitVal >= 0 ? '+' : ''}$${profitVal.toFixed(2)} USDT`;
     
     const profitEl = document.getElementById('detail-profit-amount');
     profitEl.innerText = displayProfitStr;
@@ -487,13 +490,14 @@ function openOrderDrawer(modelId) {
     
     // Update Purchase Amount values and inputs
     const isInr = assetDisplayCurrency === 'INR';
+    const usdtRate = (state.PLATFORM_EXCHANGE_RATES && state.PLATFORM_EXCHANGE_RATES['USDT']) || 1.0;
     const currencySymbol = isInr ? '\u20b9' : '$';
     
     // Calculate display minimum and default based on strategy-specific or global minInvestAmount
     const strategyMinInvest = getStrategyMinInvestAmount(selectedStrategy);
-    const minVal = isInr ? (strategyMinInvest * 83.00) : strategyMinInvest;
+    const minVal = isInr ? (strategyMinInvest * usdtRate) : strategyMinInvest;
     const baseDefault = Math.max(100, strategyMinInvest);
-    const defaultVal = isInr ? (baseDefault * 83.00) : baseDefault;
+    const defaultVal = isInr ? (baseDefault * usdtRate) : baseDefault;
     
     const minTextLabel = {
         'en': 'Min Limit',
@@ -613,7 +617,8 @@ async function refreshBalanceInOrder(event) {
     const balanceEl = document.getElementById('new-avail-balance');
     if (balanceEl) {
         if (assetDisplayCurrency === 'INR') {
-            balanceEl.innerText = `\u20b9${(userUsdtBalance * 83.00).toFixed(2)}`;
+            const usdtRate = (state.PLATFORM_EXCHANGE_RATES && state.PLATFORM_EXCHANGE_RATES['USDT']) || 1.0;
+            balanceEl.innerText = `\u20b9${(userUsdtBalance * usdtRate).toFixed(2)}`;
         } else {
             balanceEl.innerText = `$${userUsdtBalance.toFixed(2)} USDT`;
         }
@@ -629,8 +634,9 @@ function recalcAgreeButtonState() {
     
     // Minimum threshold check
     const isInr = assetDisplayCurrency === 'INR';
+    const usdtRate = (state.PLATFORM_EXCHANGE_RATES && state.PLATFORM_EXCHANGE_RATES['USDT']) || 1.0;
     const strategyMinInvest = getStrategyMinInvestAmount(selectedStrategy);
-    const minThreshold = isInr ? (strategyMinInvest * 83.00) : strategyMinInvest;
+    const minThreshold = isInr ? (strategyMinInvest * usdtRate) : strategyMinInvest;
     const isAmountValid = amountVal >= minThreshold;
     
     if (submitBtn) {
@@ -660,8 +666,16 @@ async function submitQuantFollowOrderNew() {
     
     // Minimum threshold
     const isInr = assetDisplayCurrency === 'INR';
+    const usdtRate = (state.PLATFORM_EXCHANGE_RATES && state.PLATFORM_EXCHANGE_RATES['USDT']);
+    
+    if (isInr && !usdtRate) {
+        showToast(currentLocale === 'hi' ? 'सुरक्षित रूप से रीयल-टाइम विनिमय दर सिंक की जा रही है, कृपया पुनः प्रयास करें!' : 'Syncing real-time exchange rates, please try again in a moment!', true);
+        if (window.syncExchangeRates) window.syncExchangeRates();
+        return;
+    }
+    
     const strategyMinInvest = getStrategyMinInvestAmount(selectedStrategy);
-    const minThreshold = isInr ? (strategyMinInvest * 83.00) : strategyMinInvest;
+    const minThreshold = isInr ? (strategyMinInvest * usdtRate) : strategyMinInvest;
     if (isNaN(inputVal) || inputVal < minThreshold) {
         const errorMsg = isInr 
             ? (currentLocale === 'hi' ? `न्यूनतम निवेश राशि \u20b9${minThreshold.toFixed(0)} है!` : `The minimum investment amount is \u20b9${minThreshold.toFixed(0)}!`)
@@ -673,7 +687,7 @@ async function submitQuantFollowOrderNew() {
     // Calculate actual USDT value
     let realUsdtAmount = inputVal;
     if (isInr) {
-        realUsdtAmount = inputVal / 83.00;
+        realUsdtAmount = inputVal / usdtRate;
     }
     
     // Balance check in USDT

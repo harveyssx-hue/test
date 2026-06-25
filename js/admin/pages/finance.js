@@ -281,6 +281,19 @@ async function loadWithdrawList() {
     const isComplexFilter = (idVal !== '' || startDateVal !== '' || endDateVal !== '');
     
     try {
+        let exchangeRate = 1.0;
+        try {
+            const rateRes = await apiFetch('GET', '/market/exchange-rate?from=USDT', null, true);
+            if (rateRes && rateRes.code === 200) {
+                const data = rateRes.result || rateRes.data;
+                if (data && data.rate) {
+                    exchangeRate = parseFloat(data.rate) || 1.0;
+                }
+            }
+        } catch (e) {
+            console.error('Failed to fetch USDT rate in withdrawal audit:', e);
+        }
+
         // Pre-fetch users list to map userId to registration phone number
         let userPhoneMap = {};
         try {
@@ -434,7 +447,7 @@ async function loadWithdrawList() {
                 let displayActual = parseFloat(w.actualAmount || w.amount || '0');
 
                 const isNewRecord = w.createdAt && parseInt(w.createdAt) > 1779700000000;
-                let rate = 83.00; // default exchange rate
+                let rate = exchangeRate; // dynamic exchange rate
 
                 if (w.withdrawType === 'CRYPTO') {
                     currencySymbol = '$';
@@ -1900,8 +1913,8 @@ async function submitSubjectForm(event) {
     
     showToast('\u6b63\u5728\u63d0\u4ea4\u5b58\u63d0\u79d1\u76ee\u914d\u7f6e...', false);
     try {
-        const originalPriority = (window.currentEditingSubject && window.currentEditingSubject.priority) !== undefined ? window.currentEditingSubject.priority : 1;
-        const originalEnabled = (window.currentEditingSubject && window.currentEditingSubject.enabled) !== undefined ? window.currentEditingSubject.enabled : true;
+        const originalPriority = (window.currentEditingSubject && window.currentEditingSubject.priority !== undefined) ? window.currentEditingSubject.priority : 1;
+        const originalEnabled = (window.currentEditingSubject && window.currentEditingSubject.enabled !== undefined) ? window.currentEditingSubject.enabled : true;
         
         const bodyObj = {
             name: name,
