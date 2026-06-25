@@ -667,6 +667,8 @@ async function openWithdrawModal() {
                     document.getElementById('withdraw-address').value = cryptoAccount.address;
                     document.getElementById('selected-withdraw-method-id').value = methodId;
                     document.getElementById('selected-withdraw-method-address-cached').value = cryptoAccount.address;
+                    const selWNetCached = document.getElementById('selected-withdraw-method-network-cached');
+                    if (selWNetCached) selWNetCached.value = cryptoAccount.network || 'TRC20';
                     if (bindingTip) bindingTip.innerText = currentLocale === 'hi' ? '✓ निकासी बटुआ पता सुरक्षित रूप से बाध्य है' : '✓ Withdrawal wallet address safely bound';
                 }
                 
@@ -861,6 +863,12 @@ function updateWithdrawMethodCards() {
     }
     
     const cryptoSub = document.getElementById('withdraw-card-sub-crypto');
+    const cryptoTitle = document.getElementById('withdraw-crypto-card-title');
+    const cryptoNetInput = document.getElementById('selected-withdraw-method-network-cached');
+    const netName = cryptoNetInput ? cryptoNetInput.value : '';
+    if (cryptoTitle) {
+        cryptoTitle.innerText = cryptoAddress ? `USDT (${netName || 'TRC20'})` : 'USDT (TRC20)';
+    }
     if (cryptoSub) {
         cryptoSub.innerText = cryptoAddress ? maskName(cryptoAddress) : t('payment_not_bound');
     }
@@ -945,13 +953,26 @@ async function loadPaymentAccounts() {
             
             const cryptoAccount = data.crypto || {};
             const cryptoAddrDisplay = document.getElementById('payment-display-crypto-address');
+            const cryptoNetworkDisplay = document.getElementById('payment-display-crypto-network');
+            const cryptoMemoDisplay = document.getElementById('payment-display-crypto-memo');
             const editCryptoAddr = document.getElementById('edit-crypto-address');
+            const editCryptoNetwork = document.getElementById('edit-crypto-network');
+            const editCryptoMemo = document.getElementById('edit-crypto-memo');
             if (cryptoAccount.id) {
                 if (cryptoAddrDisplay) cryptoAddrDisplay.innerText = maskName(cryptoAccount.address);
+                if (cryptoNetworkDisplay) cryptoNetworkDisplay.innerText = `USDT (${cryptoAccount.network || 'TRC20'})`;
+                if (cryptoMemoDisplay) cryptoMemoDisplay.innerText = cryptoAccount.memo || '--';
                 if (editCryptoAddr) editCryptoAddr.value = cryptoAccount.address;
+                if (editCryptoNetwork) editCryptoNetwork.value = cryptoAccount.network || 'TRC20';
+                if (editCryptoMemo) editCryptoMemo.value = cryptoAccount.memo || '';
             } else {
-                if (cryptoAddrDisplay) cryptoAddrDisplay.innerText = t('payment_not_bound');
+                const unboundText = t('payment_not_bound');
+                if (cryptoAddrDisplay) cryptoAddrDisplay.innerText = unboundText;
+                if (cryptoNetworkDisplay) cryptoNetworkDisplay.innerText = unboundText;
+                if (cryptoMemoDisplay) cryptoMemoDisplay.innerText = unboundText;
                 if (editCryptoAddr) editCryptoAddr.value = '';
+                if (editCryptoNetwork) editCryptoNetwork.value = 'TRC20';
+                if (editCryptoMemo) editCryptoMemo.value = '';
             }
         }
     } catch (e) {
@@ -1006,11 +1027,17 @@ async function savePaymentField(method) {
         body = { bankName: bankName, accountNumber: accNum, ifsc: ifsc };
     } else if (method === 'crypto') {
         const address = document.getElementById('edit-crypto-address').value.trim();
+        const network = document.getElementById('edit-crypto-network').value.trim();
+        const memo = document.getElementById('edit-crypto-memo').value.trim();
         if (!address) {
-            showToast(currentLocale === 'hi' ? '⚠️ कृपया अपना TRC20 निकासी पता दर्ज करें!' : '⚠️ Please enter your TRC20 withdrawal address!', true);
+            showToast(currentLocale === 'hi' ? '⚠️ कृपया अपना निकासी पता दर्ज करें!' : '⚠️ Please enter your withdrawal address!', true);
             return;
         }
-        body = { address: address, network: 'TRC20', memo: '123456' };
+        if (!network) {
+            showToast(currentLocale === 'hi' ? '⚠️ कृपया एक नेटवर्क चुनें!' : '⚠️ Please select a network!', true);
+            return;
+        }
+        body = { address: address, network: network, memo: memo || '' };
     }
     
     showToast(currentLocale === 'hi' ? '⚙️ खाता विवरण बाध्य किया जा रहा है...' : '⚙️ Binding account details...', false);
@@ -1088,12 +1115,18 @@ async function savePaymentField(method) {
                 const wAddress = document.getElementById('withdraw-address');
                 const selWMethodId = document.getElementById('selected-withdraw-method-id');
                 const selWMethodAddrCached = document.getElementById('selected-withdraw-method-address-cached');
+                const selWMethodNetCached = document.getElementById('selected-withdraw-method-network-cached');
                 const pDisplayCryptoAddress = document.getElementById('payment-display-crypto-address');
+                const pDisplayCryptoNetwork = document.getElementById('payment-display-crypto-network');
+                const pDisplayCryptoMemo = document.getElementById('payment-display-crypto-memo');
                 
                 if (wAddress) wAddress.value = cryptoObj.address;
                 if (selWMethodId) selWMethodId.value = cryptoObj.id;
                 if (selWMethodAddrCached) selWMethodAddrCached.value = cryptoObj.address;
+                if (selWMethodNetCached) selWMethodNetCached.value = cryptoObj.network || 'TRC20';
                 if (pDisplayCryptoAddress) pDisplayCryptoAddress.innerText = maskName(cryptoObj.address);
+                if (pDisplayCryptoNetwork) pDisplayCryptoNetwork.innerText = `USDT (${cryptoObj.network || 'TRC20'})`;
+                if (pDisplayCryptoMemo) pDisplayCryptoMemo.innerText = cryptoObj.memo || '--';
             }
             
             // Unified background sync: refresh both Payment Account modal and Withdrawal page inputs from GET source-of-truth
@@ -1116,9 +1149,11 @@ async function savePaymentField(method) {
                         const wAddr = document.getElementById('withdraw-address');
                         const selWId = document.getElementById('selected-withdraw-method-id');
                         const selWAddrCached = document.getElementById('selected-withdraw-method-address-cached');
+                        const selWNetCached = document.getElementById('selected-withdraw-method-network-cached');
                         if (wAddr) wAddr.value = cryptoAccount.address;
                         if (selWId) selWId.value = methodId;
                         if (selWAddrCached) selWAddrCached.value = cryptoAccount.address;
+                        if (selWNetCached) selWNetCached.value = cryptoAccount.network || 'TRC20';
                         const bindingTip = document.getElementById('withdraw-binding-tip');
                         if (bindingTip) bindingTip.innerText = currentLocale === 'hi' ? '✓ निकासी बटुआ पता सुरक्षित रूप से बाध्य है' : '✓ Withdrawal wallet address safely bound';
                     }

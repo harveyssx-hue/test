@@ -210,10 +210,14 @@ function renderPortfolioOrdersList() {
     const labelDetails = currentLocale === 'hi' ? 'विवरण' : 'Details';
     const quantAiStr = currentLocale === 'hi' ? 'क्वांट एआई रणनीति' : 'Quant AI Strategy';
     
+    const isInr = assetDisplayCurrency === 'INR';
+    const usdtRate = (state.PLATFORM_EXCHANGE_RATES && state.PLATFORM_EXCHANGE_RATES['USDT']) || 1.0;
+
     container.innerHTML = filtered.map(o => {
         const profit = parseFloat(o.actualProfit) || 0.00;
         const profitClass = profit >= 0 ? 'green' : 'red';
-        const profitStr = `${profit >= 0 ? '+' : ''}$${profit.toFixed(2)}`;
+        const displayProfitVal = isInr ? (profit * usdtRate) : profit;
+        const profitStr = isInr ? `${profit >= 0 ? '+' : ''}\u20b9${displayProfitVal.toFixed(2)}` : `${profit >= 0 ? '+' : ''}$${displayProfitVal.toFixed(2)}`;
         
         const rate = (profit / parseFloat(o.investAmount) * 100) || 0.00;
         const rateStr = `${rate >= 0 ? '+' : ''}${rate.toFixed(2)}%`;
@@ -221,6 +225,9 @@ function renderPortfolioOrdersList() {
         const algoName = o.algorithmModel ? getStrategyDisplayName(o.algorithmModel) : quantAiStr;
         const modelId = o.algorithmModelId || 1;
         
+        const investVal = parseFloat(o.investAmount) || 0.00;
+        const displayInvestStr = isInr ? `\u20b9${(investVal * usdtRate).toFixed(2)}` : `$${investVal.toFixed(2)} USDT`;
+
         return `
             <div class="portfolio-order-card">
                 <div class="p-card-top">
@@ -237,7 +244,7 @@ function renderPortfolioOrdersList() {
                 <div class="p-card-grid-details">
                     <div class="p-detail-col">
                         <span class="lbl">${labelTotalInvest}</span>
-                        <span class="val">${parseFloat(o.investAmount).toFixed(2)} USDT</span>
+                        <span class="val">${displayInvestStr}</span>
                     </div>
                     <!-- Small Canvas sparkline -->
                     <canvas class="p-sparkline-canvas" id="pos-canvas-${o.id}" width="90" height="22"></canvas>
@@ -297,9 +304,11 @@ async function renderTxRecordsItems() {
                 list.push({
                     id: d.id,
                     type: 'DEPOSIT',
+                    depositType: d.depositType,
                     typeText: typeText,
                     amount: parseFloat(d.amount),
-                    symbol: d.asset?.symbol || 'USDT',
+                    symbol: 'USDT', // Always show credited currency USDT in header
+                    fiatSymbol: d.asset?.symbol || 'INR',
                     status: d.status,
                     createdAt: d.createdAt,
                     remittanceCode: d.remittanceCode || '--',
@@ -314,27 +323,39 @@ async function renderTxRecordsItems() {
             const withdrawals = witRes.result || witRes.data || [];
             withdrawals.forEach(w => {
                 let displayAmount = parseFloat(w.amount || 0);
-                let displaySymbol = w.asset?.symbol || 'USDT';
+                let displaySymbol = 'USDT';
                 
-                // If it is a crypto withdrawal, convert the backend INR amount to USDT
+                const isNewRecord = w.createdAt && parseInt(w.createdAt) > 1779700000000;
+                let recordRate = parseFloat(w.fxRate || w.collectionFxRate || w.collectionRate || 0);
+                let rate = recordRate > 0 ? recordRate : ((state.PLATFORM_EXCHANGE_RATES && state.PLATFORM_EXCHANGE_RATES['USDT']) || 1.0);
+                
                 if (w.withdrawType === 'CRYPTO') {
-                    const rate = (state.PLATFORM_EXCHANGE_RATES && state.PLATFORM_EXCHANGE_RATES['USDT']) || 1.0;
-                    displayAmount = displayAmount / rate;
+                    if (isNewRecord) {
+                        displayAmount = displayAmount / rate;
+                    }
                     displaySymbol = 'USDT';
                 } else if (w.withdrawType === 'FIAT') {
-                    // For FIAT withdrawals (UPI or Bank), display amount in INR (fiat currency)
+                    if (!isNewRecord) {
+                        displayAmount = displayAmount * rate;
+                    }
                     displaySymbol = w.asset?.symbol || 'INR';
                 }
                 
                 list.push({
                     id: w.id,
                     type: 'WITHDRAW',
+                    withdrawType: w.withdrawType,
                     typeText: t('tx_type_withdraw'),
                     amount: displayAmount,
                     symbol: displaySymbol,
                     status: w.status,
                     createdAt: w.createdAt,
-                    targetSnapshot: w.targetSnapshot || ''
+                    targetSnapshot: w.targetSnapshot || '',
+                    fxRate: recordRate,
+                    rawAmount: parseFloat(w.amount || 0),
+                    fee: parseFloat(w.fee || 0),
+                    actualAmount: parseFloat(w.actualAmount || w.amount || 0),
+                    isNewRecord: isNewRecord
                 });
             });
         }
@@ -416,17 +437,57 @@ function applyTxRecordsFilter() {
         // Toggleable Detail Section
         let detailHtml = '';
         if (isDep) {
+            let fiatDetail = '';
+            if (item.depositType === 'FIAT') {
+                const fiatSym = item.fiatSymbol || 'INR';
+                const rateVal = parseFloat(item.fxRate) || 1.00;
+                const paidAmt = parseFloat(item.fiatAmount) || 0.00;
+                const rateText = currentLocale === 'hi' ? 'विनिमय दर' : 'Rate';
+                const paidText = currentLocale === 'hi' ? 'भुगतान राशि' : 'Paid Amount';
+                fiatDetail = `<div>${paidText}: <span style="font-weight: 600; color: var(--text-primary);">${paidAmt.toFixed(2)} ${fiatSym}</span> (${rateText}: 1 USDT ≈ ${rateVal.toFixed(2)} ${fiatSym})</div>`;
+            }
             detailHtml = `
                 <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(0,0,0,0.06); font-size: 0.72rem; color: var(--text-secondary); line-height: 1.5; text-align: left;">
+                    ${fiatDetail}
                     <div>${t('tx_detail_code')}: <span style="font-family: monospace; font-weight: 600; color: var(--text-primary);">${item.remittanceCode}</span></div>
                     ${item.proofUrl ? `<div>${t('tx_detail_proof')}: <a href="${item.proofUrl}" target="_blank" style="color: var(--primary); font-weight: 600; text-decoration: underline;">${t('tx_detail_preview')}</a></div>` : ''}
                 </div>
             `;
         } else {
             const targetText = parseWithdrawTarget(item.targetSnapshot);
+            const rate = item.fxRate > 0 ? item.fxRate : ((state.PLATFORM_EXCHANGE_RATES && state.PLATFORM_EXCHANGE_RATES['USDT']) || 1.0);
+            const feeVal = item.fee || 0;
+            const actualVal = item.actualAmount || item.rawAmount || 0;
+            
+            let displayFee = feeVal;
+            let displayActual = actualVal;
+            
+            if (item.withdrawType === 'CRYPTO') {
+                if (item.isNewRecord) {
+                    displayFee = feeVal / rate;
+                    displayActual = displayActual / rate;
+                }
+            } else if (item.withdrawType === 'FIAT') {
+                if (!item.isNewRecord) {
+                    displayFee = feeVal * rate;
+                    displayActual = displayActual * rate;
+                }
+            }
+            
+            const feeText = currentLocale === 'hi' ? 'सेवा शुल्क' : 'Service Fee';
+            const receivedText = currentLocale === 'hi' ? 'वास्तविक आगमन' : 'Actual Received';
+            const rateTextLabel = currentLocale === 'hi' ? 'दर' : 'Exchange Rate';
+            
+            let rateInfo = '';
+            if (item.withdrawType === 'CRYPTO' && item.isNewRecord) {
+                rateInfo = ` <span style="color: var(--text-muted); font-size: 0.65rem;">(${rateTextLabel}: 1 USDT ≈ ${rate.toFixed(2)} INR)</span>`;
+            }
+            
             detailHtml = `
                 <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(0,0,0,0.06); font-size: 0.72rem; color: var(--text-secondary); line-height: 1.5; text-align: left;">
                     <div>${t('tx_detail_channel')}: <span style="font-family: monospace; font-weight: 600; color: var(--text-primary);">${targetText}</span></div>
+                    <div>${feeText}: <span style="font-weight: 600; color: var(--text-primary);">${displayFee.toFixed(2)} ${item.symbol}</span></div>
+                    <div>${receivedText}: <span style="font-weight: 600; color: var(--green);">${displayActual.toFixed(2)} ${item.symbol}</span>${rateInfo}</div>
                 </div>
             `;
         }
@@ -579,6 +640,8 @@ function applyFundDetailsFilter() {
         'TRANSFER': t('fund_biz_transfer')
     };
     
+    const usdtRate = (state.PLATFORM_EXCHANGE_RATES && state.PLATFORM_EXCHANGE_RATES['USDT']) || 1.0;
+    
     container.innerHTML = filteredList.map(l => {
         const dateStr = l.createdAt ? new Date(parseInt(l.createdAt)).toLocaleString() : '--';
         const isAdd = l.direction === 'IN' || l.actionType === 'ADD';
@@ -597,22 +660,21 @@ function applyFundDetailsFilter() {
             // Try exact lookup from deposit map first
             const depositObj = l.bizId ? depositMap.get(l.bizId.toString()) : null;
             if (depositObj) {
-                const origAmt = parseFloat(depositObj.amount);
-                const origSym = depositObj.asset?.symbol || 'USDT';
-                originalInfoHtml = `<div style="font-size: 0.68rem; color: var(--text-muted); font-weight: 600; margin-top: 1px;">(≈ ${signText}${origAmt.toFixed(2)} ${origSym})</div>`;
-            } else {
+                if (depositObj.depositType === 'FIAT') {
+                    const origAmt = parseFloat(depositObj.collectedAmount || 0);
+                    const origSym = depositObj.asset?.symbol || 'INR';
+                    originalInfoHtml = `<div style="font-size: 0.68rem; color: var(--text-muted); font-weight: 600; margin-top: 1px;">(≈ ${signText}${origAmt.toFixed(2)} ${origSym})</div>`;
+                }
+            } else if (l.bizType === 'DEPOSIT_FIAT') {
                 // Fallback: intelligent approximation using platform exchange rates
                 const rawAmt = parseFloat(l.changeAmount);
-                const usdtRate = (state.PLATFORM_EXCHANGE_RATES && state.PLATFORM_EXCHANGE_RATES['USDT']) || 1.0;
-                const hkdRate = (state.PLATFORM_EXCHANGE_RATES && state.PLATFORM_EXCHANGE_RATES['HKD']) || 1.0;
-                if (l.bizType === 'DEPOSIT_CRYPTO') {
-                    const approxUsdt = rawAmt / usdtRate;
-                    originalInfoHtml = `<div style="font-size: 0.68rem; color: var(--text-muted); font-weight: 600; margin-top: 1px;">(approx. ${signText}${approxUsdt.toFixed(2)} USDT)</div>`;
-                } else if (l.bizType === 'DEPOSIT_FIAT') {
-                    const approxHkd = rawAmt / hkdRate;
-                    originalInfoHtml = `<div style="font-size: 0.68rem; color: var(--text-muted); font-weight: 600; margin-top: 1px;">(approx. ${signText}${approxHkd.toFixed(2)} HKD)</div>`;
-                }
+                const approxInr = rawAmt * usdtRate;
+                originalInfoHtml = `<div style="font-size: 0.68rem; color: var(--text-muted); font-weight: 600; margin-top: 1px;">(approx. ${signText}${approxInr.toFixed(2)} INR)</div>`;
             }
+        } else if (l.bizType === 'WITHDRAW_FIAT') {
+            const rawAmt = parseFloat(l.changeAmount);
+            const approxInr = rawAmt * usdtRate;
+            originalInfoHtml = `<div style="font-size: 0.68rem; color: var(--text-muted); font-weight: 600; margin-top: 1px;">(approx. ${signText}${approxInr.toFixed(2)} INR)</div>`;
         }
         
         return `
@@ -833,6 +895,9 @@ function toggleAssetCurrencyDisplay() {
     // Refresh both displays instantly
     updateTotalValDisplay();
     updateQuantOrdersDisplay();
+    if (window.renderPortfolioOrdersList) {
+        window.renderPortfolioOrdersList();
+    }
 }
 
 function toggleAssetVisibility(event) {

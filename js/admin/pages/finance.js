@@ -447,7 +447,8 @@ async function loadWithdrawList() {
                 let displayActual = parseFloat(w.actualAmount || w.amount || '0');
 
                 const isNewRecord = w.createdAt && parseInt(w.createdAt) > 1779700000000;
-                let rate = exchangeRate; // dynamic exchange rate
+                let recordRate = parseFloat(w.fxRate || w.collectionFxRate || w.collectionRate || 0);
+                let rate = recordRate > 0 ? recordRate : exchangeRate; // dynamic exchange rate fallback
 
                 if (w.withdrawType === 'CRYPTO') {
                     currencySymbol = '$';
@@ -468,6 +469,13 @@ async function loadWithdrawList() {
                 }
 
                 let amountDetails = `<span style="font-weight: 700; color: #EF4444; font-size: 0.88rem;">${currencySymbol}${displayAmt.toFixed(2)} ${currencyUnit}</span>`;
+                if (w.withdrawType === 'CRYPTO' && isNewRecord) {
+                    if (recordRate > 0) {
+                        amountDetails += `<br><span style="font-size: 0.68rem; color: var(--text-secondary); white-space: nowrap;">(锁定汇率: 1 USDT ≈ <b>${recordRate.toFixed(2)} INR</b>)</span>`;
+                    } else {
+                        amountDetails += `<br><span style="font-size: 0.68rem; color: var(--text-secondary); white-space: nowrap;">(实时汇率: 1 USDT ≈ <b>${rate.toFixed(2)} INR</b>)</span>`;
+                    }
+                }
                 if (displayFee > 0) {
                     amountDetails += `<br><span style="font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap;">实到: <b>${currencySymbol}${displayActual.toFixed(2)}</b> (服务费: ${currencySymbol}${displayFee.toFixed(2)})</span>`;
                 } else {

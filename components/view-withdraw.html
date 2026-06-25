@@ -76,6 +76,7 @@
                                 <input type="text" id="withdraw-address" style="display: none;">
                                 <input type="hidden" id="selected-withdraw-method-id" value="">
                                 <input type="hidden" id="selected-withdraw-method-address-cached" value="">
+                                <input type="hidden" id="selected-withdraw-method-network-cached" value="">
                                 
                                 <input type="text" id="withdraw-upi-address" style="display: none;">
                                 <input type="hidden" id="selected-withdraw-upi-id" value="">
@@ -130,7 +131,7 @@
                                             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v12M15 9H9.5a2.5 2.5 0 0 0 0 5H15"></path></svg>
                                         </div>
                                         <div class="withdraw-method-center">
-                                            <span class="withdraw-method-title">USDT (TRC20)</span>
+                                            <span class="withdraw-method-title" id="withdraw-crypto-card-title">USDT (TRC20)</span>
                                             <span class="withdraw-method-subtext" id="withdraw-card-sub-crypto">Not bound</span>
                                         </div>
                                     </div>
