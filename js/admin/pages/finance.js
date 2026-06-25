@@ -1686,10 +1686,21 @@ async function submitManualFundingOrder(event) {
     showToast('正在校验用户信息...', false);
     let userId = null;
     try {
+        const matchPhone = (phone1, phone2) => {
+            if (!phone1 || !phone2) return false;
+            const c1 = String(phone1).replace(/\D/g, '');
+            const c2 = String(phone2).replace(/\D/g, '');
+            if (c1 === c2) return true;
+            if (c1.length >= 10 && c2.length >= 10) {
+                return c1.slice(-10) === c2.slice(-10);
+            }
+            return false;
+        };
+
         const users = await window.adminState.getUsers();
         if (users) {
             const matchedUser = users.find(u => 
-                (u.phone && String(u.phone).trim() === userVal) || 
+                (u.phone && matchPhone(u.phone, userVal)) || 
                 (u.uid && String(u.uid).trim() === userVal) ||
                 (u.id && String(u.id).trim() === userVal)
             );
