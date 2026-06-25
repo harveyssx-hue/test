@@ -166,6 +166,14 @@ export async function loadQuantMonitor() {
         
         const orders = res.result || res.data || [];
         
+        // Retrieve user phone map to support real phone number display
+        let userPhoneMap = {};
+        try {
+            userPhoneMap = await window.adminState.getUserPhoneMap();
+        } catch(e) {
+            console.error("Failed to load userPhoneMap in loadQuantMonitor:", e);
+        }
+        
         // Sort by createdAt descending
         orders.sort((a, b) => {
             const timeA = parseInt(a.createdAt || 0);
@@ -178,10 +186,6 @@ export async function loadQuantMonitor() {
         // Reset master checkbox
         const masterCheckbox = document.getElementById('select-all-pending-orders-checkbox');
         if (masterCheckbox) masterCheckbox.checked = false;
-        
-        // Update stats
-        const pg = res.paging || { page: pageConf.current, pageSize: pageConf.size, pages: 1, records: orders.length };
-        updateAdminPageIndicator('quant', pg);
         
         // System-wide active count and valuation calculation
         try {
@@ -225,7 +229,14 @@ export async function loadQuantMonitor() {
         });
         document.getElementById('quant-total-principal-amount').innerText = sumBuyAmount.toFixed(2) + ' USDT';
         
-        const renderList = filteredOrders;
+        // Coordinated pagination mode: support both backend pagination and client-side fallback
+        const isBackendPaginated = res.paging && res.paging.pages !== undefined && res.paging.pages > 1;
+        let renderList = filteredOrders;
+        if (isBackendPaginated) {
+            updateAdminPageIndicator('quant', res.paging);
+        } else {
+            renderList = paginateList(filteredOrders, 'quant');
+        }
         
         tbody.innerHTML = renderList.map(o => {
                 const profit = parseFloat(o.actualProfit || '0');
@@ -236,9 +247,9 @@ export async function loadQuantMonitor() {
                 const dateOnly = dateObj ? dateObj.toLocaleDateString([], {year: 'numeric', month: '2-digit', day: '2-digit'}) : '--';
                 const hourSession = dateObj ? dateObj.getHours() : '14';
                 
-                // Create elegant membership UID cell block
-                const userAccount = '133' + String(o.userId || '').substring(0, 4) + '1300';
-                const userUidStr = String(o.userId || '').substring(0, 8);
+                // Get real mobile number instead of fake mock phone format
+                const userAccount = userPhoneMap[String(o.userId)] || '--';
+                const userUidStr = String(o.userId);
                 
                 // Risk-based position ratio and commission mockup
                 const positionRatio = o.riskLevel === 'High' ? '0.9' : (o.riskLevel === 'Medium' ? '0.7' : '0.5');
@@ -1315,7 +1326,22 @@ function renderActiveSettleListHtml(paging = null, userPhoneMap = {}) {
         return;
     }
     
-    tbody.innerHTML = activeSettleOrders.map(o => {
+    const pageConf = window.adminPages.quantSettle;
+    const isBackendPaginated = paging && paging.pages !== undefined && paging.pages > 1;
+    let renderList = activeSettleOrders;
+    
+    if (isBackendPaginated) {
+        const pg = paging || { page: pageConf.current, pageSize: pageConf.size, pages: 1, records: activeSettleOrders.length };
+        window.quantSettleTotalPages = pg.pages || 1;
+        const indicator = document.getElementById('quantSettle-page-indicator');
+        if (indicator) {
+            indicator.innerText = `第 ${pg.page} / ${pg.pages} 页 (共 ${pg.records} 条)`;
+        }
+    } else {
+        renderList = paginateList(activeSettleOrders, 'quantSettle');
+    }
+    
+    tbody.innerHTML = renderList.map(o => {
         const algoName = getAlgoDisplayName(o.algorithmModel);
         const date = o.createdAt ? new Date(parseInt(o.createdAt)).toLocaleString() : '--';
         
@@ -1387,16 +1413,6 @@ function renderActiveSettleListHtml(paging = null, userPhoneMap = {}) {
             </tr>
         `;
     }).join('');
-    
-    // Update pagination controls
-    const pageConf = window.adminPages.quantSettle;
-    const pg = paging || { page: pageConf.current, pageSize: pageConf.size, pages: 1, records: activeSettleOrders.length };
-    window.quantSettleTotalPages = pg.pages || 1;
-    
-    const indicator = document.getElementById('quantSettle-page-indicator');
-    if (indicator) {
-        indicator.innerText = `第 ${pg.page} / ${pg.pages} 页 (共 ${pg.records} 条)`;
-    }
 }
 
 export function resetSettleFilters() {

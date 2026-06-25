@@ -304,6 +304,7 @@ export function paginateList(list, type) {
     const pageConf = window.adminPages[type];
     const totalItems = list.length;
     const totalPages = Math.max(1, Math.ceil(totalItems / pageConf.size));
+    pageConf.pages = totalPages; // Store totalPages for boundary checks
     if (pageConf.current > totalPages) pageConf.current = totalPages;
     if (pageConf.current < 1) pageConf.current = 1;
     const start = (pageConf.current - 1) * pageConf.size;
@@ -320,6 +321,7 @@ export function updateAdminPageIndicator(type, paging) {
     const pageConf = window.adminPages[type];
     const totalItems = paging.records !== undefined ? paging.records : 0;
     const totalPages = paging.pages !== undefined ? paging.pages : 1;
+    pageConf.pages = totalPages; // Store totalPages for boundary checks
     pageConf.current = paging.page || pageConf.current;
     
     const indicator = document.getElementById(`${type}-page-indicator`);
@@ -330,7 +332,15 @@ export function updateAdminPageIndicator(type, paging) {
 window.updateAdminPageIndicator = updateAdminPageIndicator;
 
 export function changeAdminPage(type, delta) {
-    window.adminPages[type].current += delta;
+    const pageConf = window.adminPages[type];
+    const newPage = pageConf.current + delta;
+    const maxPage = pageConf.pages || 1;
+    
+    if (newPage < 1 || newPage > maxPage) {
+        return; // Prevent out-of-bounds requests
+    }
+    
+    pageConf.current = newPage;
     if (typeof window.loadKycList === 'function' && type === 'kyc') window.loadKycList();
     else if (typeof window.loadRiskLevelsList === 'function' && type === 'riskLevels') window.loadRiskLevelsList();
     else if (typeof window.loadQuantMonitor === 'function' && type === 'quant') window.loadQuantMonitor();

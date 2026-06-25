@@ -6,8 +6,8 @@
                             <!-- Filter Inputs Left -->
                             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1;">
                                 <div style="display: flex; align-items: center; gap: 4px;">
-                                    <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">量化用户 UID</span>
-                                    <input type="text" id="filter-quant-uid" placeholder="输入量化用户UID" oninput="window.adminPages.quant.current=1; loadQuantMonitor()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 6px; width: 120px;">
+                                    <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">会员手机号</span>
+                                    <input type="text" id="filter-quant-uid" placeholder="输入会员手机号" oninput="window.adminPages.quant.current=1; loadQuantMonitor()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 6px; width: 120px;">
                                 </div>
                                 <div style="display: flex; align-items: center; gap: 4px;">
                                     <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">订单号</span>
@@ -54,7 +54,7 @@
                                         <input type="checkbox" id="select-all-pending-orders-checkbox" onchange="toggleSelectAllPendingOrders(this)">
                                     </th>
                                     <th>交易日期/场次</th>
-                                    <th>会员账号/UID</th>
+                                    <th>会员手机号 / UID</th>
                                     <th>量化类型</th>
                                     <th>本金金额 (USDT)</th>
                                     <th>仓位比例</th>
