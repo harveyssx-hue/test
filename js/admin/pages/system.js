@@ -1340,3 +1340,243 @@ window.closeAppVersionDrawer = closeAppVersionDrawer;
 window.saveAppVersionSubmit = saveAppVersionSubmit;
 window.deleteAppVersion = deleteAppVersion;
 window.resetAppVersionsFilters = resetAppVersionsFilters;
+
+
+// ==========================================
+// 📞 在线客服通道管理模块 (Support Channels Management Module)
+// ==========================================
+let cachedSupportChannelsList = [];
+
+async function loadSupportChannelsList() {
+    const tableBody = document.getElementById('support-channels-table-body');
+    if (!tableBody) return;
+    
+    tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">🔄 正在调取在线客服通道列表...</td></tr>';
+    
+    const pageConf = window.adminPages.supportChannels;
+    const sizeSelect = document.getElementById('support-channels-size-select');
+    if (sizeSelect) {
+        sizeSelect.value = pageConf.size;
+    }
+    
+    try {
+        const fetchUrl = `/support-channels?page=${pageConf.current}&pageSize=${pageConf.size}`;
+        const res = await apiFetch('GET', fetchUrl, null, true);
+        if (res.code === 200) {
+            const dataList = res.result || res.data || [];
+            cachedSupportChannelsList = dataList;
+            
+            const pagingObj = res.paging || {
+                page: pageConf.current,
+                pageSize: pageConf.size,
+                records: dataList.length,
+                pages: Math.max(1, Math.ceil(dataList.length / pageConf.size))
+            };
+            updateAdminPageIndicator('supportChannels', pagingObj);
+            
+            if (dataList.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">📭 暂无在线客服配置通道</td></tr>';
+                return;
+            }
+            
+            let html = '';
+            dataList.forEach(v => {
+                const enabledBadge = v.enabled ? 
+                    `<span style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: rgba(16, 185, 129, 0.1); color: #10B981; font-weight: bold;">启用</span>` : 
+                    `<span style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: rgba(239, 68, 68, 0.1); color: #EF4444; font-weight: bold;">禁用</span>`;
+                
+                let toolBadge = '';
+                if (v.toolType === 'TELEGRAM') {
+                    toolBadge = `<span style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: rgba(59, 130, 246, 0.1); color: #3B82F6; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">✈️ TELEGRAM</span>`;
+                } else if (v.toolType === 'WHATSAPP') {
+                    toolBadge = `<span style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: rgba(16, 185, 129, 0.1); color: #10B981; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">💬 WHATSAPP</span>`;
+                } else if (v.toolType === 'FACEBOOK') {
+                    toolBadge = `<span style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: rgba(29, 78, 216, 0.1); color: #1D4ED8; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">📘 FACEBOOK</span>`;
+                } else if (v.toolType === 'WECHAT') {
+                    toolBadge = `<span style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: rgba(4, 120, 87, 0.1); color: #047857; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">🟢 WECHAT</span>`;
+                } else {
+                    toolBadge = `<span style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: rgba(148, 163, 184, 0.1); color: #94A3B8; font-weight: bold;">${escapeHtml(v.toolType || 'UNKNOWN')}</span>`;
+                }
+                
+                let formattedTime = '--';
+                if (v.updatedAt) {
+                    const ts = parseInt(v.updatedAt);
+                    if (!isNaN(ts) && String(ts).length >= 10 && /^\d+$/.test(String(v.updatedAt))) {
+                        formattedTime = new Date(ts).toLocaleString();
+                    } else {
+                        formattedTime = new Date(v.updatedAt).toLocaleString();
+                    }
+                }
+                
+                const iconHtml = v.icon ? 
+                    `<div style="display: flex; align-items: center; gap: 8px;">
+                        <img src="${escapeHtml(v.icon)}" style="width: 20px; height: 20px; border-radius: 4px; object-fit: contain; background: rgba(0,0,0,0.05); padding: 1px;" onerror="this.style.display='none'">
+                        <span style="font-family: monospace; font-size: 0.7rem; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(v.icon)}">${escapeHtml(v.icon)}</span>
+                     </div>` : '--';
+                
+                html += `
+                    <tr style="border-bottom: 1.5px solid var(--border-light);">
+                        <td style="font-family: monospace; font-size: 0.8rem;">${v.id}</td>
+                        <td style="text-align: center; font-weight: bold; color: var(--primary); font-family: monospace;">${v.orderIndex || 1}</td>
+                        <td>${toolBadge}</td>
+                        <td style="font-weight: 600; color: var(--text-primary);">${escapeHtml(v.name || '--')}</td>
+                        <td style="font-family: monospace; font-size: 0.75rem; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(v.link || '')}">
+                            <a href="${escapeHtml(v.link || '#')}" target="_blank" style="color: var(--primary); font-weight: 500;">${escapeHtml(v.link || '--')}</a>
+                        </td>
+                        <td>${iconHtml}</td>
+                        <td style="text-align: center;">${enabledBadge}</td>
+                        <td style="font-family: monospace; font-size: 0.75rem; color: var(--text-secondary);">${formattedTime}</td>
+                        <td class="sticky-right" style="text-align: center;">
+                            <div style="display: flex; gap: 8px; justify-content: center;">
+                                <button class="action-btn btn-approve" onclick="openSupportChannelDrawer('${v.id}')" style="padding: 4px 10px; font-size: 0.78rem; border-radius: 4px;">编辑</button>
+                                <button class="action-btn btn-reject" onclick="deleteSupportChannel('${v.id}')" style="padding: 4px 10px; font-size: 0.78rem; border-radius: 4px; background: rgba(239, 68, 68, 0.1); color: #EF4444; border: 1px solid rgba(239, 68, 68, 0.2);">删除</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            tableBody.innerHTML = html;
+        } else {
+            showToast(res.errorMessage || '加载客服通道列表失败！', true);
+            tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: #EF4444; padding: 40px 0;">❌ 加载失败: ${res.errorMessage || '未知接口错误'}</td></tr>`;
+        }
+    } catch (e) {
+        console.error(e);
+        showToast('获取客服通道列表异常！', true);
+        tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #EF4444; padding: 40px 0;">❌ 网络请求错误，请刷新重试！</td></tr>';
+    }
+}
+
+function openSupportChannelDrawer(id = null) {
+    const overlay = document.getElementById('support-channels-overlay');
+    const drawer = document.getElementById('support-channels-drawer');
+    const title = document.getElementById('support-channels-drawer-title');
+    const form = document.getElementById('support-channels-form');
+    
+    if (!overlay || !drawer) return;
+    
+    form.reset();
+    document.getElementById('edit-channel-id').value = '';
+    
+    if (id) {
+        title.innerText = '📝 编辑客服通道';
+        const v = cachedSupportChannelsList.find(x => String(x.id) === String(id));
+        if (v) {
+            document.getElementById('edit-channel-id').value = v.id;
+            document.getElementById('edit-channel-name').value = v.name || '';
+            document.getElementById('edit-channel-tool-type').value = v.toolType || 'TELEGRAM';
+            document.getElementById('edit-channel-order-index').value = v.orderIndex || 1;
+            document.getElementById('edit-channel-link').value = v.link || '';
+            document.getElementById('edit-channel-icon').value = v.icon || '';
+            document.getElementById('edit-channel-enabled').value = String(v.enabled === true);
+        }
+    } else {
+        title.innerText = '📝 新增客服通道';
+        document.getElementById('edit-channel-tool-type').value = 'TELEGRAM';
+        document.getElementById('edit-channel-order-index').value = '1';
+        document.getElementById('edit-channel-enabled').value = 'true';
+        document.getElementById('edit-channel-icon').value = 'https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/telegram.svg';
+    }
+    
+    overlay.classList.add('active');
+    drawer.classList.add('active');
+}
+
+function closeSupportChannelDrawer() {
+    const overlay = document.getElementById('support-channels-overlay');
+    const drawer = document.getElementById('support-channels-drawer');
+    if (overlay && drawer) {
+        overlay.classList.remove('active');
+        drawer.classList.remove('active');
+    }
+}
+
+function handleToolTypeChange() {
+    const type = document.getElementById('edit-channel-tool-type').value;
+    const iconInput = document.getElementById('edit-channel-icon');
+    if (!iconInput) return;
+    
+    const defaultIcons = {
+        'TELEGRAM': 'https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/telegram.svg',
+        'WHATSAPP': 'https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/whatsapp.svg',
+        'FACEBOOK': 'https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/facebook.svg',
+        'WECHAT': 'https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/wechat.svg'
+    };
+    
+    const currentVal = iconInput.value.trim();
+    const defaultVals = Object.values(defaultIcons);
+    if (!currentVal || defaultVals.includes(currentVal)) {
+        if (defaultIcons[type]) {
+            iconInput.value = defaultIcons[type];
+        }
+    }
+}
+
+async function saveSupportChannelSubmit(event) {
+    event.preventDefault();
+    
+    const id = document.getElementById('edit-channel-id').value;
+    const name = document.getElementById('edit-channel-name').value.trim();
+    const toolType = document.getElementById('edit-channel-tool-type').value;
+    const orderIndex = parseInt(document.getElementById('edit-channel-order-index').value) || 1;
+    const link = document.getElementById('edit-channel-link').value.trim();
+    const icon = document.getElementById('edit-channel-icon').value.trim();
+    const enabled = document.getElementById('edit-channel-enabled').value === 'true';
+    
+    const payload = {
+        name,
+        toolType,
+        orderIndex,
+        link,
+        icon,
+        enabled
+    };
+    
+    let method = 'POST';
+    let path = '/support-channels';
+    
+    if (id) {
+        method = 'PUT';
+        path = `/support-channels/${id}`;
+    }
+    
+    showToast('正在提交保存客服通道配置...', false);
+    try {
+        const res = await apiFetch(method, path, payload, true);
+        if (res.code === 200) {
+            showToast('✓ 客服通道配置保存成功！', false);
+            closeSupportChannelDrawer();
+            loadSupportChannelsList();
+        } else {
+            showToast(res.errorMessage || '保存客服通道失败', true);
+        }
+    } catch (e) {
+        console.error(e);
+        showToast('保存客服通道发生网络异常', true);
+    }
+}
+
+async function deleteSupportChannel(id) {
+    if (!confirm(`您确定要彻底删除该在线客服通道 (ID: ${id}) 吗？`)) return;
+    
+    showToast('正在执行删除客服通道...', false);
+    try {
+        const res = await apiFetch('POST', `/support-channels/${id}/delete`, {}, true);
+        if (res.code === 200) {
+            showToast('✓ 在线客服通道已成功删除！', false);
+            loadSupportChannelsList();
+        } else {
+            showToast(res.errorMessage || '删除客服通道失败', true);
+        }
+    } catch (e) {
+        console.error(e);
+        showToast('删除客服通道网络异常', true);
+    }
+}
+
+window.loadSupportChannelsList = loadSupportChannelsList;
+window.openSupportChannelDrawer = openSupportChannelDrawer;
+window.closeSupportChannelDrawer = closeSupportChannelDrawer;
+window.handleToolTypeChange = handleToolTypeChange;
+window.saveSupportChannelSubmit = saveSupportChannelSubmit;
+window.deleteSupportChannel = deleteSupportChannel;

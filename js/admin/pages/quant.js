@@ -462,32 +462,35 @@ async function fetchUserUsdtBalance(userId) {
             
             const balanceStrings = [];
             let hasNonZero = false;
-            const sortedSymbols = Object.keys(balanceMap).sort((a, b) => {
-                if (a === 'USDT') return -1;
-                if (b === 'USDT') return 1;
-                return a.localeCompare(b);
-            });
-            for (const symbol of sortedSymbols) {
-                const total = balanceMap[symbol];
-                if (total > 0) {
-                    balanceStrings.push(`${total.toFixed(2)} ${symbol}`);
-                    hasNonZero = true;
+            
+            const usdtVal = balanceMap['USDT'] || 0;
+            const inrVal = balanceMap['INR'] || 0;
+            const rate = window.userUsdtToInrRate || 1.0;
+            const totalInr = inrVal + usdtVal * rate;
+            
+            if (totalInr > 0) {
+                balanceStrings.push(`₹${totalInr.toFixed(2)}`);
+                hasNonZero = true;
+            }
+            
+            for (const symbol of Object.keys(balanceMap)) {
+                if (symbol !== 'USDT' && symbol !== 'INR') {
+                    const total = balanceMap[symbol];
+                    if (total > 0) {
+                        balanceStrings.push(`${total.toFixed(6)} ${symbol}`);
+                        hasNonZero = true;
+                    }
                 }
             }
             if (hasNonZero) {
                 return balanceStrings.join('<br>');
             }
-            
-            if (balanceMap['USDT'] !== undefined) {
-                return '0.00 USDT';
-            } else if (sortedSymbols.length > 0) {
-                return `0.00 ${sortedSymbols[0]}`;
-            }
+            return '₹0.00';
         }
     } catch (e) {
         console.error(`Failed to fetch balances for user ${userId}:`, e);
     }
-    return '0.00 USDT';
+    return '₹0.00';
 }
 
 

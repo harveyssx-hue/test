@@ -23,37 +23,52 @@ export async function fetchUserUsdtBalance(userId) {
             
             const balanceStrings = [];
             let hasNonZero = false;
-            const sortedSymbols = Object.keys(balanceMap).sort((a, b) => {
-                if (a === 'USDT') return -1;
-                if (b === 'USDT') return 1;
-                return a.localeCompare(b);
-            });
-            for (const symbol of sortedSymbols) {
-                const total = balanceMap[symbol];
-                if (total > 0) {
-                    balanceStrings.push(`${total.toFixed(2)} ${symbol}`);
-                    hasNonZero = true;
+            
+            const usdtVal = balanceMap['USDT'] || 0;
+            const inrVal = balanceMap['INR'] || 0;
+            const rate = window.userUsdtToInrRate || 1.0;
+            const totalInr = inrVal + usdtVal * rate;
+            
+            if (totalInr > 0) {
+                balanceStrings.push(`₹${totalInr.toFixed(2)}`);
+                hasNonZero = true;
+            }
+            
+            for (const symbol of Object.keys(balanceMap)) {
+                if (symbol !== 'USDT' && symbol !== 'INR') {
+                    const total = balanceMap[symbol];
+                    if (total > 0) {
+                        balanceStrings.push(`${total.toFixed(6)} ${symbol}`);
+                        hasNonZero = true;
+                    }
                 }
             }
             if (hasNonZero) {
                 return balanceStrings.join('<br>');
             }
-            
-            if (balanceMap['USDT'] !== undefined) {
-                return '0.00 USDT';
-            } else if (sortedSymbols.length > 0) {
-                return `0.00 ${sortedSymbols[0]}`;
-            }
+            return '₹0.00';
         }
     } catch (e) {
         console.error(`Failed to fetch balances for user ${userId}:`, e);
     }
-    return '0.00 USDT';
+    return '₹0.00';
 }
 
 export async function loadUsersList() {
     if (!currentAdmin) return;
     
+    // Fetch exchange rate to convert USDT to INR
+    let usdtToInrRate = 1.0;
+    try {
+        const rateRes = await apiFetch('GET', '/market/exchange-rate?from=USDT', null, true);
+        if (rateRes && rateRes.code === 200 && rateRes.data) {
+            usdtToInrRate = parseFloat(rateRes.data.rate) || 1.0;
+            window.userUsdtToInrRate = usdtToInrRate;
+        }
+    } catch (e) {
+        console.error("Failed to load exchange rate for user balances:", e);
+    }
+
     const filterEl = document.getElementById('user-search-input');
     if (!filterEl) {
         const users = await window.adminState.getUsers();
@@ -255,7 +270,12 @@ export async function loadUsersList() {
         
         const balanceVal = u.defaultBalance ? parseFloat(u.defaultBalance.total) : 0;
         const balanceSymbol = u.defaultBalance ? u.defaultBalance.assetSymbol : 'USDT';
-        const balanceText = `${balanceVal.toFixed(2)} ${balanceSymbol}`;
+        
+        let displayVal = balanceVal;
+        if (balanceSymbol === 'USDT') {
+            displayVal = balanceVal * (window.userUsdtToInrRate || 1.0);
+        }
+        const balanceText = `₹${displayVal.toFixed(2)}`;
         
         return `
             <tr>
@@ -946,10 +966,9 @@ export async function submitUserGrouping() {
         
         showToast(`正在批量更新 ${finalUserIds.length} 名用户的风控分组...`, false);
         try {
-            const res = await apiFetch('POST', '/users/batch/update-risk-level', {
+            const res = await apiFetch('POST', '/users/batch-update-risk-level', {
                 userIds: finalUserIds,
-                ids: finalUserIds,
-                riskLevelId: levelIdPayload
+                levelId: levelIdPayload
             }, true);
             
             if (res.code === 200) {
@@ -976,7 +995,7 @@ export async function submitUserGrouping() {
         showToast('正在更新交易员风控分组...', false);
         try {
             const res = await apiFetch('POST', `/users/${userId}/update-risk-level`, {
-                riskLevelId: levelIdPayload
+                levelId: levelIdPayload
             }, true);
             
             if (res.code === 200) {

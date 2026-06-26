@@ -1,0 +1,104 @@
+            <div class="view-tab-content active" id="view-support-channels">
+                <div class="glass-panel data-panel" style="padding: 18px;">
+                    <!-- Unified Filter Panel -->
+                    <div style="border-bottom: 1.5px solid var(--border-light); padding-bottom: 15px; margin-bottom: 15px;">
+                        <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap; justify-content: space-between;">
+                            <!-- Header and Add Button Left -->
+                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1;">
+                                <div class="data-panel-title" style="font-size: 1.0rem; color: var(--primary); display: flex; align-items: center; gap: 6px; margin-right: 10px; font-weight: bold;">📞 在线客服通道管理</div>
+                                <button class="action-btn btn-approve" onclick="openSupportChannelDrawer()" style="background: #5B51F9; color: #FFF; font-size: 0.72rem; padding: 4px 12px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 28px;">+ 新增客服通道</button>
+                            </div>
+                            
+                            <!-- Pagination Controls Right -->
+                            <div style="display: flex; gap: 6px; align-items: center; background: rgba(255, 255, 255, 0.05); padding: 2px 8px; border-radius: 6px; border: 1.5px solid var(--border-light);">
+                                <select class="filter-select" id="support-channels-size-select" onchange="changeAdminPageSize('supportChannels', this.value)" style="height: 24px; font-size: 0.7rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 2px; width: 85px; background: transparent; color: var(--text-primary); font-weight: 600; cursor: pointer; outline: none; margin-right: 5px;">
+                                    <option value="5">5 条/页</option>
+                                    <option value="10" selected>10 条/页</option>
+                                    <option value="20">20 条/页</option>
+                                </select>
+                                <button class="action-btn" onclick="changeAdminPage('supportChannels', -1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">上一页</button>
+                                <span id="supportChannels-page-indicator" style="font-size: 0.72rem; font-weight: 600; color: var(--text-primary); margin: 0 4px; white-space: nowrap;">第 1 / 1 页 (共 0 条)</span>
+                                <button class="action-btn" onclick="changeAdminPage('supportChannels', 1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">下一页</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 80px;">通道 ID</th>
+                                    <th style="width: 80px; text-align: center;">排序</th>
+                                    <th style="width: 120px;">工具类型</th>
+                                    <th style="width: 150px;">显示名称</th>
+                                    <th>客服跳转链接</th>
+                                    <th style="width: 180px;">图标链接</th>
+                                    <th style="width: 100px; text-align: center;">启用状态</th>
+                                    <th style="width: 160px;">修改时间</th>
+                                    <th class="sticky-right" style="text-align: center; width: 120px;">操作选项</th>
+                                </tr>
+                            </thead>
+                            <tbody id="support-channels-table-body">
+                                <!-- Loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+    <div class="drawer-overlay" id="support-channels-overlay" onclick="closeSupportChannelDrawer()"></div>
+    <div class="drawer-sheet" id="support-channels-drawer" style="width: 95%; max-width: 500px; overflow-y: auto;">
+        <button class="drawer-close-btn" onclick="closeSupportChannelDrawer()">✕</button>
+        <div class="drawer-header-audit" style="margin-bottom: 24px; border-bottom: 1px solid #F1F5F9; padding-bottom: 16px;">
+            <h2 id="support-channels-drawer-title" style="font-size: 1.35rem; display: flex; align-items: center; gap: 8px; color: var(--text-primary);">📝 新增客服通道</h2>
+            <p style="font-size: 0.78rem; color: #64748B; margin-top: 6px; font-weight: 500;">配置用户端展示的在线客服，支持 Telegram、WhatsApp 等快捷绑定</p>
+        </div>
+        
+        <form id="support-channels-form" onsubmit="saveSupportChannelSubmit(event)" style="display: flex; flex-direction: column; gap: 15px;">
+            <input type="hidden" id="edit-channel-id">
+            
+            <div class="auth-input-group">
+                <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 700; margin-bottom: 6px; display: block;">客服通道名称 *</label>
+                <input type="text" id="edit-channel-name" required placeholder="例如: Telegram 客服" style="width: 100%; height: 38px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--border-light); background: #fff;">
+            </div>
+
+            <div class="form-grid-2">
+                <div class="auth-input-group">
+                    <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 700; margin-bottom: 6px; display: block;">通道工具类型 *</label>
+                    <select id="edit-channel-tool-type" required onchange="handleToolTypeChange()" style="width: 100%; height: 38px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--border-light); background: #fff; color: var(--text-primary); font-weight: 600;">
+                        <option value="TELEGRAM">TELEGRAM</option>
+                        <option value="WHATSAPP">WHATSAPP</option>
+                        <option value="FACEBOOK">FACEBOOK</option>
+                        <option value="WECHAT">WECHAT</option>
+                    </select>
+                </div>
+                <div class="auth-input-group">
+                    <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 700; margin-bottom: 6px; display: block;">排序权重 (从小到大) *</label>
+                    <input type="number" id="edit-channel-order-index" required value="1" min="1" placeholder="例如: 1" style="width: 100%; height: 38px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--border-light); background: #fff;">
+                </div>
+            </div>
+            
+            <div class="auth-input-group">
+                <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 700; margin-bottom: 6px; display: block;">客服跳转链接 *</label>
+                <input type="text" id="edit-channel-link" required placeholder="如: https://t.me/your_service 或 https://wa.me/your_number" style="width: 100%; height: 38px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--border-light); background: #fff;">
+            </div>
+
+            <div class="auth-input-group">
+                <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 700; margin-bottom: 6px; display: block;">客服图标链接 (自动推荐或自定义) *</label>
+                <input type="text" id="edit-channel-icon" required placeholder="https://example.com/icon.png" style="width: 100%; height: 38px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--border-light); background: #fff;">
+            </div>
+
+            <div class="auth-input-group">
+                <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 700; margin-bottom: 6px; display: block;">是否启用 *</label>
+                <select id="edit-channel-enabled" required style="width: 100%; height: 38px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--border-light); background: #fff; color: var(--text-primary); font-weight: 600;">
+                    <option value="true">开启 (Enabled)</option>
+                    <option value="false">禁用 (Disabled)</option>
+                </select>
+            </div>
+            
+            <div class="drawer-footer-actions" style="margin-top: 20px; display: flex; gap: 12px; border-top: 1.5px solid var(--border-light); padding-top: 20px;">
+                <button type="button" class="action-btn" onclick="closeSupportChannelDrawer()" style="flex: 1; padding: 10px; border-radius: 6px; border: 1px solid var(--border-light); background: #fff; color: var(--text-primary); cursor: pointer; font-weight: 600;">取消</button>
+                <button type="submit" class="action-btn btn-approve" style="flex: 1; padding: 10px; border-radius: 6px; border: none; background: #5B51F9; color: #FFF; cursor: pointer; font-weight: 600;">保存并发布</button>
+            </div>
+        </form>
+    </div>

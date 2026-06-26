@@ -137,6 +137,12 @@ const tabConfig = {
         desc: '配置与发布 iOS 和 Android 客户端的最新可用版本、最低版本控制以及强更升级设置',
         controller: 'system',
         init: () => window.loadAppVersionsList()
+    },
+    'support-channels': {
+        title: '在线客服通道管理',
+        desc: '配置与管理用户客户端展示的在线客服通道，例如绑定 WhatsApp, Telegram 等',
+        controller: 'system',
+        init: () => window.loadSupportChannelsList()
     }
 };
 
@@ -300,6 +306,7 @@ window.adminPages = {
     manualSubjects: { current: 1, size: 10 },
     instruments: { current: 1, size: 10 },
     versions: { current: 1, size: 10 },
+    supportChannels: { current: 1, size: 10 },
     dailyReport: { current: 1, size: 50 }
 };
 
@@ -364,6 +371,7 @@ export function changeAdminPage(type, delta) {
     else if (typeof window.loadManualSubjectsList === 'function' && type === 'manualSubjects') window.loadManualSubjectsList();
     else if (typeof window.loadInstrumentsList === 'function' && type === 'instruments') window.loadInstrumentsList();
     else if (typeof window.loadAppVersionsList === 'function' && type === 'versions') window.loadAppVersionsList();
+    else if (typeof window.loadSupportChannelsList === 'function' && type === 'supportChannels') window.loadSupportChannelsList();
 }
 window.changeAdminPage = changeAdminPage;
 
@@ -390,6 +398,7 @@ export function changeAdminPageSize(type, newSize) {
     else if (typeof window.loadManualSubjectsList === 'function' && type === 'manualSubjects') window.loadManualSubjectsList();
     else if (typeof window.loadInstrumentsList === 'function' && type === 'instruments') window.loadInstrumentsList();
     else if (typeof window.loadAppVersionsList === 'function' && type === 'versions') window.loadAppVersionsList();
+    else if (typeof window.loadSupportChannelsList === 'function' && type === 'supportChannels') window.loadSupportChannelsList();
 }
 window.changeAdminPageSize = changeAdminPageSize;
 
