@@ -581,7 +581,7 @@ async function loadPaymentChannels() {
     const pageConf = window.adminPages.payment;
     
     try {
-        const res = await apiFetch('GET', `/payment-methods?page=${pageConf.current}&pageSize=${pageConf.size}`, null, true);
+        const res = await apiFetch('GET', `/finance/payment-methods?page=${pageConf.current}&pageSize=${pageConf.size}`, null, true);
         if (res.code === 200) {
             const list = res.result || res.data || [];
             cachedPaymentChannels = list; // Cache for edit lookup
@@ -658,7 +658,7 @@ async function loadPaymentChannels() {
 async function togglePaymentChannelStatus(channelId, enable) {
     showToast(enable ? '正在启用通道...' : '正在禁用通道...', false);
     try {
-        const res = await apiFetch('POST', `/payment-methods/${channelId}/update-status`, { enabled: enable }, true);
+        const res = await apiFetch('POST', `/finance/payment-methods/${channelId}/update-status`, { enabled: enable }, true);
         if (res.code === 200) {
             showToast(enable ? '✓ 通道已成功启用！' : '✓ 通道已成功禁用！', false);
             loadPaymentChannels();
@@ -675,7 +675,7 @@ async function deletePaymentChannel(channelId) {
     if (!confirm('⚠️ 您确定要永久删除该支付通道吗？删除后将无法恢复且影响用户充值端展示！')) return;
     showToast('正在删除通道...', false);
     try {
-        const res = await apiFetch('POST', `/payment-methods/${channelId}/delete`, {}, true);
+        const res = await apiFetch('POST', `/finance/payment-methods/${channelId}/delete`, {}, true);
         if (res.code === 200) {
             showToast('✓ 支付通道已成功删除！', false);
             loadPaymentChannels();
@@ -756,7 +756,7 @@ async function submitNewPaymentChannel(event) {
         ]
     };
     try {
-        const res = await apiFetch('POST', '/payment-methods', body, true);
+        const res = await apiFetch('POST', '/finance/payment-methods', body, true);
         if (res.code === 200) {
             showToast('✓ 新支付通道已成功发布并激活！', false);
             closePaymentAddModal();
@@ -850,7 +850,7 @@ async function submitEditPaymentChannel(event) {
         ]
     };
     try {
-        const res = await apiFetch('PUT', `/payment-methods/${id}`, body, true);
+        const res = await apiFetch('PUT', `/finance/payment-methods/${id}`, body, true);
         if (res.code === 200) {
             showToast('✓ 支付通道修改已成功保存！', false);
             closePaymentEditModal();
@@ -983,7 +983,7 @@ export async function loadCryptoTargetsList() {
     window.adminPages.crypto = pageConf;
     
     try {
-        const res = await apiFetch('GET', `/platform-crypto-receiving-targets?page=${pageConf.current}&pageSize=${pageConf.size}`, null, true);
+        const res = await apiFetch('GET', `/finance/platform-crypto-receiving-targets?page=${pageConf.current}&pageSize=${pageConf.size}`, null, true);
         if (res.code === 200) {
             const list = res.result || res.data || [];
             cachedCryptoTargets = list;
@@ -1110,9 +1110,9 @@ export async function submitCryptoTargetForm(event) {
     try {
         let res;
         if (id) {
-            res = await apiFetchWithRawBody('PUT', `/platform-crypto-receiving-targets/${id}`, payloadStr, true);
+            res = await apiFetchWithRawBody('PUT', `/finance/platform-crypto-receiving-targets/${id}`, payloadStr, true);
         } else {
-            res = await apiFetchWithRawBody('POST', '/platform-crypto-receiving-targets', payloadStr, true);
+            res = await apiFetchWithRawBody('POST', '/finance/platform-crypto-receiving-targets', payloadStr, true);
         }
         
         if (res.code === 200) {
@@ -1134,7 +1134,7 @@ export async function deleteCryptoTarget(id) {
     
     showToast('正在删除收款账号...', false);
     try {
-        const res = await apiFetch('POST', `/platform-crypto-receiving-targets/${id}/delete`, {}, true);
+        const res = await apiFetch('POST', `/finance/platform-crypto-receiving-targets/${id}/delete`, {}, true);
         if (res.code === 200) {
             showToast('✓ 加密账号已成功删除！', false);
             loadCryptoTargetsList();
@@ -1161,7 +1161,7 @@ export async function loadFiatTargetsList() {
     window.adminPages.fiat = pageConf;
     
     try {
-        const res = await apiFetch('GET', `/platform-fiat-receiving-targets?page=${pageConf.current}&pageSize=${pageConf.size}`, null, true);
+        const res = await apiFetch('GET', `/finance/platform-fiat-receiving-targets?page=${pageConf.current}&pageSize=${pageConf.size}`, null, true);
         if (res.code === 200) {
             const list = res.result || res.data || [];
             cachedFiatTargets = list;
@@ -1299,9 +1299,9 @@ export async function submitFiatTargetForm(event) {
     try {
         let res;
         if (id) {
-            res = await apiFetchWithRawBody('PUT', `/platform-fiat-receiving-targets/${id}`, payloadStr, true);
+            res = await apiFetchWithRawBody('PUT', `/finance/platform-fiat-receiving-targets/${id}`, payloadStr, true);
         } else {
-            res = await apiFetchWithRawBody('POST', '/platform-fiat-receiving-targets', payloadStr, true);
+            res = await apiFetchWithRawBody('POST', '/finance/platform-fiat-receiving-targets', payloadStr, true);
         }
         
         if (res.code === 200) {
@@ -1323,7 +1323,7 @@ export async function deleteFiatTarget(id) {
     
     showToast('正在删除收款账号...', false);
     try {
-        const res = await apiFetch('POST', `/platform-fiat-receiving-targets/${id}/delete`, {}, true);
+        const res = await apiFetch('POST', `/finance/platform-fiat-receiving-targets/${id}/delete`, {}, true);
         if (res.code === 200) {
             showToast('✓ 法币账号已成功删除！', false);
             loadFiatTargetsList();
@@ -1351,7 +1351,7 @@ export async function loadBindingsList() {
     window.adminPages.bindings = pageConf;
     
     try {
-        const res = await apiFetch('GET', `/payment-method-assets?page=${pageConf.current}&pageSize=${pageConf.size}`, null, true);
+        const res = await apiFetch('GET', `/finance/payment-method-assets?page=${pageConf.current}&pageSize=${pageConf.size}`, null, true);
         if (res.code === 200) {
             const list = res.result || res.data || [];
             cachedBindings = list;
@@ -1366,15 +1366,15 @@ export async function loadBindingsList() {
             let cryptoList = [];
             let fiatList = [];
             try {
-                const methodsRes = await apiFetch('GET', '/payment-methods?page=1&pageSize=1000', null, true);
+                const methodsRes = await apiFetch('GET', '/finance/payment-methods?page=1&pageSize=1000', null, true);
                 methodsList = methodsRes.result || methodsRes.data || [];
             } catch (err) {}
             try {
-                const cryptoRes = await apiFetch('GET', '/platform-crypto-receiving-targets?page=1&pageSize=1000', null, true);
+                const cryptoRes = await apiFetch('GET', '/finance/platform-crypto-receiving-targets?page=1&pageSize=1000', null, true);
                 cryptoList = cryptoRes.result || cryptoRes.data || [];
             } catch (err) {}
             try {
-                const fiatRes = await apiFetch('GET', '/platform-fiat-receiving-targets?page=1&pageSize=1000', null, true);
+                const fiatRes = await apiFetch('GET', '/finance/platform-fiat-receiving-targets?page=1&pageSize=1000', null, true);
                 fiatList = fiatRes.result || fiatRes.data || [];
             } catch (err) {}
             
@@ -1448,7 +1448,7 @@ export async function openBindingAddModal() {
     document.getElementById('binding-add-modal').classList.add('active');
     
     try {
-        const methodsRes = await apiFetch('GET', '/payment-methods?page=1&pageSize=1000', null, true);
+        const methodsRes = await apiFetch('GET', '/finance/payment-methods?page=1&pageSize=1000', null, true);
         const methods = methodsRes.result || methodsRes.data || [];
         if (methods.length === 0) {
             methodSelect.innerHTML = `<option value="">⚠️ 平台当前无可用支付方式</option>`;
@@ -1456,10 +1456,10 @@ export async function openBindingAddModal() {
             methodSelect.innerHTML = methods.map(m => `<option value="${m.id}">${m.name} (${m.assetClass})</option>`).join('');
         }
         
-        const cryptoRes = await apiFetch('GET', '/platform-crypto-receiving-targets?page=1&pageSize=1000', null, true);
+        const cryptoRes = await apiFetch('GET', '/finance/platform-crypto-receiving-targets?page=1&pageSize=1000', null, true);
         bindingTargetOptionsMap.CRYPTO = cryptoRes.result || cryptoRes.data || [];
         
-        const fiatRes = await apiFetch('GET', '/platform-fiat-receiving-targets?page=1&pageSize=1000', null, true);
+        const fiatRes = await apiFetch('GET', '/finance/platform-fiat-receiving-targets?page=1&pageSize=1000', null, true);
         bindingTargetOptionsMap.FIAT = fiatRes.result || fiatRes.data || [];
         
         filterBindingTargetsDropdown();
@@ -1521,7 +1521,7 @@ export async function submitNewBinding(event) {
     const payloadStr = `{"methodId":${methodId},"assetId":${assetId},"receivingTargetId":${targetId},"receivingTargetType":${JSON.stringify(targetType)},"enabled":true}`;
     
     try {
-        const res = await apiFetchWithRawBody('POST', '/payment-method-assets', payloadStr, true);
+        const res = await apiFetchWithRawBody('POST', '/finance/payment-method-assets', payloadStr, true);
         if (res.code === 200) {
             showToast('✓ 支付方式与资产收款账户成功绑定！', false);
             closeBindingAddModal();
@@ -1541,7 +1541,7 @@ export async function deleteBinding(id) {
     
     showToast('正在解除绑定...', false);
     try {
-        const res = await apiFetch('POST', `/payment-method-assets/${id}/delete`, {}, true);
+        const res = await apiFetch('POST', `/finance/payment-method-assets/${id}/delete`, {}, true);
         if (res.code === 200) {
             showToast('✓ 绑定已解除！', false);
             loadBindingsList();
