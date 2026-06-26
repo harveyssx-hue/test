@@ -1,6 +1,55 @@
+async function ensureRiskLevelsLoaded() {
+    if (!window.cachedRiskLevels || window.cachedRiskLevels.length === 0) {
+        try {
+            const rlRes = await apiFetch('GET', '/users/risk-levels', null, true);
+            if (rlRes.code === 200) {
+                window.cachedRiskLevels = rlRes.result || rlRes.data || [];
+            }
+        } catch (e) {
+            console.error("Failed to fetch risk levels:", e);
+        }
+    }
+    return window.cachedRiskLevels || [];
+}
+
+async function getUserRiskMap() {
+    try {
+        const users = await window.adminState.getUsers();
+        const map = {};
+        users.forEach(u => {
+            map[String(u.id)] = u.userRisk || null;
+        });
+        return map;
+    } catch (e) {
+        console.error("Failed to map user risk levels:", e);
+        return {};
+    }
+}
+
+function populateRiskLevelFilter(selectId) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+    const levels = window.cachedRiskLevels || [];
+    const currentVal = select.value;
+    select.innerHTML = '<option value="ALL">全部层级</option>';
+    levels.forEach(l => {
+        if (l.enabled) {
+            const opt = document.createElement('option');
+            opt.value = l.id;
+            opt.textContent = `${l.name} (等级 ${l.level || 0})`;
+            select.appendChild(opt);
+        }
+    });
+    select.value = currentVal || 'ALL';
+}
+
 export // --- DEPOSIT AND WITHDRAWAL FINANCE AUDIT FUNCTIONS ---
 async function loadDepositList() {
     if (!currentAdmin) return;
+    
+    await ensureRiskLevelsLoaded();
+    populateRiskLevelFilter('filter-deposit-risk-level');
+    const riskLevelFilter = document.getElementById('filter-deposit-risk-level')?.value || 'ALL';
     
     const filterStatus = document.getElementById('deposit-status-filter').value;
     const phoneVal = document.getElementById('filter-deposit-phone')?.value.trim().toLowerCase() || '';
@@ -14,7 +63,7 @@ async function loadDepositList() {
         sizeSelect.value = pageConf.size;
     }
     
-    const isComplexFilter = (remittanceVal !== '' || startDateVal !== '' || endDateVal !== '');
+    const isComplexFilter = (remittanceVal !== '' || startDateVal !== '' || endDateVal !== '' || riskLevelFilter !== 'ALL');
     
     try {
         let exchangeRate = 1.0;
@@ -32,10 +81,12 @@ async function loadDepositList() {
 
         // Pre-fetch users list to map userId to registration phone number
         let userPhoneMap = {};
+        let userRiskMap = {};
         try {
             userPhoneMap = await window.adminState.getUserPhoneMap();
+            userRiskMap = await getUserRiskMap();
         } catch (e) {
-            console.error('Failed to pre-fetch users for deposit phone mapping:', e);
+            console.error('Failed to pre-fetch users for deposit mappings:', e);
         }
 
         let fetchUrl = '';
@@ -115,6 +166,12 @@ async function loadDepositList() {
                     const endMs = new Date(endDateVal + 'T23:59:59').getTime();
                     filteredList = filteredList.filter(d => parseInt(d.createdAt || 0) <= endMs);
                 }
+                if (riskLevelFilter !== 'ALL') {
+                    filteredList = filteredList.filter(d => {
+                        const r = userRiskMap[String(d.userId)];
+                        return r && String(r.id) === String(riskLevelFilter);
+                    });
+                }
                 
                 if (filteredList.length === 0) {
                     bodyEl.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 30px 0;">暂无符合条件的充值记录</td></tr>`;
@@ -181,10 +238,13 @@ async function loadDepositList() {
                 
                 const remittanceDisplay = d.remittanceCode ? (d.remittanceCode.length > 8 ? d.remittanceCode.substring(0, 8) + '...' : d.remittanceCode) : '--';
                 const userPhone = userPhoneMap[String(d.userId)] || '--';
+                const userRiskObj = userRiskMap[String(d.userId)] || { name: '未分组', level: 0 };
+                const riskLevelName = userRiskObj.name || '未分组';
+                const riskLevelBadge = `<br><span style="font-size: 0.68rem; color: #38BDF8; font-weight: 600;">${riskLevelName}</span>`;
                 
                 return `
                     <tr>
-                        <td style="font-weight: 600; color: var(--text-primary);">${userPhone}</td>
+                        <td style="font-weight: 600; color: var(--text-primary);">${userPhone}${riskLevelBadge}</td>
                         <td>${typeBadge}</td>
                         <td>${amountDetails}</td>
                         <td style="font-family: monospace; font-size: 0.72rem;" title="${d.remittanceCode || ''}">${remittanceDisplay}</td>
@@ -288,6 +348,10 @@ export function closeProofLightbox() {
 async function loadWithdrawList() {
     if (!currentAdmin) return;
     
+    await ensureRiskLevelsLoaded();
+    populateRiskLevelFilter('filter-withdraw-risk-level');
+    const riskLevelFilter = document.getElementById('filter-withdraw-risk-level')?.value || 'ALL';
+    
     const filterStatus = document.getElementById('withdraw-status-filter').value;
     const phoneVal = document.getElementById('filter-withdraw-phone')?.value.trim().toLowerCase() || '';
     const idVal = document.getElementById('filter-withdraw-id')?.value.trim().toLowerCase() || '';
@@ -300,7 +364,7 @@ async function loadWithdrawList() {
         sizeSelect.value = pageConf.size;
     }
     
-    const isComplexFilter = (idVal !== '' || startDateVal !== '' || endDateVal !== '');
+    const isComplexFilter = (idVal !== '' || startDateVal !== '' || endDateVal !== '' || riskLevelFilter !== 'ALL');
     
     try {
         let exchangeRate = 1.0;
@@ -318,10 +382,12 @@ async function loadWithdrawList() {
 
         // Pre-fetch users list to map userId to registration phone number
         let userPhoneMap = {};
+        let userRiskMap = {};
         try {
             userPhoneMap = await window.adminState.getUserPhoneMap();
+            userRiskMap = await getUserRiskMap();
         } catch (e) {
-            console.error('Failed to pre-fetch users for withdraw phone mapping:', e);
+            console.error('Failed to pre-fetch users for withdraw mappings:', e);
         }
 
         let fetchUrl = '';
@@ -397,6 +463,12 @@ async function loadWithdrawList() {
                     const endMs = new Date(endDateVal + 'T23:59:59').getTime();
                     filteredList = filteredList.filter(w => parseInt(w.createdAt || 0) <= endMs);
                 }
+                if (riskLevelFilter !== 'ALL') {
+                    filteredList = filteredList.filter(w => {
+                        const r = userRiskMap[String(w.userId)];
+                        return r && String(r.id) === String(riskLevelFilter);
+                    });
+                }
                 
                 if (filteredList.length === 0) {
                     bodyEl.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 30px 0;">暂无符合条件的提现记录</td></tr>`;
@@ -425,6 +497,9 @@ async function loadWithdrawList() {
             bodyEl.innerHTML = renderList.map(w => {
                 const date = w.createdAt ? new Date(parseInt(w.createdAt)).toLocaleString() : '--';
                 const userPhone = userPhoneMap[String(w.userId)] || '--';
+                const userRiskObj = userRiskMap[String(w.userId)] || { name: '未分组', level: 0 };
+                const riskLevelName = userRiskObj.name || '未分组';
+                const riskLevelBadge = `<br><span style="font-size: 0.68rem; color: #38BDF8; font-weight: 600;">${riskLevelName}</span>`;
                 
                 let channelName = '--';
                 let targetAddress = '--';
@@ -522,7 +597,7 @@ async function loadWithdrawList() {
                 return `
                     <tr>
                         <td style="font-family: monospace; font-size: 0.72rem;" title="${String(w.id || '')}">${String(w.id || '').substring(0, 8)}...</td>
-                        <td style="font-weight: 600; color: var(--text-primary);">${userPhone}</td>
+                        <td style="font-weight: 600; color: var(--text-primary);">${userPhone}${riskLevelBadge}</td>
                         <td>${channelName}</td>
                         <td>${amountDetails}</td>
                         <td>${targetAddress}</td>
@@ -1835,12 +1910,14 @@ export function resetDepositFilters() {
     const end = document.getElementById('filter-deposit-end-date');
     const status = document.getElementById('deposit-status-filter');
     const size = document.getElementById('deposit-size-select');
+    const riskLevel = document.getElementById('filter-deposit-risk-level');
     if (phone) phone.value = '';
     if (remittance) remittance.value = '';
     if (start) start.value = '';
     if (end) end.value = '';
     if (status) status.value = 'ALL';
     if (size) size.value = '10';
+    if (riskLevel) riskLevel.value = 'ALL';
     window.adminPages.deposit.size = 10;
     window.adminPages.deposit.current = 1;
     loadDepositList();
@@ -1855,12 +1932,14 @@ export function resetWithdrawFilters() {
     const end = document.getElementById('filter-withdraw-end-date');
     const status = document.getElementById('withdraw-status-filter');
     const size = document.getElementById('withdraw-size-select');
+    const riskLevel = document.getElementById('filter-withdraw-risk-level');
     if (phone) phone.value = '';
     if (id) id.value = '';
     if (start) start.value = '';
     if (end) end.value = '';
     if (status) status.value = 'ALL';
     if (size) size.value = '10';
+    if (riskLevel) riskLevel.value = 'ALL';
     window.adminPages.withdraw.size = 10;
     window.adminPages.withdraw.current = 1;
     loadWithdrawList();
@@ -1873,6 +1952,10 @@ export // --- MANUAL FUNDING & ACCOUNTING SUBJECTS ---
 
 async function loadManualFundingList() {
     showToast('\u6b63\u5728\u52a0\u8f7d\u540e\u53f0\u5b58\u63d0\u5355\u636e\u5217\u8868...', false);
+    
+    await ensureRiskLevelsLoaded();
+    populateRiskLevelFilter('filter-manual-risk-level');
+    const riskLevelFilter = document.getElementById('filter-manual-risk-level')?.value || 'ALL';
     
     let exchangeRate = 1.0;
     try {
@@ -1888,6 +1971,13 @@ async function loadManualFundingList() {
         console.error('Failed to fetch USDT rate in manual funding list:', e);
     }
 
+    let userRiskMap = {};
+    try {
+        userRiskMap = await getUserRiskMap();
+    } catch (e) {
+        console.error('Failed to map user risk levels in manual funding:', e);
+    }
+
     try {
         const uidVal = document.getElementById('filter-manual-uid').value.trim();
         const subjectIdVal = document.getElementById('filter-manual-subject').value;
@@ -1896,13 +1986,21 @@ async function loadManualFundingList() {
         
         const pageConf = window.adminPages.manualFunding;
         
+        const isComplexFilter = (riskLevelFilter !== 'ALL');
+        
         let queryParams = [];
         if (uidVal) queryParams.push(`userId=${uidVal}`);
         if (subjectIdVal !== 'ALL') queryParams.push(`subjectId=${subjectIdVal}`);
         if (typeVal !== 'ALL') queryParams.push(`type=${typeVal}`);
         if (statusVal !== 'ALL') queryParams.push(`status=${statusVal}`);
-        queryParams.push(`page=${pageConf.current}`);
-        queryParams.push(`pageSize=${pageConf.size}`);
+        
+        if (isComplexFilter) {
+            queryParams.push(`page=1`);
+            queryParams.push(`pageSize=1000`);
+        } else {
+            queryParams.push(`page=${pageConf.current}`);
+            queryParams.push(`pageSize=${pageConf.size}`);
+        }
         
         const queryString = queryParams.length > 0 ? '?' + queryParams.join('&') : '';
         const res = await apiFetch('GET', '/finance/manual-fund-orders' + queryString, null, true);
@@ -1917,22 +2015,50 @@ async function loadManualFundingList() {
             const tbody = document.getElementById('manual-funding-table-body');
             if (!tbody) return;
             
-            if (list.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 30px 0;">\u65e0\u6570\u636e</td></tr>`;
-                const indicator = document.getElementById(`manualFunding-page-indicator`);
-                if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
-                return;
+            let renderList = list;
+            let pagingObj = null;
+            
+            if (isComplexFilter) {
+                let filteredList = list;
+                if (riskLevelFilter !== 'ALL') {
+                    filteredList = filteredList.filter(o => {
+                        const r = userRiskMap[String(o.userId)];
+                        return r && String(r.id) === String(riskLevelFilter);
+                    });
+                }
+                
+                if (filteredList.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 30px 0;">暂无符合条件的记录</td></tr>`;
+                    const indicator = document.getElementById(`manualFunding-page-indicator`);
+                    if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
+                    return;
+                }
+                
+                pagingObj = {
+                    page: pageConf.current,
+                    pageSize: pageConf.size,
+                    records: filteredList.length,
+                    pages: Math.max(1, Math.ceil(filteredList.length / pageConf.size))
+                };
+                renderList = paginateList(filteredList, 'manualFunding');
+            } else {
+                if (list.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 30px 0;">\u65e0\u6570\u636e</td></tr>`;
+                    const indicator = document.getElementById(`manualFunding-page-indicator`);
+                    if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
+                    return;
+                }
+                
+                pagingObj = res.paging || {
+                    page: pageConf.current,
+                    pageSize: pageConf.size,
+                    records: list.length,
+                    pages: 1
+                };
+                updateAdminPageIndicator('manualFunding', pagingObj);
             }
             
-            const pagingObj = res.paging || {
-                page: pageConf.current,
-                pageSize: pageConf.size,
-                records: list.length,
-                pages: 1
-            };
-            updateAdminPageIndicator('manualFunding', pagingObj);
-            
-            tbody.innerHTML = list.map(o => {
+            tbody.innerHTML = renderList.map(o => {
                 const statusColor = o.status === 'PENDING' ? '#F59E0B' : (o.status === 'APPROVED' ? '#10B981' : '#EF4444');
                 const statusName = o.status === 'PENDING' ? '\u5f85\u5ba1\u6838' : (o.status === 'APPROVED' ? '\u5df2\u901a\u8fc7' : '\u5df2\u62d2\u7edd');
                 const typeColor = o.type === 'DEPOSIT' ? '#10B981' : '#EF4444';
@@ -1957,12 +2083,16 @@ async function loadManualFundingList() {
                     actionHtml = `<span style="font-size: 0.75rem; color: var(--text-secondary);">${o.auditorEmail || o.auditorId || '-'} (${o.auditRemark || '-'})</span>`;
                 }
                 
+                const userRiskObj = userRiskMap[String(o.userId)] || { name: '未分组', level: 0 };
+                const riskLevelName = userRiskObj.name || '未分组';
+                const riskLevelBadge = `<br><span style="font-size: 0.68rem; color: #38BDF8; font-weight: 600;">${riskLevelName}</span>`;
+
                 return `
                     <tr>
                         <td><code>${o.id}</code></td>
                         <td>
                             <div style="font-weight: 600;">${o.userEmail || '-'}</div>
-                            <div style="font-size: 0.72rem; color: var(--text-muted);">UID: ${o.userId || '-'}</div>
+                            <div style="font-size: 0.72rem; color: var(--text-muted);">UID: ${o.userId || '-'}${riskLevelBadge}</div>
                         </td>
                         <td style="color: ${typeColor}; font-weight: bold;">${typeName}</td>
                         <td>${amountDetails}</td>
@@ -2009,10 +2139,12 @@ function resetManualFundingFilters() {
     const subject = document.getElementById('filter-manual-subject');
     const type = document.getElementById('filter-manual-type');
     const status = document.getElementById('filter-manual-status');
+    const riskLevel = document.getElementById('filter-manual-risk-level');
     if (uid) uid.value = '';
     if (subject) subject.value = 'ALL';
     if (type) type.value = 'ALL';
     if (status) status.value = 'ALL';
+    if (riskLevel) riskLevel.value = 'ALL';
     window.adminPages.manualFunding.current = 1;
     loadManualFundingList();
 }

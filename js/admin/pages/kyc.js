@@ -1,3 +1,48 @@
+async function ensureRiskLevelsLoaded() {
+    if (!window.cachedRiskLevels || window.cachedRiskLevels.length === 0) {
+        try {
+            const rlRes = await apiFetch('GET', '/users/risk-levels', null, true);
+            if (rlRes.code === 200) {
+                window.cachedRiskLevels = rlRes.result || rlRes.data || [];
+            }
+        } catch (e) {
+            console.error("Failed to fetch risk levels:", e);
+        }
+    }
+    return window.cachedRiskLevels || [];
+}
+
+async function getUserRiskMap() {
+    try {
+        const users = await window.adminState.getUsers();
+        const map = {};
+        users.forEach(u => {
+            map[String(u.id)] = u.userRisk || null;
+        });
+        return map;
+    } catch (e) {
+        console.error("Failed to map user risk levels:", e);
+        return {};
+    }
+}
+
+function populateRiskLevelFilter(selectId) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+    const levels = window.cachedRiskLevels || [];
+    const currentVal = select.value;
+    select.innerHTML = '<option value="ALL">全部层级</option>';
+    levels.forEach(l => {
+        if (l.enabled) {
+            const opt = document.createElement('option');
+            opt.value = l.id;
+            opt.textContent = `${l.name} (等级 ${l.level || 0})`;
+            select.appendChild(opt);
+        }
+    });
+    select.value = currentVal || 'ALL';
+}
+
 export async function loadKycList() {
     if (!currentAdmin) return;
     
@@ -26,6 +71,10 @@ export async function loadKycList() {
         return;
     }
 
+    await ensureRiskLevelsLoaded();
+    populateRiskLevelFilter('filter-kyc-risk-level');
+    const riskLevelFilter = document.getElementById('filter-kyc-risk-level')?.value || 'ALL';
+
     const filter = filterEl.value;
     let realFilter = filter;
     if (filter === 'APPROVED') realFilter = 'VERIFIED';
@@ -36,7 +85,7 @@ export async function loadKycList() {
     const nameVal = document.getElementById('filter-kyc-name')?.value.trim().toLowerCase() || '';
     
     const pageConf = window.adminPages.kyc;
-    const isFilterActive = (realFilter !== 'ALL' || uidVal !== '' || emailVal !== '' || nameVal !== '');
+    const isFilterActive = (realFilter !== 'ALL' || uidVal !== '' || emailVal !== '' || nameVal !== '' || riskLevelFilter !== 'ALL');
     
     // Sync size select dropdown with current page size state
     const kycSizeSelect = document.getElementById('kyc-size-select');
@@ -48,10 +97,12 @@ export async function loadKycList() {
     let pagingObj = null;
 
     let phoneMap = {};
+    let userRiskMap = {};
     try {
         phoneMap = await window.adminState.getUserPhoneMap();
-    } catch (phoneErr) {
-        console.error("Failed to load user phone map for KYC view:", phoneErr);
+        userRiskMap = await getUserRiskMap();
+    } catch (err) {
+        console.error("Failed to load user maps for KYC view:", err);
     }
     
     if (isFilterActive) {
@@ -79,6 +130,12 @@ export async function loadKycList() {
             }
             if (nameVal !== '') {
                 allApps = allApps.filter(a => a.fullName && String(a.fullName).toLowerCase().includes(nameVal));
+            }
+            if (riskLevelFilter !== 'ALL') {
+                allApps = allApps.filter(a => {
+                    const r = userRiskMap[String(a.userId)];
+                    return r && String(r.id) === String(riskLevelFilter);
+                });
             }
             
             window.cachedKycApps = allApps; // Cache globally for detail drawers
@@ -144,9 +201,14 @@ export async function loadKycList() {
             actionHtml = `<span style="color: var(--text-muted); font-size: 0.8rem;">已审核完结</span>`;
         }
         
+        const phone = phoneMap[String(a.userId)] || '--';
+        const userRiskObj = userRiskMap[String(a.userId)] || { name: '未分组', level: 0 };
+        const riskLevelName = userRiskObj.name || '未分组';
+        const riskLevelBadge = `<br><span style="font-size: 0.68rem; color: #38BDF8; font-weight: 600;">${riskLevelName}</span>`;
+
         return `
             <tr>
-                <td>${phoneMap[String(a.userId)] || '--'}</td>
+                <td>${phone}${riskLevelBadge}</td>
                 <td>${a.email}</td>
                 <td>${a.fullName}</td>
                 <td>${translateIdType(a.idType)}</td>
@@ -270,18 +332,19 @@ async function handleKycReviewSubmit(status) {
     }
 }
 
-
 export function resetKycFilters() {
     const uid = document.getElementById('filter-kyc-uid');
     const email = document.getElementById('filter-kyc-email');
     const name = document.getElementById('filter-kyc-name');
     const status = document.getElementById('kyc-status-filter');
     const size = document.getElementById('kyc-size-select');
+    const riskLevel = document.getElementById('filter-kyc-risk-level');
     if (uid) uid.value = '';
     if (email) email.value = '';
     if (name) name.value = '';
     if (status) status.value = 'ALL';
     if (size) size.value = '10';
+    if (riskLevel) riskLevel.value = 'ALL';
     window.adminPages.kyc.size = 10;
     window.adminPages.kyc.current = 1;
     loadKycList();

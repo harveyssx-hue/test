@@ -39,6 +39,12 @@
                                         <option value="REJECTED">已拒绝 (REJECTED)</option>
                                     </select>
                                 </div>
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">层级</span>
+                                    <select class="filter-select" id="filter-manual-risk-level" onchange="window.adminPages.manualFunding.current=1; loadManualFundingList()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 4px; width: 120px;">
+                                        <option value="ALL">全部层级</option>
+                                    </select>
+                                </div>
                                 <button class="action-btn" onclick="loadManualFundingList()" style="background: #5B51F9; color: #FFF; font-size: 0.72rem; padding: 4px 10px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 28px;">查询</button>
                                 <button class="action-btn" onclick="resetManualFundingFilters()" style="background: #E2E8F0; color: #475569; font-size: 0.72rem; padding: 4px 10px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 28px;">重置</button>
                             </div>
