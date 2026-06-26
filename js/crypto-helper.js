@@ -213,7 +213,14 @@ async function apiFetch(method, path, body = null, requireAuth = true) {
     const accessToken = localStorage.getItem('matp_access_token');
     const sessionKey = localStorage.getItem('matp_session_key');
     
-    const headers = routeToAdmin ? {
+    let isCrossOrigin = false;
+    try {
+        if (baseUrl.startsWith('http')) {
+            isCrossOrigin = new URL(baseUrl).origin !== window.location.origin;
+        }
+    } catch(e) {}
+
+    const headers = (routeToAdmin || isCrossOrigin) ? {
         'Content-Type': 'application/json'
     } : {
         'Content-Type': 'application/json',
@@ -357,7 +364,14 @@ async function apiFetchRaw(method, path, body = null, requireAuth = true) {
     const accessToken = localStorage.getItem('matp_access_token');
     const sessionKey = localStorage.getItem('matp_session_key');
     
-    const headers = routeToAdmin ? {
+    let isCrossOrigin = false;
+    try {
+        if (baseUrl.startsWith('http')) {
+            isCrossOrigin = new URL(baseUrl).origin !== window.location.origin;
+        }
+    } catch(e) {}
+
+    const headers = (routeToAdmin || isCrossOrigin) ? {
         'Content-Type': 'application/json'
     } : {
         'Content-Type': 'application/json',
@@ -446,7 +460,14 @@ async function apiFetchWithRawBody(method, path, rawBodyStr, requireAuth = true)
     const accessToken = localStorage.getItem('matp_access_token');
     const sessionKey = localStorage.getItem('matp_session_key');
     
-    const headers = routeToAdmin ? {
+    let isCrossOrigin = false;
+    try {
+        if (baseUrl.startsWith('http')) {
+            isCrossOrigin = new URL(baseUrl).origin !== window.location.origin;
+        }
+    } catch(e) {}
+
+    const headers = (routeToAdmin || isCrossOrigin) ? {
         'Content-Type': 'application/json'
     } : {
         'Content-Type': 'application/json',
