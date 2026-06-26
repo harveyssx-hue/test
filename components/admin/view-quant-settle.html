@@ -38,6 +38,12 @@
                                 <option value="PENDING">待交易 (未开仓)</option>
                             </select>
                         </div>
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <label style="font-size: 0.68rem; font-weight: 600; color: var(--text-secondary);">层级</label>
+                            <select id="filter-settle-risk-level" onchange="window.adminPages.quantSettle.current=1; loadQuantSettleList()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 4px; width: 120px; background: transparent; color: var(--text-primary); cursor: pointer; outline: none;">
+                                <option value="ALL">全部层级</option>
+                            </select>
+                        </div>
                         <div style="display: flex; gap: 6px; align-items: flex-end; margin-top: 16px;">
                             <button class="action-btn" onclick="loadQuantSettleList()" style="height: 28px; font-size: 0.72rem; padding: 0 12px; border-radius: 4px; background: var(--primary); color: white; border: none; font-weight: 600; cursor: pointer;">🔍 筛选</button>
                             <button class="action-btn" onclick="resetSettleFilters()" style="height: 28px; font-size: 0.72rem; padding: 0 12px; border-radius: 4px; background: rgba(255, 255, 255, 0.08); color: var(--text-primary); border: 1px solid var(--border-light); font-weight: 600; cursor: pointer;">🔄 重置</button>

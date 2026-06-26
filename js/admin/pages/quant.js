@@ -1,3 +1,48 @@
+async function ensureRiskLevelsLoaded() {
+    if (!window.cachedRiskLevels || window.cachedRiskLevels.length === 0) {
+        try {
+            const rlRes = await apiFetch('GET', '/users/risk-levels', null, true);
+            if (rlRes.code === 200) {
+                window.cachedRiskLevels = rlRes.result || rlRes.data || [];
+            }
+        } catch (e) {
+            console.error("Failed to fetch risk levels:", e);
+        }
+    }
+    return window.cachedRiskLevels || [];
+}
+
+async function getUserRiskMap() {
+    try {
+        const users = await window.adminState.getUsers();
+        const map = {};
+        users.forEach(u => {
+            map[String(u.id)] = u.userRisk || null;
+        });
+        return map;
+    } catch (e) {
+        console.error("Failed to map user risk levels:", e);
+        return {};
+    }
+}
+
+function populateRiskLevelFilter(selectId) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+    const levels = window.cachedRiskLevels || [];
+    const currentVal = select.value;
+    select.innerHTML = '<option value="ALL">全部层级</option>';
+    levels.forEach(l => {
+        if (l.enabled) {
+            const opt = document.createElement('option');
+            opt.value = l.id;
+            opt.textContent = `${l.name} (等级 ${l.level || 0})`;
+            select.appendChild(opt);
+        }
+    });
+    select.value = currentVal || 'ALL';
+}
+
 function unpackStrategyStats(descText) {
     const res = {
         description: descText || '',
@@ -118,6 +163,9 @@ window.toggleSelectAllPendingOrders = toggleSelectAllPendingOrders;
 export async function loadQuantMonitor() {
     if (!currentAdmin) return;
     await ensureInstrumentsLoaded();
+    await ensureRiskLevelsLoaded();
+    populateRiskLevelFilter('filter-quant-risk-level');
+    const riskLevelFilter = document.getElementById('filter-quant-risk-level')?.value || 'ALL';
     
     const pageConf = window.adminPages.quant;
     
@@ -133,9 +181,18 @@ export async function loadQuantMonitor() {
     }
     
     try {
-        let fetchUrl = `/trading/quant/orders?page=${pageConf.current}&pageSize=${pageConf.size}`;
-        if (statusVal !== 'ALL') {
-            fetchUrl += `&status=${statusVal}`;
+        const isComplexFilter = (riskLevelFilter !== 'ALL');
+        let fetchUrl = '';
+        if (isComplexFilter) {
+            fetchUrl = `/trading/quant/orders?page=1&pageSize=1000`;
+            if (statusVal !== 'ALL') {
+                fetchUrl += `&status=${statusVal}`;
+            }
+        } else {
+            fetchUrl = `/trading/quant/orders?page=${pageConf.current}&pageSize=${pageConf.size}`;
+            if (statusVal !== 'ALL') {
+                fetchUrl += `&status=${statusVal}`;
+            }
         }
         
         // Coordinated search by user phone number or full userId
@@ -174,6 +231,13 @@ export async function loadQuantMonitor() {
             console.error("Failed to load userPhoneMap in loadQuantMonitor:", e);
         }
         
+        let userRiskMap = {};
+        try {
+            userRiskMap = await getUserRiskMap();
+        } catch (e) {
+            console.error("Failed to map user risk levels in loadQuantMonitor:", e);
+        }
+        
         // Sort by createdAt descending
         orders.sort((a, b) => {
             const timeA = parseInt(a.createdAt || 0);
@@ -209,8 +273,22 @@ export async function loadQuantMonitor() {
             console.error("Failed to update dashboard quant stats:", statsErr);
         }
         
-        // Local filtering for orderNo
+        // Local filtering
         let filteredOrders = orders;
+        if (riskLevelFilter !== 'ALL') {
+            const targetLevelDef = window.cachedRiskLevels?.find(l => String(l.id) === String(riskLevelFilter));
+            const targetLevelNum = targetLevelDef ? (targetLevelDef.level || 0) : null;
+            filteredOrders = filteredOrders.filter(o => {
+                const r = userRiskMap[String(o.userId)] || null;
+                if (!r) {
+                    return targetLevelNum === 0;
+                }
+                if (String(r.id) === String(riskLevelFilter)) {
+                    return true;
+                }
+                return targetLevelNum !== null && (r.level || 0) === targetLevelNum;
+            });
+        }
         if (orderNoVal !== '') {
             filteredOrders = filteredOrders.filter(o => String(o.orderNo).toLowerCase().includes(orderNoVal));
         }
@@ -230,11 +308,20 @@ export async function loadQuantMonitor() {
         document.getElementById('quant-total-principal-amount').innerText = sumBuyAmount.toFixed(2) + ' USDT';
         
         // Coordinated pagination mode: support both backend pagination and client-side fallback
-        const isBackendPaginated = res.paging && res.paging.pages !== undefined && res.paging.pages > 1;
+        const isBackendPaginated = res.paging && res.paging.pages !== undefined && res.paging.pages > 1 && !isComplexFilter;
         let renderList = filteredOrders;
         if (isBackendPaginated) {
             updateAdminPageIndicator('quant', res.paging);
         } else {
+            const totalCount = filteredOrders.length;
+            const totalPages = Math.max(1, Math.ceil(totalCount / pageConf.size));
+            pageConf.totalPages = totalPages;
+            if (pageConf.current > totalPages) pageConf.current = totalPages;
+            if (pageConf.current < 1) pageConf.current = 1;
+            const indicator = document.getElementById('quant-page-indicator');
+            if (indicator) {
+                indicator.innerText = `第 ${pageConf.current} / ${totalPages} 页 (共 ${totalCount} 条)`;
+            }
             renderList = paginateList(filteredOrders, 'quant');
         }
         
@@ -303,7 +390,11 @@ export async function loadQuantMonitor() {
                         </td>
                         <td>
                             <div style="font-weight: 600;">${userAccount}</div>
-                            <div style="color: var(--primary); font-size: 0.72rem; font-weight: 600; font-family: monospace;">${userUidStr}</div>
+                            <div style="color: var(--primary); font-size: 0.72rem; font-weight: 600; font-family: monospace;">${userUidStr}${(() => {
+                                const r = userRiskMap[String(o.userId)] || null;
+                                const riskLevelName = r ? r.name : '未分组';
+                                return `<br><span style="font-size: 0.68rem; color: #38BDF8; font-weight: 600;">${riskLevelName}</span>`;
+                            })()}</div>
                             <div style="color: var(--text-muted); font-size: 0.68rem;">正式</div>
                         </td>
                         <td>
@@ -335,10 +426,12 @@ function resetQuantFilters() {
     const statusFilter = document.getElementById('filter-quant-status');
     const orderNoFilter = document.getElementById('filter-quant-orderNo');
     const uidFilter = document.getElementById('filter-quant-uid');
+    const riskLevelFilter = document.getElementById('filter-quant-risk-level');
     
     if (statusFilter) statusFilter.value = 'PENDING';
     if (orderNoFilter) orderNoFilter.value = '';
     if (uidFilter) uidFilter.value = '';
+    if (riskLevelFilter) riskLevelFilter.value = 'ALL';
     
     window.adminPages.quant.current = 1;
     loadQuantMonitor();
@@ -1202,6 +1295,9 @@ let activeSettleOrders = []; // store in-memory for checkbox and selection opera
 async function loadQuantSettleList() {
     if (!currentAdmin) return;
     await ensureInstrumentsLoaded();
+    await ensureRiskLevelsLoaded();
+    populateRiskLevelFilter('filter-settle-risk-level');
+    const riskLevelFilter = document.getElementById('filter-settle-risk-level')?.value || 'ALL';
     
     const pageConf = window.adminPages.quantSettle;
     
@@ -1216,7 +1312,13 @@ async function loadQuantSettleList() {
     }
     
     try {
-        let fetchUrl = `/trading/quant/orders?status=ACTIVE&page=${pageConf.current}&pageSize=${pageConf.size}`;
+        const isComplexFilter = (riskLevelFilter !== 'ALL');
+        let fetchUrl = '';
+        if (isComplexFilter) {
+            fetchUrl = `/trading/quant/orders?status=ACTIVE&page=1&pageSize=1000`;
+        } else {
+            fetchUrl = `/trading/quant/orders?status=ACTIVE&page=${pageConf.current}&pageSize=${pageConf.size}`;
+        }
         
         // Coordinated search by user phone number or full userId
         if (uidFilter !== '') {
@@ -1254,6 +1356,13 @@ async function loadQuantSettleList() {
             console.error(e);
         }
         
+        let userRiskMap = {};
+        try {
+            userRiskMap = await getUserRiskMap();
+        } catch (e) {
+            console.error("Failed to map user risk levels in loadQuantSettleList:", e);
+        }
+        
         // Concurrently fetch trades ONLY for the paginated page size (max 10 items) rather than the entire collection!
         const ordersWithTrades = await Promise.all(activeOrders.map(async (o) => {
             let trades = [];
@@ -1268,8 +1377,22 @@ async function loadQuantSettleList() {
             return { ...o, trades };
         }));
         
-        // Local filtering for orderNo and statusFilter (holding status)
+        // Local filtering for orderNo, statusFilter, and riskLevelFilter
         let resultList = ordersWithTrades;
+        if (riskLevelFilter !== 'ALL') {
+            const targetLevelDef = window.cachedRiskLevels?.find(l => String(l.id) === String(riskLevelFilter));
+            const targetLevelNum = targetLevelDef ? (targetLevelDef.level || 0) : null;
+            resultList = resultList.filter(o => {
+                const r = userRiskMap[String(o.userId)] || null;
+                if (!r) {
+                    return targetLevelNum === 0;
+                }
+                if (String(r.id) === String(riskLevelFilter)) {
+                    return true;
+                }
+                return targetLevelNum !== null && (r.level || 0) === targetLevelNum;
+            });
+        }
         if (orderNoFilter !== '') {
             resultList = resultList.filter(o => String(o.orderNo || '').toLowerCase().includes(orderNoFilter));
         }
@@ -1298,14 +1421,24 @@ async function loadQuantSettleList() {
         
         activeSettleOrders = resultList;
         
-        const pagingObj = res.paging || {
-            page: pageConf.current,
-            pageSize: pageConf.size,
-            records: resultList.length,
-            pages: 1
-        };
+        let pagingObj = null;
+        if (isComplexFilter) {
+            pagingObj = {
+                page: pageConf.current,
+                pageSize: pageConf.size,
+                records: resultList.length,
+                pages: Math.max(1, Math.ceil(resultList.length / pageConf.size))
+            };
+        } else {
+            pagingObj = res.paging || {
+                page: pageConf.current,
+                pageSize: pageConf.size,
+                records: resultList.length,
+                pages: 1
+            };
+        }
         
-        renderActiveSettleListHtml(pagingObj, userPhoneMap);
+        renderActiveSettleListHtml(pagingObj, userPhoneMap, userRiskMap);
     } catch (err) {
         console.error('Error fetching trades traces:', err);
         showToast('获取成交明细异常！', true);
@@ -1315,7 +1448,7 @@ async function loadQuantSettleList() {
     }
 }
 
-function renderActiveSettleListHtml(paging = null, userPhoneMap = {}) {
+function renderActiveSettleListHtml(paging = null, userPhoneMap = {}, userRiskMap = {}) {
     const selectAllCheckbox = document.getElementById('select-all-settle-orders');
     if (selectAllCheckbox) selectAllCheckbox.checked = false;
     
@@ -1396,7 +1529,11 @@ function renderActiveSettleListHtml(paging = null, userPhoneMap = {}) {
                 <td style="text-align: center;">${checkboxHtml}</td>
                 <td>
                     <div style="font-weight: 600;">${userAccount}</div>
-                    <div style="color: var(--primary); font-size: 0.68rem; font-weight: 600; font-family: monospace;">${userUidStr}</div>
+                    <div style="color: var(--primary); font-size: 0.68rem; font-weight: 600; font-family: monospace;">${userUidStr}${(() => {
+                        const r = userRiskMap[String(o.userId)] || null;
+                        const riskLevelName = r ? r.name : '未分组';
+                        return `<br><span style="font-size: 0.68rem; color: #38BDF8; font-weight: 600;">${riskLevelName}</span>`;
+                    })()}</div>
                 </td>
                 <td>
                     <div style="display: flex; align-items: center; gap: 6px;">
@@ -1422,10 +1559,12 @@ export function resetSettleFilters() {
     const uidFilter = document.getElementById('filter-settle-uid');
     const orderNoFilter = document.getElementById('filter-settle-orderno');
     const statusFilter = document.getElementById('filter-settle-status');
+    const riskLevelFilter = document.getElementById('filter-settle-risk-level');
     
     if (uidFilter) uidFilter.value = '';
     if (orderNoFilter) orderNoFilter.value = '';
     if (statusFilter) statusFilter.value = 'ALL';
+    if (riskLevelFilter) riskLevelFilter.value = 'ALL';
     
     window.adminPages.quantSettle.current = 1;
     loadQuantSettleList();

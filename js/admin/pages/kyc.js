@@ -49,7 +49,7 @@ export async function loadKycList() {
     const filterEl = document.getElementById('kyc-status-filter');
     if (!filterEl) {
         if (!window.kycFetchPromise) {
-            window.kycFetchPromise = apiFetch('GET', '/users/kyc?page=1&pageSize=10000', null, true);
+            window.kycFetchPromise = apiFetch('GET', '/users/kyc?page=1&pageSize=2000', null, true);
         }
         const res = await window.kycFetchPromise;
         if (res.code === 200) {
@@ -132,9 +132,14 @@ export async function loadKycList() {
                 allApps = allApps.filter(a => a.fullName && String(a.fullName).toLowerCase().includes(nameVal));
             }
             if (riskLevelFilter !== 'ALL') {
+                const targetLevelDef = window.cachedRiskLevels?.find(l => String(l.id) === String(riskLevelFilter));
+                const targetLevelNum = targetLevelDef ? (targetLevelDef.level || 0) : null;
                 allApps = allApps.filter(a => {
                     const r = userRiskMap[String(a.userId)];
-                    return r && String(r.id) === String(riskLevelFilter);
+                    if (!r) {
+                        return targetLevelNum === 0;
+                    }
+                    return String(r.id) === String(riskLevelFilter) || (targetLevelNum !== null && (r.level || 0) === targetLevelNum);
                 });
             }
             

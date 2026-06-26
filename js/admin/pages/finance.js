@@ -167,9 +167,14 @@ async function loadDepositList() {
                     filteredList = filteredList.filter(d => parseInt(d.createdAt || 0) <= endMs);
                 }
                 if (riskLevelFilter !== 'ALL') {
+                    const targetLevelDef = window.cachedRiskLevels?.find(l => String(l.id) === String(riskLevelFilter));
+                    const targetLevelNum = targetLevelDef ? (targetLevelDef.level || 0) : null;
                     filteredList = filteredList.filter(d => {
                         const r = userRiskMap[String(d.userId)];
-                        return r && String(r.id) === String(riskLevelFilter);
+                        if (!r) {
+                            return targetLevelNum === 0;
+                        }
+                        return String(r.id) === String(riskLevelFilter) || (targetLevelNum !== null && (r.level || 0) === targetLevelNum);
                     });
                 }
                 
@@ -464,9 +469,14 @@ async function loadWithdrawList() {
                     filteredList = filteredList.filter(w => parseInt(w.createdAt || 0) <= endMs);
                 }
                 if (riskLevelFilter !== 'ALL') {
+                    const targetLevelDef = window.cachedRiskLevels?.find(l => String(l.id) === String(riskLevelFilter));
+                    const targetLevelNum = targetLevelDef ? (targetLevelDef.level || 0) : null;
                     filteredList = filteredList.filter(w => {
                         const r = userRiskMap[String(w.userId)];
-                        return r && String(r.id) === String(riskLevelFilter);
+                        if (!r) {
+                            return targetLevelNum === 0;
+                        }
+                        return String(r.id) === String(riskLevelFilter) || (targetLevelNum !== null && (r.level || 0) === targetLevelNum);
                     });
                 }
                 
@@ -2021,9 +2031,14 @@ async function loadManualFundingList() {
             if (isComplexFilter) {
                 let filteredList = list;
                 if (riskLevelFilter !== 'ALL') {
+                    const targetLevelDef = window.cachedRiskLevels?.find(l => String(l.id) === String(riskLevelFilter));
+                    const targetLevelNum = targetLevelDef ? (targetLevelDef.level || 0) : null;
                     filteredList = filteredList.filter(o => {
                         const r = userRiskMap[String(o.userId)];
-                        return r && String(r.id) === String(riskLevelFilter);
+                        if (!r) {
+                            return targetLevelNum === 0;
+                        }
+                        return String(r.id) === String(riskLevelFilter) || (targetLevelNum !== null && (r.level || 0) === targetLevelNum);
                     });
                 }
                 

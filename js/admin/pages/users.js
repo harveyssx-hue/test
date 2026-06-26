@@ -69,6 +69,13 @@ export async function loadUsersList() {
         console.error("Failed to load exchange rate for user balances:", e);
     }
 
+    let userPhoneMap = {};
+    try {
+        userPhoneMap = await window.adminState.getUserPhoneMap();
+    } catch (e) {
+        console.error("Failed to load userPhoneMap in loadUsersList:", e);
+    }
+
     const filterEl = document.getElementById('user-search-input');
     if (!filterEl) {
         const users = await window.adminState.getUsers();
@@ -142,6 +149,7 @@ export async function loadUsersList() {
             let filteredUsers = allUsers;
             if (searchVal !== '') {
                 filteredUsers = filteredUsers.filter(u => 
+                    String(u.id) === searchVal ||
                     String(u.uid).includes(searchVal) || 
                     (u.username && u.username.toLowerCase().includes(searchVal)) || 
                     (u.email && u.email.toLowerCase().includes(searchVal)) ||
@@ -179,8 +187,17 @@ export async function loadUsersList() {
                 });
             }
             if (riskLevelFilter !== 'ALL') {
+                const targetLevelDef = window.cachedRiskLevels?.find(l => String(l.id) === String(riskLevelFilter));
+                const targetLevelNum = targetLevelDef ? (targetLevelDef.level || 0) : null;
                 filteredUsers = filteredUsers.filter(u => {
-                    return String(u.riskLevelId || '') === String(riskLevelFilter);
+                    if (!u.riskLevelId) {
+                        return targetLevelNum === 0;
+                    }
+                    if (String(u.riskLevelId) === String(riskLevelFilter)) {
+                        return true;
+                    }
+                    const currentLevelDef = window.cachedRiskLevels?.find(l => String(l.id) === String(u.riskLevelId));
+                    return targetLevelNum !== null && currentLevelDef && (currentLevelDef.level || 0) === targetLevelNum;
                 });
             }
             
@@ -277,6 +294,16 @@ export async function loadUsersList() {
         }
         const balanceText = `₹${displayVal.toFixed(2)}`;
         
+        const referrerPhone = u.referralUserId ? (userPhoneMap[String(u.referralUserId)] || u.referralUserId) : null;
+        const referralText = u.referralUserId 
+            ? `<div style="font-size: 0.65rem; color: #38BDF8; margin-top: 3px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+                   <span>上级: ${referrerPhone}</span>
+                   <button class="action-btn" onclick="searchUserById('${u.referralUserId}')" style="padding: 1px 4px; font-size: 0.6rem; height: 16px; line-height: 14px; background: rgba(56, 189, 248, 0.15); border: none; border-radius: 3px; color: #38BDF8; cursor: pointer;">去查看</button>
+               </div>`
+            : `<div style="font-size: 0.65rem; color: var(--text-secondary); margin-top: 3px;">上级: 无</div>`;
+            
+        const subordinatesBtn = `<div style="margin-top: 4px;"><button class="action-btn" onclick="showUserReferralsTree('${u.id}', '${u.nickname || u.uid}')" style="padding: 2px 6px; font-size: 0.65rem; background: rgba(16, 185, 129, 0.1); border: 1.5px solid rgba(16, 185, 129, 0.25); color: #10B981; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 2px; height: 20px; font-weight: 600;">🌳 下级关系树</button></div>`;
+        
         return `
             <tr>
                 <td style="text-align: center;">
@@ -285,7 +312,11 @@ export async function loadUsersList() {
                 <td>${u.uid || '--'}</td>
                 <td>${u.username || '--'}</td>
                 <td>${u.email || '--'}</td>
-                <td>${u.nickname}</td>
+                <td>
+                    <div style="font-weight: 600;">${u.nickname}</div>
+                    ${referralText}
+                    ${subordinatesBtn}
+                </td>
                 <td>
                     <span class="badge badge-${kycBadgeType}" style="margin-bottom: 4px; display: inline-flex;">
                         <span class="badge-status-dot"></span>
@@ -369,9 +400,11 @@ export function resetUsersFilters() {
     const kw = document.getElementById('user-search-input');
     const kyc = document.getElementById('filter-users-kyc');
     const status = document.getElementById('filter-users-status');
+    const riskLevel = document.getElementById('filter-users-risk-level');
     if (kw) kw.value = '';
     if (kyc) kyc.value = 'ALL';
     if (status) status.value = 'ALL';
+    if (riskLevel) riskLevel.value = 'ALL';
     window.adminPages.users.current = 1;
     loadUsersList();
     showToast('✓ 用户管理检索条件已重置', false);
@@ -1065,3 +1098,13 @@ if (!window.userDropdownListenerAdded) {
     });
     window.userDropdownListenerAdded = true;
 }
+
+window.searchUserById = function(id) {
+    const searchInput = document.getElementById('user-search-input');
+    if (searchInput) {
+        searchInput.value = id;
+        window.adminPages.users.current = 1;
+        loadUsersList();
+        showToast(`🔍 已过滤显示目标上级用户`, false);
+    }
+};
