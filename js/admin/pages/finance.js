@@ -17,6 +17,19 @@ async function loadDepositList() {
     const isComplexFilter = (remittanceVal !== '' || startDateVal !== '' || endDateVal !== '');
     
     try {
+        let exchangeRate = 1.0;
+        try {
+            const rateRes = await apiFetch('GET', '/market/exchange-rate?from=USDT', null, true);
+            if (rateRes && rateRes.code === 200) {
+                const data = rateRes.result || rateRes.data;
+                if (data && data.rate) {
+                    exchangeRate = parseFloat(data.rate) || 1.0;
+                }
+            }
+        } catch (e) {
+            console.error('Failed to fetch USDT rate in deposit audit:', e);
+        }
+
         // Pre-fetch users list to map userId to registration phone number
         let userPhoneMap = {};
         try {
@@ -140,10 +153,19 @@ async function loadDepositList() {
                     typeBadge = `<span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: rgba(148, 163, 184, 0.1); color: #94A3B8; font-weight: bold; display: inline-block;">${d.depositType || 'UNKNOWN'}</span>`;
                 }
 
-                let amountDetails = `<span style="font-weight: 700; color: var(--primary); font-size: 0.88rem;">${parseFloat(d.amount).toFixed(2)}</span>`;
+                let recordRate = parseFloat(d.collectionFxRate || 0);
+                let rate = recordRate > 0 ? recordRate : exchangeRate;
+                let usdtAmt = parseFloat(d.amount || 0);
+                
+                let inrAmt = 0;
                 if (d.depositType === 'FIAT' && d.collectedAmount) {
-                    amountDetails += `<br><span style="font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap;">实收: <b>${parseFloat(d.collectedAmount).toFixed(2)}</b> (汇率: ${parseFloat(d.collectionFxRate).toFixed(2)})</span>`;
+                    inrAmt = parseFloat(d.collectedAmount);
+                } else {
+                    inrAmt = usdtAmt * rate;
                 }
+                
+                let amountDetails = `<span style="font-weight: 700; color: var(--primary); font-size: 0.88rem;">₹${inrAmt.toFixed(2)} INR</span>`;
+                amountDetails += `<br><span style="font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap;">入账: <b>${usdtAmt.toFixed(2)} USDT</b> (汇率: ${rate.toFixed(2)})</span>`;
 
                 let actionHtml = '';
                 if (d.status === 'PENDING' || d.status === 'CONFIRMED') {
@@ -440,46 +462,42 @@ async function loadWithdrawList() {
                     targetAddress = `<span style="font-family: monospace; font-size: 0.8rem; color: var(--text-muted);">--</span>`;
                 }
 
-                let currencySymbol = '$';
-                let currencyUnit = 'USDT';
-                let displayAmt = parseFloat(w.amount || '0');
-                let displayFee = parseFloat(w.fee || '0');
-                let displayActual = parseFloat(w.actualAmount || w.amount || '0');
-
                 const isNewRecord = w.createdAt && parseInt(w.createdAt) > 1779700000000;
                 let recordRate = parseFloat(w.fxRate || w.collectionFxRate || w.collectionRate || 0);
                 let rate = recordRate > 0 ? recordRate : exchangeRate; // dynamic exchange rate fallback
 
-                if (w.withdrawType === 'CRYPTO') {
-                    currencySymbol = '$';
-                    currencyUnit = 'USDT';
-                    if (isNewRecord) {
-                        displayAmt = displayAmt / rate;
-                        displayFee = displayFee / rate;
-                        displayActual = displayActual / rate;
-                    }
-                } else if (w.withdrawType === 'FIAT') {
-                    currencySymbol = '\u20b9';
-                    currencyUnit = 'INR';
-                    if (!isNewRecord) {
-                        displayAmt = displayAmt * rate;
-                        displayFee = displayFee * rate;
-                        displayActual = displayActual * rate;
-                    }
+                let inrAmt = 0;
+                let inrFee = 0;
+                let inrActual = 0;
+                let usdtAmt = 0;
+                let usdtFee = 0;
+                let usdtActual = 0;
+
+                if (isNewRecord) {
+                    inrAmt = parseFloat(w.amount || '0');
+                    inrFee = parseFloat(w.fee || '0');
+                    inrActual = parseFloat(w.actualAmount || w.amount || '0');
+
+                    usdtAmt = inrAmt / rate;
+                    usdtFee = inrFee / rate;
+                    usdtActual = inrActual / rate;
+                } else {
+                    usdtAmt = parseFloat(w.amount || '0');
+                    usdtFee = parseFloat(w.fee || '0');
+                    usdtActual = parseFloat(w.actualAmount || w.amount || '0');
+
+                    inrAmt = usdtAmt * rate;
+                    inrFee = usdtFee * rate;
+                    inrActual = usdtActual * rate;
                 }
 
-                let amountDetails = `<span style="font-weight: 700; color: #EF4444; font-size: 0.88rem;">${currencySymbol}${displayAmt.toFixed(2)} ${currencyUnit}</span>`;
-                if (w.withdrawType === 'CRYPTO' && isNewRecord) {
-                    if (recordRate > 0) {
-                        amountDetails += `<br><span style="font-size: 0.68rem; color: var(--text-secondary); white-space: nowrap;">(锁定汇率: 1 USDT ≈ <b>${recordRate.toFixed(2)} INR</b>)</span>`;
-                    } else {
-                        amountDetails += `<br><span style="font-size: 0.68rem; color: var(--text-secondary); white-space: nowrap;">(实时汇率: 1 USDT ≈ <b>${rate.toFixed(2)} INR</b>)</span>`;
-                    }
-                }
-                if (displayFee > 0) {
-                    amountDetails += `<br><span style="font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap;">实到: <b>${currencySymbol}${displayActual.toFixed(2)}</b> (服务费: ${currencySymbol}${displayFee.toFixed(2)})</span>`;
+                let amountDetails = `<span style="font-weight: 700; color: #EF4444; font-size: 0.88rem;">₹${inrAmt.toFixed(2)} INR</span>`;
+                amountDetails += `<br><span style="font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap;">出账: <b>${usdtAmt.toFixed(2)} USDT</b> (汇率: ${rate.toFixed(2)})</span>`;
+                
+                if (inrFee > 0) {
+                    amountDetails += `<br><span style="font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap;">实到: <b>₹${inrActual.toFixed(2)} INR</b> (服务费: ₹${inrFee.toFixed(2)})</span>`;
                 } else {
-                    amountDetails += `<br><span style="font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap;">实到: <b>${currencySymbol}${displayAmt.toFixed(2)}</b> (免手续费)</span>`;
+                    amountDetails += `<br><span style="font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap;">实到: <b>₹${inrAmt.toFixed(2)} INR</b> (免手续费)</span>`;
                 }
 
                 let actionHtml = '';
@@ -1855,6 +1873,21 @@ export // --- MANUAL FUNDING & ACCOUNTING SUBJECTS ---
 
 async function loadManualFundingList() {
     showToast('\u6b63\u5728\u52a0\u8f7d\u540e\u53f0\u5b58\u63d0\u5355\u636e\u5217\u8868...', false);
+    
+    let exchangeRate = 1.0;
+    try {
+        const rateRes = await apiFetch('GET', '/market/exchange-rate?from=USDT', null, true);
+        if (rateRes && rateRes.code === 200) {
+            const data = rateRes.result || rateRes.data;
+            if (data && data.rate) {
+                exchangeRate = parseFloat(data.rate) || 1.0;
+                window.userUsdtToInrRate = exchangeRate;
+            }
+        }
+    } catch (e) {
+        console.error('Failed to fetch USDT rate in manual funding list:', e);
+    }
+
     try {
         const uidVal = document.getElementById('filter-manual-uid').value.trim();
         const subjectIdVal = document.getElementById('filter-manual-subject').value;
@@ -1905,6 +1938,13 @@ async function loadManualFundingList() {
                 const typeColor = o.type === 'DEPOSIT' ? '#10B981' : '#EF4444';
                 const typeName = o.type === 'DEPOSIT' ? '\u5145\u503c\u5165\u91d1' : '\u6263\u6b3e\u51fa\u91d1';
                 
+                const rate = window.userUsdtToInrRate || exchangeRate || 1.0;
+                const usdtAmt = parseFloat(o.amount || 0);
+                const inrAmt = usdtAmt * rate;
+                
+                let amountDetails = `<span style="font-weight: 700; color: ${typeColor}; font-size: 0.88rem;">₹${inrAmt.toFixed(2)} INR</span>`;
+                amountDetails += `<br><span style="font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap;">额度: <b>${usdtAmt.toFixed(4)} USDT</b> (汇率: ${rate.toFixed(2)})</span>`;
+
                 let actionHtml = '';
                 if (o.status === 'PENDING') {
                     actionHtml = `
@@ -1925,7 +1965,7 @@ async function loadManualFundingList() {
                             <div style="font-size: 0.72rem; color: var(--text-muted);">UID: ${o.userId || '-'}</div>
                         </td>
                         <td style="color: ${typeColor}; font-weight: bold;">${typeName}</td>
-                        <td style="font-weight: 700; color: var(--text-primary); font-size: 0.9rem;">${parseFloat(o.amount).toFixed(4)} USDT</td>
+                        <td>${amountDetails}</td>
                         <td>
                             <div>${o.subjectName || '-'}</div>
                             <div style="font-size: 0.72rem; color: var(--text-muted);">ID: ${o.subjectId || '-'}</div>
@@ -1950,6 +1990,20 @@ async function loadManualFundingList() {
 }
 window.loadManualFundingList = loadManualFundingList;
 
+function updateManualFundInrPreview() {
+    const amountEl = document.getElementById('manual-fund-add-amount');
+    const previewEl = document.getElementById('manual-fund-add-inr-preview');
+    if (!amountEl || !previewEl) return;
+    const val = parseFloat(amountEl.value) || 0;
+    const rate = window.userUsdtToInrRate || 1.0;
+    if (val > 0) {
+        previewEl.innerText = `≈ ₹${(val * rate).toFixed(2)} INR`;
+    } else {
+        previewEl.innerText = '';
+    }
+}
+window.updateManualFundInrPreview = updateManualFundInrPreview;
+
 function resetManualFundingFilters() {
     const uid = document.getElementById('filter-manual-uid');
     const subject = document.getElementById('filter-manual-subject');
@@ -1970,8 +2024,10 @@ async function openManualFundingModal() {
     document.getElementById('manual-fund-add-amount').value = '';
     document.getElementById('manual-fund-add-remark').value = '';
     document.getElementById('manual-fund-add-type').value = 'DEPOSIT';
-    
     document.getElementById('manual-fund-add-user').value = '';
+    
+    const previewEl = document.getElementById('manual-fund-add-inr-preview');
+    if (previewEl) previewEl.innerText = '';
     try {
         await window.adminState.getUsers();
     } catch (e) {
