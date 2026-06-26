@@ -149,6 +149,15 @@ async function handleKycSubmit(event) {
     const frontUrl = document.getElementById('kyc-front-url').value.trim();
     const backUrl = document.getElementById('kyc-back-url').value.trim();
     
+    if (!frontUrl) {
+        showToast(currentLocale === 'hi' ? '⚠️ कृपया अपने दस्तावेज़ का अगला भाग (Front side) अपलोड करें!' : '⚠️ Please upload the front side of your document!', true);
+        return;
+    }
+    if (!backUrl) {
+        showToast(currentLocale === 'hi' ? '⚠️ कृपया अपने दस्तावेज़ का पिछला भाग (Back side) अपलोड करें!' : '⚠️ Please upload the back side of your document!', true);
+        return;
+    }
+    
     try {
         const body = {
             fullName: name,

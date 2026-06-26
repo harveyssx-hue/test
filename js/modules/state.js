@@ -35,7 +35,7 @@ const state = {
     homeTrendingClass: 'crypto',
     
     // Constant exchange rates
-    PLATFORM_EXCHANGE_RATES: {},
+    PLATFORM_EXCHANGE_RATES: { 'INR': 1.0 },
     
     // Index sparkline memory pools
     sparklinePools: {

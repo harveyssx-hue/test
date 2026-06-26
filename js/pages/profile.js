@@ -5,9 +5,16 @@ async function openNotifyModal() { await ensureModalLoaded('notify-modal'); docu
 
 function closeNotifyModal() { document.getElementById('notify-modal').classList.remove('active'); }
 
-function openAcademyModal() { document.getElementById('academy-modal').classList.add('active'); }
+async function openAcademyModal() {
+    await ensureModalLoaded('academy-modal');
+    const modal = document.getElementById('academy-modal');
+    if (modal) modal.classList.add('active');
+}
 
-function closeAcademyModal() { document.getElementById('academy-modal').classList.remove('active'); }
+function closeAcademyModal() {
+    const modal = document.getElementById('academy-modal');
+    if (modal) modal.classList.remove('active');
+}
 
 async function openPlatformAgreementModal(code, event) {
     if (event) {

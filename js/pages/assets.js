@@ -56,9 +56,7 @@ async function loadUserAssets() {
                         const inrTotal = parseFloat(inrBal.total) || 0.00;
                         // Convert INR to USDT/USD (using the platform rate)
                         const usdtRate = (state.PLATFORM_EXCHANGE_RATES && state.PLATFORM_EXCHANGE_RATES['USDT']) || 1.0;
-                        if (!hasUSDT || userUsdtBalance === 0) {
-                            userUsdtBalance = inrAvailable / usdtRate;
-                        }
+                        userUsdtBalance = (hasUSDT ? userUsdtBalance : 0.00) + (inrAvailable / usdtRate);
                         totalVal += inrTotal / usdtRate;
                     }
                     

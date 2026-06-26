@@ -2,6 +2,7 @@
 import { state } from '../modules/state.js?v=2.2.0';
 
 let currentPaymentMethods = [];
+let currentSelectedChannelIdx = 0;
 
 function closeDepositModal() {
     switchTab('profile');
@@ -460,6 +461,43 @@ async function handleDepositFormSubmit(event) {
         showToast(currentLocale === 'hi' ? '⚠️ कृपया एक वैध जमा चैनल चुनें!' : '⚠️ Please select a valid deposit channel!', true);
         return;
     }
+    
+    // Add client-side deposit limit verification
+    const m = currentPaymentMethods[currentSelectedChannelIdx];
+    if (m && m.target) {
+        const minLimit = parseFloat(m.target.minDepositAmount);
+        const maxLimit = parseFloat(m.target.maxDepositAmount);
+        
+        if (m.assetClass === 'FIAT') {
+            const rate = PLATFORM_EXCHANGE_RATES[m.asset?.symbol || 'HKD'];
+            const usdtRate = PLATFORM_EXCHANGE_RATES['USDT'];
+            if (rate && usdtRate) {
+                const usdtToFiatRate = usdtRate / rate;
+                const requiredFiat = amt * usdtToFiatRate;
+                
+                if (!isNaN(minLimit) && requiredFiat < minLimit) {
+                    const fiatSym = m.asset?.symbol || 'INR';
+                    showToast(currentLocale === 'hi' ? `⚠️ न्यूनतम जमा राशि ${minLimit.toFixed(2)} ${fiatSym} है!` : `⚠️ Minimum deposit amount is ${minLimit.toFixed(2)} ${fiatSym}!`, true);
+                    return;
+                }
+                if (!isNaN(maxLimit) && maxLimit > 0 && requiredFiat > maxLimit) {
+                    const fiatSym = m.asset?.symbol || 'INR';
+                    showToast(currentLocale === 'hi' ? `⚠️ अधिकतम जमा राशि ${maxLimit.toFixed(2)} ${fiatSym} है!` : `⚠️ Maximum deposit amount is ${maxLimit.toFixed(2)} ${fiatSym}!`, true);
+                    return;
+                }
+            }
+        } else {
+            if (!isNaN(minLimit) && amt < minLimit) {
+                showToast(currentLocale === 'hi' ? `⚠️ न्यूनतम जमा राशि ${minLimit.toFixed(2)} USDT है!` : `⚠️ Minimum deposit amount is ${minLimit.toFixed(2)} USDT!`, true);
+                return;
+            }
+            if (!isNaN(maxLimit) && maxLimit > 0 && amt > maxLimit) {
+                showToast(currentLocale === 'hi' ? `⚠️ अधिकतम जमा राशि ${maxLimit.toFixed(2)} USDT है!` : `⚠️ Maximum deposit amount is ${maxLimit.toFixed(2)} USDT!`, true);
+                return;
+            }
+        }
+    }
+    
     if (!proofUrl) {
         showToast(currentLocale === 'hi' ? '⚠️ कृपया जमा वाउचर स्क्रीनशॉट अपलोड करें!' : '⚠️ Please upload deposit voucher screenshot!', true);
         return;
@@ -817,6 +855,7 @@ function calculateWithdrawFee() {
 
 
 async function syncExchangeRates() {
+    PLATFORM_EXCHANGE_RATES['INR'] = 1.0; // INR is the base currency (all exchange rates anchor to INR)
     const symbols = ['USDT', 'HKD', 'USD', 'EUR', 'BTC', 'ETH'];
     const promises = symbols.map(async (symbol) => {
         try {

@@ -290,6 +290,9 @@ window.adminPages = {
     relations: { current: 1, size: 10 },
     orders: { current: 1, size: 10 },
     payment: { current: 1, size: 10 },
+    crypto: { current: 1, size: 10 },
+    fiat: { current: 1, size: 10 },
+    bindings: { current: 1, size: 10 },
     rates: { current: 1, size: 10 },
     strategies: { current: 1, size: 10 },
     quantSettle: { current: 1, size: 10 },
@@ -351,6 +354,9 @@ export function changeAdminPage(type, delta) {
     else if (typeof window.loadCopyTradingRelations === 'function' && type === 'relations') window.loadCopyTradingRelations();
     else if (typeof window.loadCopyTradingOrders === 'function' && type === 'orders') window.loadCopyTradingOrders();
     else if (typeof window.loadPaymentChannels === 'function' && type === 'payment') window.loadPaymentChannels();
+    else if (typeof window.loadCryptoTargetsList === 'function' && type === 'crypto') window.loadCryptoTargetsList();
+    else if (typeof window.loadFiatTargetsList === 'function' && type === 'fiat') window.loadFiatTargetsList();
+    else if (typeof window.loadBindingsList === 'function' && type === 'bindings') window.loadBindingsList();
     else if (typeof window.loadExchangeRatesList === 'function' && type === 'rates') window.loadExchangeRatesList();
     else if (typeof window.loadPlatformStrategies === 'function' && type === 'strategies') window.loadPlatformStrategies();
     else if (typeof window.loadQuantSettleList === 'function' && type === 'quantSettle') window.loadQuantSettleList();
@@ -374,6 +380,9 @@ export function changeAdminPageSize(type, newSize) {
     else if (typeof window.loadCopyTradingRelations === 'function' && type === 'relations') window.loadCopyTradingRelations();
     else if (typeof window.loadCopyTradingOrders === 'function' && type === 'orders') window.loadCopyTradingOrders();
     else if (typeof window.loadPaymentChannels === 'function' && type === 'payment') window.loadPaymentChannels();
+    else if (typeof window.loadCryptoTargetsList === 'function' && type === 'crypto') window.loadCryptoTargetsList();
+    else if (typeof window.loadFiatTargetsList === 'function' && type === 'fiat') window.loadFiatTargetsList();
+    else if (typeof window.loadBindingsList === 'function' && type === 'bindings') window.loadBindingsList();
     else if (typeof window.loadExchangeRatesList === 'function' && type === 'rates') window.loadExchangeRatesList();
     else if (typeof window.loadPlatformStrategies === 'function' && type === 'strategies') window.loadPlatformStrategies();
     else if (typeof window.loadQuantSettleList === 'function' && type === 'quantSettle') window.loadQuantSettleList();

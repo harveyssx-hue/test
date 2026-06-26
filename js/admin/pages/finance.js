@@ -557,6 +557,22 @@ async function handleWithdrawReview(id, action) {
 let cachedPaymentChannels = [];
 
 async function loadPaymentChannels() {
+    const activeBtn = document.getElementById('btn-sub-methods');
+    if (activeBtn && activeBtn.classList.contains('active')) {
+        currentPaymentSubTab = 'payment';
+    }
+
+    if (currentPaymentSubTab !== 'payment') {
+        if (currentPaymentSubTab === 'crypto') {
+            await loadCryptoTargetsList();
+        } else if (currentPaymentSubTab === 'fiat') {
+            await loadFiatTargetsList();
+        } else if (currentPaymentSubTab === 'bindings') {
+            await loadBindingsList();
+        }
+        return;
+    }
+
     const tableBody = document.getElementById('payment-table-body');
     if (!tableBody) return;
     
@@ -565,7 +581,7 @@ async function loadPaymentChannels() {
     const pageConf = window.adminPages.payment;
     
     try {
-        const res = await apiFetch('GET', `/finance/payment-methods?page=${pageConf.current}&pageSize=${pageConf.size}`, null, true);
+        const res = await apiFetch('GET', `/payment-methods?page=${pageConf.current}&pageSize=${pageConf.size}`, null, true);
         if (res.code === 200) {
             const list = res.result || res.data || [];
             cachedPaymentChannels = list; // Cache for edit lookup
@@ -592,8 +608,6 @@ async function loadPaymentChannels() {
                 const actionBtn = m.enabled
                     ? `<button class="action-btn btn-reject" onclick="togglePaymentChannelStatus('${m.id}', false)" style="padding: 4px 8px; font-size: 0.72rem; cursor: pointer;">禁用</button>`
                     : `<button class="action-btn btn-approve" onclick="togglePaymentChannelStatus('${m.id}', true)" style="padding: 4px 8px; font-size: 0.72rem; cursor: pointer;">启用</button>`;
-                
-                const configBtn = `<button class="action-btn btn-view" onclick="openReceivingConfigDrawer('${m.id}', '${m.name.replace(/'/g, "\\'")}', '${m.assetClass}')" style="padding: 4px 8px; font-size: 0.72rem; margin-left: 5px; cursor: pointer; background: rgba(91,81,249,0.08); color: var(--primary);">⚙️ 收款配置</button>`;
                 
                 const editBtn = `<button class="action-btn btn-view" onclick="openPaymentEditModal('${m.id}')" style="padding: 4px 8px; font-size: 0.72rem; margin-left: 5px; cursor: pointer; background: rgba(59, 130, 246, 0.08); color: var(--blue);">📝 编辑</button>`;
  
@@ -625,7 +639,6 @@ async function loadPaymentChannels() {
                         <td>
                             <div style="display: flex; align-items: center;">
                                 ${actionBtn}
-                                ${configBtn}
                                 ${editBtn}
                                 ${deleteBtn}
                             </div>
@@ -645,7 +658,7 @@ async function loadPaymentChannels() {
 async function togglePaymentChannelStatus(channelId, enable) {
     showToast(enable ? '正在启用通道...' : '正在禁用通道...', false);
     try {
-        const res = await apiFetch('POST', `/finance/payment-methods/${channelId}/update-status`, { enabled: enable }, true);
+        const res = await apiFetch('POST', `/payment-methods/${channelId}/update-status`, { enabled: enable }, true);
         if (res.code === 200) {
             showToast(enable ? '✓ 通道已成功启用！' : '✓ 通道已成功禁用！', false);
             loadPaymentChannels();
@@ -662,7 +675,7 @@ async function deletePaymentChannel(channelId) {
     if (!confirm('⚠️ 您确定要永久删除该支付通道吗？删除后将无法恢复且影响用户充值端展示！')) return;
     showToast('正在删除通道...', false);
     try {
-        const res = await apiFetch('POST', `/finance/payment-methods/${channelId}/delete`, {}, true);
+        const res = await apiFetch('POST', `/payment-methods/${channelId}/delete`, {}, true);
         if (res.code === 200) {
             showToast('✓ 支付通道已成功删除！', false);
             loadPaymentChannels();
@@ -743,7 +756,7 @@ async function submitNewPaymentChannel(event) {
         ]
     };
     try {
-        const res = await apiFetch('POST', '/finance/payment-methods', body, true);
+        const res = await apiFetch('POST', '/payment-methods', body, true);
         if (res.code === 200) {
             showToast('✓ 新支付通道已成功发布并激活！', false);
             closePaymentAddModal();
@@ -837,7 +850,7 @@ async function submitEditPaymentChannel(event) {
         ]
     };
     try {
-        const res = await apiFetch('PUT', `/finance/payment-methods/${id}`, body, true);
+        const res = await apiFetch('PUT', `/payment-methods/${id}`, body, true);
         if (res.code === 200) {
             showToast('✓ 支付通道修改已成功保存！', false);
             closePaymentEditModal();
@@ -922,299 +935,625 @@ async function uploadPaymentChannelIcon(fileInputId, urlInputId, previewImgId) {
     }
 }
 
-export // --- RECEIVING CONFIG DRAWER CONTROLLERS ---
-let currentRecChannelId = null;
-let currentRecAssetClass = null;
+export // --- PLATFORM RECEIVING ACCOUNTS SUB-TABS ORCHESTRATION ---
+let currentPaymentSubTab = 'payment';
 
-async function openReceivingConfigDrawer(methodId, name, assetClass) {
-    currentRecChannelId = methodId;
-    currentRecAssetClass = assetClass;
+export async function switchPaymentSubTab(subTab, element) {
+    currentPaymentSubTab = subTab;
     
-    document.getElementById('rec-channel-id').value = methodId;
-    document.getElementById('rec-channel-name').innerText = name;
-    document.getElementById('rec-channel-class').innerText = assetClass;
-    
-    // Clear state inputs
-    document.getElementById('rec-binding-id').value = '';
-    document.getElementById('rec-target-id').value = '';
-    document.getElementById('rec-asset-id').value = '';
-    
-    // Clear form inputs
-    document.getElementById('rec-crypto-network').value = '';
-    document.getElementById('rec-crypto-address').value = '';
-    document.getElementById('rec-crypto-memo').value = '';
-    document.getElementById('rec-fiat-bank').value = '';
-    document.getElementById('rec-fiat-name').value = '';
-    document.getElementById('rec-fiat-number').value = '';
-    document.getElementById('rec-fiat-swift').value = '';
-    document.getElementById('rec-fiat-iban').value = '';
-    
-    // Show loader, hide unbound/form boxes
-    document.getElementById('rec-loader').style.display = 'block';
-    document.getElementById('rec-unbound-box').style.display = 'none';
-    document.getElementById('rec-form-box').style.display = 'none';
-    
-    // Slide drawer open
-    document.getElementById('receiving-overlay').classList.add('active');
-    document.getElementById('receiving-drawer').classList.add('active');
-    
-    try {
-        // 1. Fetch all payment method assets to find bindings
-        const bindingsRes = await apiFetch('GET', '/finance/payment-method-assets', null, true);
-        if (bindingsRes.code === 200) {
-            const list = bindingsRes.result || bindingsRes.data || [];
-            // Find active binding for this channel ID
-            const binding = list.find(b => String(b.methodId) === String(methodId) && b.enabled !== false);
-            
-            if (binding) {
-                const targetId = binding.receivingTargetId;
-                const assetId = binding.assetId;
-                
-                document.getElementById('rec-binding-id').value = binding.id;
-                document.getElementById('rec-target-id').value = targetId;
-                document.getElementById('rec-asset-id').value = assetId;
-                
-                // 2. Fetch target details from targets list to prevent path ID "Not Found" error
-                if (assetClass === 'CRYPTO') {
-                    const targetsRes = await apiFetch('GET', '/finance/platform-crypto-receiving-targets', null, true);
-                    const targets = targetsRes.result || targetsRes.data || [];
-                    const target = targets.find(t => String(t.id) === String(targetId));
-                    
-                    if (target) {
-                        document.getElementById('rec-crypto-network').value = target.network || 'TRC20';
-                        document.getElementById('rec-crypto-address').value = target.address || '';
-                        document.getElementById('rec-crypto-memo').value = target.memo || '';
-                        
-                        // Show crypto fields, hide fiat fields
-                        document.getElementById('rec-crypto-fields').style.display = 'flex';
-                        document.getElementById('rec-fiat-fields').style.display = 'none';
-                        
-                        document.getElementById('rec-loader').style.display = 'none';
-                        document.getElementById('rec-form-box').style.display = 'flex';
-                    } else {
-                        throw new Error("Crypto target not found in list");
-                    }
-                } else {
-                    const targetsRes = await apiFetch('GET', '/finance/platform-fiat-receiving-targets', null, true);
-                    const targets = targetsRes.result || targetsRes.data || [];
-                    const target = targets.find(t => String(t.id) === String(targetId));
-                    
-                    if (target) {
-                        document.getElementById('rec-fiat-bank').value = target.bankName || '';
-                        document.getElementById('rec-fiat-name').value = target.accountName || '';
-                        document.getElementById('rec-fiat-number').value = target.accountNumber || '';
-                        document.getElementById('rec-fiat-swift').value = target.swiftCode || '';
-                        document.getElementById('rec-fiat-iban').value = target.iban || '';
-                        
-                        // Show fiat fields, hide crypto fields
-                        document.getElementById('rec-crypto-fields').style.display = 'none';
-                        document.getElementById('rec-fiat-fields').style.display = 'flex';
-                        
-                        document.getElementById('rec-loader').style.display = 'none';
-                        document.getElementById('rec-form-box').style.display = 'flex';
-                    } else {
-                        throw new Error("Fiat target not found in list");
-                    }
-                }
-            } else {
-                // No binding found!
-                document.getElementById('rec-loader').style.display = 'none';
-                document.getElementById('rec-unbound-box').style.display = 'block';
-                
-                // Save fallback assetIds
-                const fallbackAssetId = assetClass === 'CRYPTO' ? '1183348576672026624' : '1126151490264633349';
-                document.getElementById('rec-asset-id').value = fallbackAssetId;
-            }
-        } else {
-            showToast('获取资产通道绑定列表失败：' + (bindingsRes.errorMessage || '错误'), true);
-            closeReceivingDrawer();
-        }
-    } catch (e) {
-        console.error('Failed to load receiving target config:', e);
-        
-        // Handle error gracefully by showing unbound box
-        document.getElementById('rec-loader').style.display = 'none';
-        document.getElementById('rec-unbound-box').style.display = 'block';
-        const fallbackAssetId = assetClass === 'CRYPTO' ? '1183348576672026624' : '1126151490264633349';
-        document.getElementById('rec-asset-id').value = fallbackAssetId;
-    }
-}
-
-function closeReceivingDrawer() {
-    document.getElementById('receiving-overlay').classList.remove('active');
-    document.getElementById('receiving-drawer').classList.remove('active');
-}
-
-function createNewTargetAndBind() {
-    document.getElementById('rec-unbound-box').style.display = 'none';
-    
-    if (currentRecAssetClass === 'CRYPTO') {
-        document.getElementById('rec-crypto-fields').style.display = 'flex';
-        document.getElementById('rec-fiat-fields').style.display = 'none';
+    // Update sub-tab button active class
+    const btns = document.querySelectorAll('.payment-sub-tab-btn');
+    btns.forEach(btn => btn.classList.remove('active'));
+    if (element) {
+        element.classList.add('active');
     } else {
-        document.getElementById('rec-crypto-fields').style.display = 'none';
-        document.getElementById('rec-fiat-fields').style.display = 'flex';
+        const activeBtn = document.getElementById(`btn-sub-${subTab === 'payment' ? 'methods' : subTab}`);
+        if (activeBtn) activeBtn.classList.add('active');
     }
     
-    document.getElementById('rec-form-box').style.display = 'flex';
-}
-
-async function saveReceivingTargetChanges() {
-    const bindingId = document.getElementById('rec-binding-id').value;
-    const targetId = document.getElementById('rec-target-id').value;
-    const assetId = document.getElementById('rec-asset-id').value;
-    const methodId = document.getElementById('rec-channel-id').value;
+    // Show correct content div
+    const contents = document.querySelectorAll('.payment-sub-content');
+    contents.forEach(content => content.classList.remove('active'));
+    const activeContent = document.getElementById(`sub-content-${subTab}`);
+    if (activeContent) activeContent.classList.add('active');
     
-    showToast('正在保存收款账户配置...', false);
-    
-    try {
-        let newTargetId = targetId;
-        
-        // 1. Create or Update the target record
-        if (currentRecAssetClass === 'CRYPTO') {
-            const address = document.getElementById('rec-crypto-address').value.trim();
-            const network = document.getElementById('rec-crypto-network').value.trim();
-            const memo = document.getElementById('rec-crypto-memo').value.trim();
-            
-            if (!address || !network) {
-                showToast('收款地址和网络名称不能为空！', true);
-                return;
-            }
-            
-            const payload = {
-                address: address,
-                network: network,
-                memo: memo,
-                status: 'ACTIVE',
-                assetId: parseInt(assetId)
-            };
-            let res;
-            if (targetId) {
-                payload.id = parseInt(targetId);
-                res = await apiFetch('PUT', `/finance/platform-crypto-receiving-targets/${targetId}`, payload, true);
-            } else {
-                res = await apiFetch('POST', '/finance/platform-crypto-receiving-targets', payload, true);
-            }
-            if (res.code === 200) {
-                const targetData = res.result || res.data;
-                if (targetData && targetData.id) {
-                    newTargetId = String(targetData.id);
-                } else if (res.id) {
-                    newTargetId = String(res.id);
-                } else {
-                    newTargetId = targetId || '';
-                }
-            } else {
-                showToast('保存加密收款目标失败：' + (res.errorMessage || '错误'), true);
-                return;
-            }
-        } else {
-            const bankName = document.getElementById('rec-fiat-bank').value.trim();
-            const accountName = document.getElementById('rec-fiat-name').value.trim();
-            const accountNumber = document.getElementById('rec-fiat-number').value.trim();
-            const swiftCode = document.getElementById('rec-fiat-swift').value.trim();
-            const iban = document.getElementById('rec-fiat-iban').value.trim();
-            
-            if (!bankName || !accountName || !accountNumber) {
-                showToast('银行名称、账户姓名和卡号不能为空！', true);
-                return;
-            }
-            
-            const payload = {
-                bankName: bankName,
-                accountName: accountName,
-                accountNumber: accountNumber,
-                swiftCode: swiftCode,
-                iban: iban,
-                regionCode: 'US',
-                status: 'ACTIVE',
-                assetId: parseInt(assetId)
-            };
-            let res;
-            if (targetId) {
-                payload.id = parseInt(targetId);
-                res = await apiFetch('PUT', `/finance/platform-fiat-receiving-targets/${targetId}`, payload, true);
-            } else {
-                res = await apiFetch('POST', '/finance/platform-fiat-receiving-targets', payload, true);
-            }
-            if (res.code === 200) {
-                const targetData = res.result || res.data;
-                if (targetData && targetData.id) {
-                    newTargetId = String(targetData.id);
-                } else if (res.id) {
-                    newTargetId = String(res.id);
-                } else {
-                    newTargetId = targetId || '';
-                }
-            } else {
-                showToast('保存法币收款目标失败：' + (res.errorMessage || '错误'), true);
-                return;
-            }
-        }
-        
-        // 2. Bind target if it was a new binding
-        if (!bindingId && newTargetId) {
-            const bindPayload = {
-                methodId: parseInt(methodId),
-                assetId: parseInt(assetId),
-                receivingTargetId: parseInt(newTargetId),
-                receivingTargetType: currentRecAssetClass,
-                enabled: true
-            };
-            const bindRes = await apiFetch('POST', '/finance/payment-method-assets', bindPayload, true);
-            if (bindRes.code !== 200) {
-                showToast('绑定支付通道收款关系失败！', true);
-                return;
-            }
-        }
-        
-        showToast('✓ 收款账户配置成功已实时生效！', false);
-        closeReceivingDrawer();
-        loadPaymentChannels();
-        
-    } catch (e) {
-        console.error('Failed to save receiving target:', e);
-        showToast('保存通道收款参数网络异常！', true);
+    // Load data for the active sub-tab
+    if (subTab === 'payment') {
+        await loadPaymentChannels();
+    } else if (subTab === 'crypto') {
+        await loadCryptoTargetsList();
+    } else if (subTab === 'fiat') {
+        await loadFiatTargetsList();
+    } else if (subTab === 'bindings') {
+        await loadBindingsList();
     }
 }
+window.switchPaymentSubTab = switchPaymentSubTab;
 
-async function unbindAndDeleteReceivingTarget() {
-    const bindingId = document.getElementById('rec-binding-id').value;
-    const targetId = document.getElementById('rec-target-id').value;
+// --- SUB-TAB 2: CRYPTO RECEIVING TARGETS CONTROLLERS ---
+export let cachedCryptoTargets = [];
+
+export async function loadCryptoTargetsList() {
+    const tableBody = document.getElementById('crypto-table-body');
+    if (!tableBody) return;
     
-    if (!bindingId) {
-        showToast('当前通道未绑定任何收款配置。', true);
-        return;
-    }
+    tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 50px 0;">🔄 正在拉取加密收款账号库...</td></tr>`;
     
-    if (!confirm('⚠️ 警告：您确定要解除绑定并永久删除该通道的收款账号吗？删除后用户充值端将无法查阅到收款信息！')) {
-        return;
-    }
-    
-    showToast('正在解除绑定并永久删除...', false);
+    const pageConf = window.adminPages.crypto || { current: 1, size: 10 };
+    window.adminPages.crypto = pageConf;
     
     try {
-        // 1. Delete Binding Asset relation
-        const delBindRes = await apiFetch('POST', `/finance/payment-method-assets/${bindingId}/delete`, {}, true);
-        if (delBindRes.code === 200) {
-            // 2. Delete Receiving Target itself
-            const endpoint = currentRecAssetClass === 'CRYPTO' 
-                ? `/finance/platform-crypto-receiving-targets/${targetId}/delete`
-                : `/finance/platform-fiat-receiving-targets/${targetId}/delete`;
+        const res = await apiFetch('GET', `/platform-crypto-receiving-targets?page=${pageConf.current}&pageSize=${pageConf.size}`, null, true);
+        if (res.code === 200) {
+            const list = res.result || res.data || [];
+            cachedCryptoTargets = list;
+            if (list.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 50px 0;">🫙 平台暂无已录入的加密收款账号</td></tr>`;
+                const indicator = document.getElementById(`crypto-page-indicator`);
+                if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
+                return;
+            }
+            
+            const pagingObj = res.paging || {
+                page: pageConf.current,
+                pageSize: pageConf.size,
+                records: list.length,
+                pages: 1
+            };
+            updateAdminPageIndicator('crypto', pagingObj);
+            
+            tableBody.innerHTML = list.map(t => {
+                const statusBadge = t.status === 'ACTIVE'
+                    ? `<span class="kyc-badge-status kyc-status-APPROVED" style="font-size:0.75rem; padding: 2px 8px; border-radius: 4px;">可用</span>`
+                    : `<span class="kyc-badge-status kyc-status-NONE" style="font-size:0.75rem; padding: 2px 8px; border-radius: 4px;">禁用</span>`;
                 
-            await apiFetch('POST', endpoint, {}, true);
-            
-            showToast('✓ 该通道收款信息已成功解绑并永久删除！', false);
-            closeReceivingDrawer();
-            loadPaymentChannels();
+                const editBtn = `<button class="action-btn btn-view" onclick="openCryptoTargetEditModal('${t.id}')" style="padding: 4px 8px; font-size: 0.72rem; cursor: pointer; background: rgba(59, 130, 246, 0.08); color: var(--blue);">📝 编辑</button>`;
+                const deleteBtn = `<button class="action-btn btn-reject" onclick="deleteCryptoTarget('${t.id}')" style="padding: 4px 8px; font-size: 0.72rem; background: rgba(239, 68, 68, 0.08); color: var(--red); margin-left: 5px; cursor: pointer;">删除</button>`;
+                
+                return `
+                    <tr>
+                        <td style="font-family: monospace; font-size: 0.8rem;">${t.id}</td>
+                        <td style="font-weight: 700; color: var(--primary);">${String(t.assetId) === '1183348576672026624' ? 'USDT' : (String(t.assetId) === '1183348576672026625' ? 'BTC' : t.assetId)}</td>
+                        <td style="font-weight: 600; color: var(--text-secondary);">${t.network || '--'}</td>
+                        <td style="font-family: monospace; font-size: 0.8rem; color: var(--text-primary);" title="${t.address}">${t.address || '--'}</td>
+                        <td style="font-family: monospace; font-size: 0.8rem;">${t.memo || '--'}</td>
+                        <td>${t.minDepositAmount || '0'} ~ ${t.maxDepositAmount || '无限制'}</td>
+                        <td style="font-weight: 600; text-align: center;">${t.priority || 0}</td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            <div style="display: flex; align-items: center;">
+                                ${editBtn}
+                                ${deleteBtn}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
         } else {
-            showToast('解绑失败：' + (delBindRes.errorMessage || '错误'), true);
+            tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--red); padding: 50px 0;">⚠️ 获取加密收款账号失败：${res.errorMessage || '错误'}</td></tr>`;
         }
     } catch (e) {
-        console.error('Failed to unbind and delete:', e);
-        showToast('解绑收款目标网络异常！', true);
+        console.error('Failed to load crypto targets:', e);
+        tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--red); padding: 50px 0;">⚠️ 网络异常，无法拉取加密账号列表！</td></tr>`;
     }
 }
+window.loadCryptoTargetsList = loadCryptoTargetsList;
+
+export function openCryptoTargetAddModal() {
+    document.getElementById('crypto-target-id').value = '';
+    document.getElementById('crypto-target-assetId').value = '1183348576672026624'; // USDT
+    document.getElementById('crypto-target-network').value = 'TRC20';
+    document.getElementById('crypto-target-address').value = '';
+    document.getElementById('crypto-target-memo').value = '';
+    document.getElementById('crypto-target-minDeposit').value = '10';
+    document.getElementById('crypto-target-maxDeposit').value = '100000';
+    document.getElementById('crypto-target-priority').value = '100';
+    document.getElementById('crypto-target-label').value = '';
+    document.getElementById('crypto-target-qrCode').value = '';
+    
+    document.getElementById('crypto-modal-title').innerText = '🪙 新增加密收款账号';
+    document.getElementById('crypto-target-modal').classList.add('active');
+}
+window.openCryptoTargetAddModal = openCryptoTargetAddModal;
+
+export function openCryptoTargetEditModal(id) {
+    const t = cachedCryptoTargets.find(item => String(item.id) === String(id));
+    if (!t) {
+        showToast('未找到该加密账号配置数据！', true);
+        return;
+    }
+    
+    document.getElementById('crypto-target-id').value = t.id;
+    document.getElementById('crypto-target-assetId').value = t.assetId || '1183348576672026624';
+    document.getElementById('crypto-target-network').value = t.network || '';
+    document.getElementById('crypto-target-address').value = t.address || '';
+    document.getElementById('crypto-target-memo').value = t.memo || '';
+    document.getElementById('crypto-target-minDeposit').value = t.minDepositAmount || '10';
+    document.getElementById('crypto-target-maxDeposit').value = t.maxDepositAmount || '100000';
+    document.getElementById('crypto-target-priority').value = t.priority || '100';
+    document.getElementById('crypto-target-label').value = t.addressLabel || '';
+    document.getElementById('crypto-target-qrCode').value = t.qrCodeUrl || '';
+    
+    document.getElementById('crypto-modal-title').innerText = '📝 编辑加密收款账号';
+    document.getElementById('crypto-target-modal').classList.add('active');
+}
+window.openCryptoTargetEditModal = openCryptoTargetEditModal;
+
+export function closeCryptoTargetModal() {
+    document.getElementById('crypto-target-modal').classList.remove('active');
+}
+window.closeCryptoTargetModal = closeCryptoTargetModal;
+
+export async function submitCryptoTargetForm(event) {
+    event.preventDefault();
+    
+    const id = document.getElementById('crypto-target-id').value;
+    const assetId = document.getElementById('crypto-target-assetId').value;
+    const network = document.getElementById('crypto-target-network').value.trim();
+    const address = document.getElementById('crypto-target-address').value.trim();
+    const memo = document.getElementById('crypto-target-memo').value.trim();
+    const minDeposit = document.getElementById('crypto-target-minDeposit').value;
+    const maxDeposit = document.getElementById('crypto-target-maxDeposit').value;
+    const priority = parseInt(document.getElementById('crypto-target-priority').value || '100');
+    const label = document.getElementById('crypto-target-label').value.trim();
+    const qrCode = document.getElementById('crypto-target-qrCode').value.trim();
+    
+    if (!network || !address) {
+        showToast('区块链网络名称和收款钱包地址不能为空！', true);
+        return;
+    }
+    
+    showToast('正在保存加密账号配置...', false);
+    
+    const payloadStr = `{"assetId":${assetId},"network":${JSON.stringify(network)},"address":${JSON.stringify(address)},"memo":${JSON.stringify(memo)},"minDepositAmount":"${minDeposit}","maxDepositAmount":"${maxDeposit}","priority":${priority},"addressLabel":${JSON.stringify(label)},"qrCodeUrl":${JSON.stringify(qrCode)},"status":"ACTIVE"${id ? `,"id":${id}` : ''}}`;
+    
+    try {
+        let res;
+        if (id) {
+            res = await apiFetchWithRawBody('PUT', `/platform-crypto-receiving-targets/${id}`, payloadStr, true);
+        } else {
+            res = await apiFetchWithRawBody('POST', '/platform-crypto-receiving-targets', payloadStr, true);
+        }
+        
+        if (res.code === 200) {
+            showToast('✓ 加密收款账号保存成功！', false);
+            closeCryptoTargetModal();
+            loadCryptoTargetsList();
+        } else {
+            showToast(res.errorMessage || '保存加密账号失败！', true);
+        }
+    } catch (e) {
+        console.error('Failed to submit crypto target:', e);
+        showToast('保存配置网络异常！', true);
+    }
+}
+window.submitCryptoTargetForm = submitCryptoTargetForm;
+
+export async function deleteCryptoTarget(id) {
+    if (!confirm('⚠️ 警告：您确定要永久删除该加密收款账号吗？删除后所有引用该账号的资产绑定都会失效！')) return;
+    
+    showToast('正在删除收款账号...', false);
+    try {
+        const res = await apiFetch('POST', `/platform-crypto-receiving-targets/${id}/delete`, {}, true);
+        if (res.code === 200) {
+            showToast('✓ 加密账号已成功删除！', false);
+            loadCryptoTargetsList();
+        } else {
+            showToast(res.errorMessage || '删除加密账号失败！', true);
+        }
+    } catch (e) {
+        console.error('Failed to delete crypto target:', e);
+        showToast('删除操作网络异常！', true);
+    }
+}
+window.deleteCryptoTarget = deleteCryptoTarget;
+
+// --- SUB-TAB 3: FIAT RECEIVING TARGETS CONTROLLERS ---
+export let cachedFiatTargets = [];
+
+export async function loadFiatTargetsList() {
+    const tableBody = document.getElementById('fiat-table-body');
+    if (!tableBody) return;
+    
+    tableBody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--text-muted); padding: 50px 0;">🔄 正在拉取法币收款账号库...</td></tr>`;
+    
+    const pageConf = window.adminPages.fiat || { current: 1, size: 10 };
+    window.adminPages.fiat = pageConf;
+    
+    try {
+        const res = await apiFetch('GET', `/platform-fiat-receiving-targets?page=${pageConf.current}&pageSize=${pageConf.size}`, null, true);
+        if (res.code === 200) {
+            const list = res.result || res.data || [];
+            cachedFiatTargets = list;
+            if (list.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--text-muted); padding: 50px 0;">🫙 平台暂无已录入的法币收款账户</td></tr>`;
+                const indicator = document.getElementById(`fiat-page-indicator`);
+                if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
+                return;
+            }
+            
+            const pagingObj = res.paging || {
+                page: pageConf.current,
+                pageSize: pageConf.size,
+                records: list.length,
+                pages: 1
+            };
+            updateAdminPageIndicator('fiat', pagingObj);
+            
+            tableBody.innerHTML = list.map(t => {
+                const statusBadge = t.status === 'ACTIVE'
+                    ? `<span class="kyc-badge-status kyc-status-APPROVED" style="font-size:0.75rem; padding: 2px 8px; border-radius: 4px;">可用</span>`
+                    : `<span class="kyc-badge-status kyc-status-NONE" style="font-size:0.75rem; padding: 2px 8px; border-radius: 4px;">禁用</span>`;
+                
+                const editBtn = `<button class="action-btn btn-view" onclick="openFiatTargetEditModal('${t.id}')" style="padding: 4px 8px; font-size: 0.72rem; cursor: pointer; background: rgba(59, 130, 246, 0.08); color: var(--blue);">📝 编辑</button>`;
+                const deleteBtn = `<button class="action-btn btn-reject" onclick="deleteFiatTarget('${t.id}')" style="padding: 4px 8px; font-size: 0.72rem; background: rgba(239, 68, 68, 0.08); color: var(--red); margin-left: 5px; cursor: pointer;">删除</button>`;
+                
+                return `
+                    <tr>
+                        <td style="font-family: monospace; font-size: 0.8rem;">${t.id}</td>
+                        <td style="font-weight: 700; color: var(--primary);">${String(t.assetId) === '1126151490264633349' ? 'USD' : (String(t.assetId) === '1126151490264633456' ? 'INR' : t.assetId)}</td>
+                        <td style="font-weight: 600; color: var(--text-secondary);">${t.bankName || '--'}</td>
+                        <td style="font-weight: 600; color: var(--text-primary);">${t.accountName || '--'}</td>
+                        <td style="font-family: monospace; font-size: 0.8rem; color: var(--text-primary);">${t.accountNumber || '--'}</td>
+                        <td style="font-family: monospace; font-size: 0.8rem;">${t.swiftCode || '--'}</td>
+                        <td style="font-family: monospace; font-size: 0.8rem;">${t.iban || '--'}</td>
+                        <td style="font-size: 0.75rem; font-weight: 600; color: var(--text-secondary);">${t.accountType || '--'}</td>
+                        <td style="font-weight: 600; text-align: center;">${t.priority || 0}</td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            <div style="display: flex; align-items: center;">
+                                ${editBtn}
+                                ${deleteBtn}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        } else {
+            tableBody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--red); padding: 50px 0;">⚠️ 获取法币收款账户失败：${res.errorMessage || '错误'}</td></tr>`;
+        }
+    } catch (e) {
+        console.error('Failed to load fiat targets:', e);
+        tableBody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--red); padding: 50px 0;">⚠️ 网络异常，无法拉取法币账户列表！</td></tr>`;
+    }
+}
+window.loadFiatTargetsList = loadFiatTargetsList;
+
+export function openFiatTargetAddModal() {
+    document.getElementById('fiat-target-id').value = '';
+    document.getElementById('fiat-target-assetId').value = '1126151490264633349'; // USD
+    document.getElementById('fiat-target-bank').value = '';
+    document.getElementById('fiat-target-name').value = '';
+    document.getElementById('fiat-target-number').value = '';
+    document.getElementById('fiat-target-swift').value = '';
+    document.getElementById('fiat-target-iban').value = '';
+    document.getElementById('fiat-target-region').value = 'HK';
+    document.getElementById('fiat-target-type').value = 'BUSINESS';
+    document.getElementById('fiat-target-branch').value = '';
+    document.getElementById('fiat-target-minDeposit').value = '100';
+    document.getElementById('fiat-target-maxDeposit').value = '50000';
+    document.getElementById('fiat-target-priority').value = '100';
+    
+    document.getElementById('fiat-modal-title').innerText = '🏦 新增法币收款账号';
+    document.getElementById('fiat-target-modal').classList.add('active');
+}
+window.openFiatTargetAddModal = openFiatTargetAddModal;
+
+export function openFiatTargetEditModal(id) {
+    const t = cachedFiatTargets.find(item => String(item.id) === String(id));
+    if (!t) {
+        showToast('未找到该法币账号配置数据！', true);
+        return;
+    }
+    
+    document.getElementById('fiat-target-id').value = t.id;
+    document.getElementById('fiat-target-assetId').value = t.assetId || '1126151490264633349';
+    document.getElementById('fiat-target-bank').value = t.bankName || '';
+    document.getElementById('fiat-target-name').value = t.accountName || '';
+    document.getElementById('fiat-target-number').value = t.accountNumber || '';
+    document.getElementById('fiat-target-swift').value = t.swiftCode || '';
+    document.getElementById('fiat-target-iban').value = t.iban || '';
+    document.getElementById('fiat-target-region').value = t.regionCode || 'HK';
+    document.getElementById('fiat-target-type').value = t.accountType || 'BUSINESS';
+    document.getElementById('fiat-target-branch').value = t.branchName || '';
+    document.getElementById('fiat-target-minDeposit').value = t.minDepositAmount || '100';
+    document.getElementById('fiat-target-maxDeposit').value = t.maxDepositAmount || '50000';
+    document.getElementById('fiat-target-priority').value = t.priority || '100';
+    
+    document.getElementById('fiat-modal-title').innerText = '📝 编辑法币收款账号';
+    document.getElementById('fiat-target-modal').classList.add('active');
+}
+window.openFiatTargetEditModal = openFiatTargetEditModal;
+
+export function closeFiatTargetModal() {
+    document.getElementById('fiat-target-modal').classList.remove('active');
+}
+window.closeFiatTargetModal = closeFiatTargetModal;
+
+export async function submitFiatTargetForm(event) {
+    event.preventDefault();
+    
+    const id = document.getElementById('fiat-target-id').value;
+    const assetId = document.getElementById('fiat-target-assetId').value;
+    const bank = document.getElementById('fiat-target-bank').value.trim();
+    const name = document.getElementById('fiat-target-name').value.trim();
+    const number = document.getElementById('fiat-target-number').value.trim();
+    const swift = document.getElementById('fiat-target-swift').value.trim();
+    const iban = document.getElementById('fiat-target-iban').value.trim();
+    const region = document.getElementById('fiat-target-region').value.trim();
+    const type = document.getElementById('fiat-target-type').value;
+    const branch = document.getElementById('fiat-target-branch').value.trim();
+    const minDeposit = document.getElementById('fiat-target-minDeposit').value;
+    const maxDeposit = document.getElementById('fiat-target-maxDeposit').value;
+    const priority = parseInt(document.getElementById('fiat-target-priority').value || '100');
+    
+    if (!bank || !name || !number) {
+        showToast('银行名称、开户姓名和账户账号不能为空！', true);
+        return;
+    }
+    
+    showToast('正在保存法币银行账号...', false);
+    
+    const payloadStr = `{"assetId":${assetId},"bankName":${JSON.stringify(bank)},"accountName":${JSON.stringify(name)},"accountNumber":${JSON.stringify(number)},"swiftCode":${JSON.stringify(swift)},"iban":${JSON.stringify(iban)},"regionCode":${JSON.stringify(region)},"accountType":${JSON.stringify(type)},"branchName":${JSON.stringify(branch)},"minDepositAmount":"${minDeposit}","maxDepositAmount":"${maxDeposit}","priority":${priority},"status":"ACTIVE"${id ? `,"id":${id}` : ''}}`;
+    
+    try {
+        let res;
+        if (id) {
+            res = await apiFetchWithRawBody('PUT', `/platform-fiat-receiving-targets/${id}`, payloadStr, true);
+        } else {
+            res = await apiFetchWithRawBody('POST', '/platform-fiat-receiving-targets', payloadStr, true);
+        }
+        
+        if (res.code === 200) {
+            showToast('✓ 法币银行收款账号保存成功！', false);
+            closeFiatTargetModal();
+            loadFiatTargetsList();
+        } else {
+            showToast(res.errorMessage || '保存法币账号失败！', true);
+        }
+    } catch (e) {
+        console.error('Failed to submit fiat target:', e);
+        showToast('保存配置网络异常！', true);
+    }
+}
+window.submitFiatTargetForm = submitFiatTargetForm;
+
+export async function deleteFiatTarget(id) {
+    if (!confirm('⚠️ 警告：您确定要永久删除该法币收款银行账号吗？删除后所有引用该账号的资产绑定都会失效！')) return;
+    
+    showToast('正在删除收款账号...', false);
+    try {
+        const res = await apiFetch('POST', `/platform-fiat-receiving-targets/${id}/delete`, {}, true);
+        if (res.code === 200) {
+            showToast('✓ 法币账号已成功删除！', false);
+            loadFiatTargetsList();
+        } else {
+            showToast(res.errorMessage || '删除法币账号失败！', true);
+        }
+    } catch (e) {
+        console.error('Failed to delete fiat target:', e);
+        showToast('删除操作网络异常！', true);
+    }
+}
+window.deleteFiatTarget = deleteFiatTarget;
+
+// --- SUB-TAB 4: PAYMENT METHOD ASSET BINDINGS CONTROLLERS ---
+export let cachedBindings = [];
+export let bindingTargetOptionsMap = { CRYPTO: [], FIAT: [] };
+
+export async function loadBindingsList() {
+    const tableBody = document.getElementById('bindings-table-body');
+    if (!tableBody) return;
+    
+    tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 50px 0;">🔄 正在拉取通道资产绑定配置...</td></tr>`;
+    
+    const pageConf = window.adminPages.bindings || { current: 1, size: 10 };
+    window.adminPages.bindings = pageConf;
+    
+    try {
+        const res = await apiFetch('GET', `/payment-method-assets?page=${pageConf.current}&pageSize=${pageConf.size}`, null, true);
+        if (res.code === 200) {
+            const list = res.result || res.data || [];
+            cachedBindings = list;
+            if (list.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 50px 0;">🫙 平台暂无已建立的支付资产绑定关系</td></tr>`;
+                const indicator = document.getElementById(`bindings-page-indicator`);
+                if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
+                return;
+            }
+            
+            let methodsList = [];
+            let cryptoList = [];
+            let fiatList = [];
+            try {
+                const methodsRes = await apiFetch('GET', '/payment-methods?page=1&pageSize=1000', null, true);
+                methodsList = methodsRes.result || methodsRes.data || [];
+            } catch (err) {}
+            try {
+                const cryptoRes = await apiFetch('GET', '/platform-crypto-receiving-targets?page=1&pageSize=1000', null, true);
+                cryptoList = cryptoRes.result || cryptoRes.data || [];
+            } catch (err) {}
+            try {
+                const fiatRes = await apiFetch('GET', '/platform-fiat-receiving-targets?page=1&pageSize=1000', null, true);
+                fiatList = fiatRes.result || fiatRes.data || [];
+            } catch (err) {}
+            
+            const pagingObj = res.paging || {
+                page: pageConf.current,
+                pageSize: pageConf.size,
+                records: list.length,
+                pages: 1
+            };
+            updateAdminPageIndicator('bindings', pagingObj);
+            
+            tableBody.innerHTML = list.map(b => {
+                const method = methodsList.find(m => String(m.id) === String(b.methodId));
+                const methodName = method ? method.name : `Method ID: ${b.methodId}`;
+                
+                let assetName = 'USDT';
+                if (String(b.assetId) === '1183348576672026625') assetName = 'BTC';
+                else if (String(b.assetId) === '1126151490264633349') assetName = 'USD';
+                else if (String(b.assetId) === '1126151490264633456') assetName = 'INR';
+                else assetName = `Asset ID: ${b.assetId}`;
+                
+                let targetDetail = '';
+                if (b.receivingTargetType === 'CRYPTO') {
+                    const crypto = cryptoList.find(c => String(c.id) === String(b.receivingTargetId));
+                    if (crypto) {
+                        const addr = crypto.address || '';
+                        const truncAddr = addr.length > 16 ? `${addr.substring(0, 8)}...${addr.substring(addr.length - 8)}` : addr;
+                        targetDetail = `🔗 [${crypto.network || ''}] ${truncAddr}`;
+                    } else {
+                        targetDetail = `Crypto ID: ${b.receivingTargetId}`;
+                    }
+                } else {
+                    const fiat = fiatList.find(f => String(f.id) === String(b.receivingTargetId));
+                    targetDetail = fiat ? `🏦 [${fiat.bankName || ''}] ${fiat.accountName || '--'} (${fiat.accountNumber || '--'})` : `Fiat ID: ${b.receivingTargetId}`;
+                }
+                
+                const deleteBtn = `<button class="action-btn btn-reject" onclick="deleteBinding('${b.id}')" style="padding: 4px 8px; font-size: 0.72rem; background: rgba(239, 68, 68, 0.08); color: var(--red); cursor: pointer;">✕ 解除绑定</button>`;
+                
+                return `
+                    <tr>
+                        <td style="font-family: monospace; font-size: 0.8rem;">${b.id}</td>
+                        <td style="font-weight: 600; color: var(--text-primary);">${methodName}</td>
+                        <td><span style="font-weight: 700; color: var(--primary);">${assetName}</span></td>
+                        <td>
+                            <span style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: rgba(0,0,0,0.04); font-family: monospace; font-weight: 600;">
+                                ${b.receivingTargetType}
+                            </span>
+                        </td>
+                        <td style="font-size: 0.82rem; color: var(--text-secondary); font-family: monospace;">${targetDetail}</td>
+                        <td>${deleteBtn}</td>
+                    </tr>
+                `;
+            }).join('');
+        } else {
+            tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--red); padding: 50px 0;">⚠️ 获取绑定关系列表失败：${res.errorMessage || '错误'}</td></tr>`;
+        }
+    } catch (e) {
+        console.error('Failed to load bindings:', e);
+        tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--red); padding: 50px 0;">⚠️ 网络异常，无法拉取绑定配置列表！</td></tr>`;
+    }
+}
+window.loadBindingsList = loadBindingsList;
+
+export async function openBindingAddModal() {
+    const methodSelect = document.getElementById('binding-add-methodId');
+    if (!methodSelect) return;
+    
+    methodSelect.innerHTML = `<option value="">🔄 正在获取支付方式...</option>`;
+    document.getElementById('binding-add-targetId').innerHTML = '';
+    
+    document.getElementById('binding-add-modal').classList.add('active');
+    
+    try {
+        const methodsRes = await apiFetch('GET', '/payment-methods?page=1&pageSize=1000', null, true);
+        const methods = methodsRes.result || methodsRes.data || [];
+        if (methods.length === 0) {
+            methodSelect.innerHTML = `<option value="">⚠️ 平台当前无可用支付方式</option>`;
+        } else {
+            methodSelect.innerHTML = methods.map(m => `<option value="${m.id}">${m.name} (${m.assetClass})</option>`).join('');
+        }
+        
+        const cryptoRes = await apiFetch('GET', '/platform-crypto-receiving-targets?page=1&pageSize=1000', null, true);
+        bindingTargetOptionsMap.CRYPTO = cryptoRes.result || cryptoRes.data || [];
+        
+        const fiatRes = await apiFetch('GET', '/platform-fiat-receiving-targets?page=1&pageSize=1000', null, true);
+        bindingTargetOptionsMap.FIAT = fiatRes.result || fiatRes.data || [];
+        
+        filterBindingTargetsDropdown();
+        
+    } catch (e) {
+        console.error('Failed to prepare binding modal:', e);
+        showToast('加载绑定配置选项网络异常！', true);
+    }
+}
+window.openBindingAddModal = openBindingAddModal;
+
+export function filterBindingTargetsDropdown() {
+    const targetType = document.getElementById('binding-add-targetType').value;
+    const targetSelect = document.getElementById('binding-add-targetId');
+    if (!targetSelect) return;
+    
+    const list = bindingTargetOptionsMap[targetType] || [];
+    if (list.length === 0) {
+        targetSelect.innerHTML = `<option value="">⚠️ 无可用收款账号（请先新增账号）</option>`;
+        return;
+    }
+    
+    if (targetType === 'CRYPTO') {
+        targetSelect.innerHTML = list.map(c => {
+            const addr = c.address || '';
+            const truncAddr = addr.length > 10 ? addr.substring(0, 10) + '...' : addr;
+            return `<option value="${c.id}">[${c.network || ''}] ${truncAddr} (Priority: ${c.priority || 0})</option>`;
+        }).join('');
+    } else {
+        targetSelect.innerHTML = list.map(f => {
+            const accNo = f.accountNumber || '';
+            const last4 = accNo.length > 4 ? accNo.substring(accNo.length - 4) : accNo;
+            return `<option value="${f.id}">[${f.bankName || ''}] ${f.accountName || '--'} (*${last4})</option>`;
+        }).join('');
+    }
+}
+window.filterBindingTargetsDropdown = filterBindingTargetsDropdown;
+
+export function closeBindingAddModal() {
+    document.getElementById('binding-add-modal').classList.remove('active');
+}
+window.closeBindingAddModal = closeBindingAddModal;
+
+export async function submitNewBinding(event) {
+    event.preventDefault();
+    
+    const methodId = document.getElementById('binding-add-methodId').value;
+    const assetId = document.getElementById('binding-add-assetId').value;
+    const targetType = document.getElementById('binding-add-targetType').value;
+    const targetId = document.getElementById('binding-add-targetId').value;
+    
+    if (!methodId || !targetId) {
+        showToast('必须选择有效的支付方式和收款账号！', true);
+        return;
+    }
+    
+    showToast('正在创建绑定关系...', false);
+    
+    const payloadStr = `{"methodId":${methodId},"assetId":${assetId},"receivingTargetId":${targetId},"receivingTargetType":${JSON.stringify(targetType)},"enabled":true}`;
+    
+    try {
+        const res = await apiFetchWithRawBody('POST', '/payment-method-assets', payloadStr, true);
+        if (res.code === 200) {
+            showToast('✓ 支付方式与资产收款账户成功绑定！', false);
+            closeBindingAddModal();
+            loadBindingsList();
+        } else {
+            showToast(res.errorMessage || '创建绑定失败！', true);
+        }
+    } catch (e) {
+        console.error('Failed to submit binding:', e);
+        showToast('创建绑定网络异常！', true);
+    }
+}
+window.submitNewBinding = submitNewBinding;
+
+export async function deleteBinding(id) {
+    if (!confirm('⚠️ 警告：解除绑定后，该充值入口组合将不会在用户端显示！您确定吗？')) return;
+    
+    showToast('正在解除绑定...', false);
+    try {
+        const res = await apiFetch('POST', `/payment-method-assets/${id}/delete`, {}, true);
+        if (res.code === 200) {
+            showToast('✓ 绑定已解除！', false);
+            loadBindingsList();
+        } else {
+            showToast(res.errorMessage || '解除绑定失败！', true);
+        }
+    } catch (e) {
+        console.error('Failed to delete binding:', e);
+        showToast('解绑操作网络异常！', true);
+    }
+}
+window.deleteBinding = deleteBinding;
 
 
 export // --- PLATFORM ASSET EXCHANGE RATES MANAGEMENT (汇率管理) ---
@@ -1998,11 +2337,6 @@ window.openPaymentEditModal = openPaymentEditModal;
 window.closePaymentEditModal = closePaymentEditModal;
 window.submitEditPaymentChannel = submitEditPaymentChannel;
 window.uploadPaymentChannelIcon = uploadPaymentChannelIcon;
-window.openReceivingConfigDrawer = openReceivingConfigDrawer;
-window.closeReceivingDrawer = closeReceivingDrawer;
-window.createNewTargetAndBind = createNewTargetAndBind;
-window.saveReceivingTargetChanges = saveReceivingTargetChanges;
-window.unbindAndDeleteReceivingTarget = unbindAndDeleteReceivingTarget;
 window.loadExchangeRatesList = loadExchangeRatesList;
 window.openRateEditModal = openRateEditModal;
 window.closeRateEditModal = closeRateEditModal;
