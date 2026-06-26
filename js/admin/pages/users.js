@@ -545,7 +545,7 @@ export async function loadRiskLevelsList() {
     const tableBody = document.getElementById('risk-levels-table-body');
     if (!tableBody) return;
     
-    tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">🔄 正在安全调取用户风控层级列表...</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">🔄 正在安全调取用户风控层级列表...</td></tr>';
     
     try {
         const pageConf = window.adminPages.riskLevels;
@@ -574,13 +574,17 @@ export async function loadRiskLevelsList() {
             updateAdminPageIndicator('riskLevels', pagingObj);
             
             if (list.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">📭 暂无匹配的用户风控层级记录</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">📭 暂无匹配的用户风控层级记录</td></tr>';
                 return;
             }
             
             tableBody.innerHTML = list.map(item => {
                 const enabledChecked = item.enabled ? 'checked' : '';
                 const needAuditText = item.needAudit ? '<span style="color: var(--red); font-weight: bold;">⚠️ 需要审核</span>' : '<span style="color: var(--green); font-weight: bold;">✓ 免审核</span>';
+                
+                const lockBadge = item.locked
+                    ? `<span style="cursor: pointer; font-size: 0.75rem; padding: 4px 10px; border-radius: 4px; background: rgba(239, 68, 68, 0.08); color: #EF4444; font-weight: bold; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(239, 68, 68, 0.15);" onclick="toggleRiskLevelLocked('${item.id}', false)">🔒 已锁定</span>`
+                    : `<span style="cursor: pointer; font-size: 0.75rem; padding: 4px 10px; border-radius: 4px; background: rgba(16, 185, 129, 0.08); color: #10B981; font-weight: bold; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(16, 185, 129, 0.15);" onclick="toggleRiskLevelLocked('${item.id}', true)">🔓 未锁定</span>`;
                 
                 return `
                     <tr style="border-bottom: 1.5px solid var(--border-light);">
@@ -597,6 +601,7 @@ export async function loadRiskLevelsList() {
                                 <span class="switch-slider"></span>
                             </label>
                         </td>
+                        <td style="text-align: center;">${lockBadge}</td>
                         <td style="text-align: center;">
                             <div style="display: flex; gap: 8px; justify-content: center;">
                                 <button class="action-btn btn-approve" onclick="openRiskLevelModal('${item.id}')" style="padding: 4px 10px; font-size: 0.78rem; border-radius: 4px;">编辑</button>
@@ -608,12 +613,12 @@ export async function loadRiskLevelsList() {
             }).join('');
         } else {
             showToast(res.errorMessage || '获取风控层级列表失败！', true);
-            tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: #EF4444; padding: 40px 0;">❌ 获取失败: ${res.errorMessage || '未知接口错误'}</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: #EF4444; padding: 40px 0;">❌ 获取失败: ${res.errorMessage || '未知接口错误'}</td></tr>`;
         }
     } catch (e) {
         console.error(e);
         showToast('获取风控层级列表网络异常！', true);
-        tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #EF4444; padding: 40px 0;">❌ 网络请求错误，请重试！</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: #EF4444; padding: 40px 0;">❌ 网络请求错误，请重试！</td></tr>';
     }
 }
 window.loadRiskLevelsList = loadRiskLevelsList;
@@ -639,6 +644,29 @@ export async function toggleRiskLevelEnabled(id, checked) {
     }
 }
 window.toggleRiskLevelEnabled = toggleRiskLevelEnabled;
+
+export async function toggleRiskLevelLocked(id, checked) {
+    showToast(checked ? '正在锁定风控层级...' : '正在解锁风控层级...', false);
+    try {
+        const res = await apiFetch('POST', `/users/risk-levels/${id}/set-locked`, { locked: checked }, true);
+        if (res.code === 200) {
+            showToast(`✓ 风控层级已成功${checked ? '锁定' : '解锁'}！`);
+            if (window.cachedRiskLevels) {
+                const matched = window.cachedRiskLevels.find(x => String(x.id) === String(id));
+                if (matched) matched.locked = checked;
+            }
+            loadRiskLevelsList();
+        } else {
+            showToast(res.errorMessage || '操作失败！', true);
+            loadRiskLevelsList();
+        }
+    } catch (e) {
+        console.error(e);
+        showToast('操作风控层级锁定状态网络异常', true);
+        loadRiskLevelsList();
+    }
+}
+window.toggleRiskLevelLocked = toggleRiskLevelLocked;
 
 export function openRiskLevelModal(id = null) {
     const titleEl = document.getElementById('risk-level-modal-title');
@@ -918,7 +946,7 @@ export async function submitUserGrouping() {
         
         showToast(`正在批量更新 ${finalUserIds.length} 名用户的风控分组...`, false);
         try {
-            const res = await apiFetch('POST', '/users/batch/update-status', {
+            const res = await apiFetch('POST', '/users/batch/update-risk-level', {
                 userIds: finalUserIds,
                 ids: finalUserIds,
                 riskLevelId: levelIdPayload
@@ -947,12 +975,7 @@ export async function submitUserGrouping() {
         const userId = targetType;
         showToast('正在更新交易员风控分组...', false);
         try {
-            const allUsers = await window.adminState.getUsers();
-            const user = allUsers.find(x => String(x.id) === String(userId));
-            const currentStatus = user ? user.status : 'ENABLED';
-            
-            const res = await apiFetch('POST', `/users/${userId}/update-status`, {
-                status: currentStatus,
+            const res = await apiFetch('POST', `/users/${userId}/update-risk-level`, {
                 riskLevelId: levelIdPayload
             }, true);
             
