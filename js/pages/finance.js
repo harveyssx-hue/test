@@ -1,4 +1,4 @@
-﻿// Finance Payments (Deposits, Withdrawals, Account Bindings) Controller
+// Finance Payments (Deposits, Withdrawals, Account Bindings) Controller
 import { state } from '../modules/state.js?v=2.2.0';
 
 let currentPaymentMethods = [];
@@ -16,7 +16,7 @@ function copyFiatValue(elementId, label) {
     const val = document.getElementById(elementId).value;
     if (!val) return;
     navigator.clipboard.writeText(val);
-    showToast(currentLocale === 'hi' ? `âœ“ à¤œà¤®à¤¾ ${label} à¤•à¥à¤²à¤¿à¤ªà¤¬à¥‹à¤°à¥à¤¡ à¤ªà¤° à¤•à¥‰à¤ªà¥€ à¤•à¤¿à¤¯à¤¾ à¤—à¤¯à¤¾!` : `âœ“ Deposit ${label} copied to clipboard!`, false);
+    showToast(currentLocale === 'hi' ? `✓ जमा ${label} क्लिपबोर्ड पर कॉपी किया गया!` : `✓ Deposit ${label} copied to clipboard!`, false);
 }
 
 async function openDepositModal() {
@@ -26,10 +26,10 @@ async function openDepositModal() {
     const cachedKyc = localStorage.getItem('matp_user_kyc') || 'NOT_VERIFIED';
     if (cachedKyc !== 'VERIFIED') {
         if (cachedKyc === 'PENDING') {
-            showToast(currentLocale === 'hi' ? 'âš ï¸ à¤†à¤ªà¤•à¤¾ à¤•à¥‡à¤µà¤¾à¤ˆà¤¸à¥€ à¤¸à¤¤à¥à¤¯à¤¾à¤ªà¤¨ à¤¸à¤®à¥€à¤•à¥à¤·à¤¾à¤§à¥€à¤¨ à¤¹à¥ˆ, à¤•à¥ƒà¤ªà¤¯à¤¾ à¤œà¤®à¤¾ à¤•à¤°à¤¨à¥‡ à¤¸à¥‡ à¤ªà¤¹à¤²à¥‡ à¤¸à¤®à¥€à¤•à¥à¤·à¤¾ à¤ªà¥‚à¤°à¥€ à¤¹à¥‹à¤¨à¥‡ à¤•à¥€ à¤ªà¥à¤°à¤¤à¥€à¤•à¥à¤·à¤¾ à¤•à¤°à¥‡à¤‚!' : 'âš ï¸ Your KYC verification is under review, please wait for approval before depositing!', true);
+            showToast(currentLocale === 'hi' ? '⚠️ आपका केवाईसी सत्यापन समीक्षाधीन है, कृपया जमा करने से पहले समीक्षा पूरी होने की प्रतीक्षा करें!' : '⚠️ Your KYC verification is under review, please wait for approval before depositing!', true);
             return;
         } else {
-            showToast(currentLocale === 'hi' ? 'âš ï¸ à¤œà¤®à¤¾ à¤”à¤° à¤§à¤¨ à¤¸à¤‚à¤šà¤¾à¤²à¤¨ à¤•à¤°à¤¨à¥‡ à¤¸à¥‡ à¤ªà¤¹à¤²à¥‡ à¤†à¤ªà¤•à¥‹ à¤•à¥‡à¤µà¤¾à¤ˆà¤¸à¥€ à¤ªà¥‚à¤°à¤¾ à¤•à¤°à¤¨à¤¾ à¤¹à¥‹à¤—à¤¾ à¤”à¤° à¤¸à¥à¤µà¥€à¤•à¥ƒà¤¤ à¤¹à¥‹à¤¨à¤¾ à¤¹à¥‹à¤—à¤¾!' : 'âš ï¸ You need to complete KYC verification and be approved before depositing!', true);
+            showToast(currentLocale === 'hi' ? '⚠️ जमा और धन संचालन करने से पहले आपको केवाईसी पूरा करना होगा और स्वीकृत होना होगा!' : '⚠️ You need to complete KYC verification and be approved before depositing!', true);
             setTimeout(() => {
                 openKycModal();
             }, 1500);
@@ -48,7 +48,7 @@ async function openDepositModal() {
     
     // Render Loading and Open Modal Overlay instantly
     const container = document.getElementById('deposit-channels-container');
-    container.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--text-secondary); font-size: 0.85rem;">${currentLocale === 'hi' ? 'ðŸ”„ à¤‰à¤ªà¤²à¤¬à¥à¤§ à¤œà¤®à¤¾ à¤šà¥ˆà¤¨à¤²à¥‹à¤‚ à¤•à¥‹ à¤ªà¥à¤°à¤¾à¤ªà¥à¤¤ à¤•à¤¿à¤¯à¤¾ à¤œà¤¾ à¤°à¤¹à¤¾ à¤¹à¥ˆ...' : 'ðŸ”„ Fetching available deposit channels...'}</div>`;
+    container.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--text-secondary); font-size: 0.85rem;">${currentLocale === 'hi' ? '🔄 उपलब्ध जमा चैनलों को प्राप्त किया जा रहा है...' : '🔄 Fetching available deposit channels...'}</div>`;
     document.getElementById('deposit-channel-details').style.display = 'none';
     document.getElementById('selected-payment-method-asset-id').value = '';
     
@@ -77,9 +77,9 @@ async function openDepositModal() {
 
         if (kycStatus !== 'VERIFIED') {
             if (kycStatus === 'PENDING') {
-                showToast(currentLocale === 'hi' ? 'âš ï¸ à¤†à¤ªà¤•à¤¾ à¤•à¥‡à¤µà¤¾à¤ˆà¤¸à¥€ à¤¸à¤¤à¥à¤¯à¤¾à¤ªà¤¨ à¤¸à¤®à¥€à¤•à¥à¤·à¤¾à¤§à¥€à¤¨ à¤¹à¥ˆ, à¤•à¥ƒà¤ªà¤¯à¤¾ à¤œà¤®à¤¾ à¤•à¤°à¤¨à¥‡ à¤¸à¥‡ à¤ªà¤¹à¤²à¥‡ à¤¸à¤®à¥€à¤•à¥à¤·à¤¾ à¤ªà¥‚à¤°à¥€ à¤¹à¥‹à¤¨à¥‡ à¤•à¥€ à¤ªà¥à¤°à¤¤à¥€à¤•à¥à¤·à¤¾ à¤•à¤°à¥‡à¤‚!' : 'âš ï¸ Your KYC verification is under review, please wait for approval before depositing!', true);
+                showToast(currentLocale === 'hi' ? '⚠️ आपका केवाईसी सत्यापन समीक्षाधीन है, कृपया जमा करने से पहले समीक्षा पूरी होने की प्रतीक्षा करें!' : '⚠️ Your KYC verification is under review, please wait for approval before depositing!', true);
             } else {
-                showToast(currentLocale === 'hi' ? 'âš ï¸ à¤œà¤®à¤¾ à¤”à¤° à¤§à¤¨ à¤¸à¤‚à¤šà¤¾à¤²à¤¨ à¤•à¤°à¤¨à¥‡ à¤¸à¥‡ à¤ªà¤¹à¤²à¥‡ à¤†à¤ªà¤•à¥‹ à¤•à¥‡à¤µà¤¾à¤ˆà¤¸à¥€ à¤ªà¥‚à¤°à¤¾ à¤•à¤°à¤¨à¤¾ à¤¹à¥‹à¤—à¤¾ à¤”à¤° à¤¸à¥à¤µà¥€à¤•à¥ƒà¤¤ à¤¹à¥‹à¤¨à¤¾ à¤¹à¥‹à¤—à¤¾!' : 'âš ï¸ You need to complete KYC verification and be approved before depositing!', true);
+                showToast(currentLocale === 'hi' ? '⚠️ जमा और धन संचालन करने से पहले आपको केवाईसी पूरा करना होगा और स्वीकृत होना होगा!' : '⚠️ You need to complete KYC verification and be approved before depositing!', true);
                 setTimeout(() => {
                     openKycModal();
                 }, 1500);
@@ -94,15 +94,15 @@ async function openDepositModal() {
         if (!phone || phone.includes('*')) {
             const fallbackPhone = localStorage.getItem('matp_user_email') || '';
             if (fallbackPhone.includes('*') || !fallbackPhone) {
-                const userFormPhone = prompt(currentLocale === 'hi' ? 'ðŸ”’ à¤¸à¥à¤°à¤•à¥à¤·à¤¾ à¤…à¤‚à¤¶à¤¾à¤‚à¤•à¤¨:\nà¤œà¤®à¤¾ à¤¸à¥à¤°à¤•à¥à¤·à¤¾ à¤¸à¥à¤µà¤¿à¤§à¤¾à¤“à¤‚ à¤•à¥‹ à¤¬à¤¾à¤§à¥à¤¯ à¤•à¤°à¤¨à¥‡ à¤•à¥‡ à¤²à¤¿à¤ à¤•à¥ƒà¤ªà¤¯à¤¾ à¤…à¤ªà¤¨à¤¾ à¤ªà¥‚à¤°à¤¾ à¤®à¥‹à¤¬à¤¾à¤‡à¤² à¤¨à¤‚à¤¬à¤° à¤¦à¤°à¥à¤œ à¤•à¤°à¥‡à¤‚:' : 'ðŸ”’ Security Calibration:\nPlease enter your full mobile number to bind deposit security features:', '');
+                const userFormPhone = prompt(currentLocale === 'hi' ? '🔒 सुरक्षा अंशांकन:\nजमा सुरक्षा सुविधाओं को बाध्य करने के लिए कृपया अपना पूरा मोबाइल नंबर दर्ज करें:' : '🔒 Security Calibration:\nPlease enter your full mobile number to bind deposit security features:', '');
                 if (!userFormPhone) {
-                    showToast(currentLocale === 'hi' ? 'âš ï¸ à¤œà¤®à¤¾ à¤ªà¤¹à¤šà¤¾à¤¨ à¤¸à¤¤à¥à¤¯à¤¾à¤ªà¤¨ à¤µà¤¿à¤«à¤²!' : 'âš ï¸ Deposit identity verification failed!', true);
+                    showToast(currentLocale === 'hi' ? '⚠️ जमा पहचान सत्यापन विफल!' : '⚠️ Deposit identity verification failed!', true);
                     switchTab('profile');
                     return;
                 }
                 phone = userFormPhone.trim();
                 if (!/^\d{8,15}$/.test(phone)) {
-                    showToast(currentLocale === 'hi' ? 'âš ï¸ à¤•à¥ƒà¤ªà¤¯à¤¾ à¤à¤• à¤µà¥ˆà¤§ à¤®à¥‹à¤¬à¤¾à¤‡à¤² à¤¨à¤‚à¤¬à¤° à¤¦à¤°à¥à¤œ à¤•à¤°à¥‡à¤‚!' : 'âš ï¸ Please enter a valid mobile number!', true);
+                    showToast(currentLocale === 'hi' ? '⚠️ कृपया एक वैध मोबाइल नंबर दर्ज करें!' : '⚠️ Please enter a valid mobile number!', true);
                     switchTab('profile');
                     return;
                 }
@@ -114,7 +114,7 @@ async function openDepositModal() {
         }
         const INVALID_NICKS = ['invalid user', 'invalid', 'unknown', 'null', 'undefined', ''];
         if (INVALID_NICKS.includes(nickname.toLowerCase()) || nickname.includes('*') || /^[a-zA-Z0-9]{10}$/.test(nickname) || (phone && nickname !== phone)) {
-            showToast(currentLocale === 'hi' ? 'âš™ï¸ à¤†à¤ªà¤•à¥‡ à¤²à¤¿à¤ à¤œà¤®à¤¾ à¤¸à¥à¤°à¤•à¥à¤·à¤¾ à¤¸à¥à¤µà¤¿à¤§à¤¾à¤“à¤‚ à¤•à¥‹ à¤¸à¥à¤µà¤šà¤¾à¤²à¤¿à¤¤ à¤°à¥‚à¤ª à¤¸à¥‡ à¤•à¥ˆà¤²à¤¿à¤¬à¥à¤°à¥‡à¤Ÿ à¤•à¤¿à¤¯à¤¾ à¤œà¤¾ à¤°à¤¹à¤¾ à¤¹à¥ˆ...' : 'âš™ï¸ Automatically calibrating deposit security features for you...', false);
+            showToast(currentLocale === 'hi' ? '⚙️ आपके लिए जमा सुरक्षा सुविधाओं को स्वचालित रूप से कैलिब्रेट किया जा रहा है...' : '⚙️ Automatically calibrating deposit security features for you...', false);
             try {
                 const updateRes = await apiFetch('POST', '/users/update-nickname', { nickname: phone }, true);
                 if (updateRes.code === 200) {
@@ -126,7 +126,7 @@ async function openDepositModal() {
                     if (nickEl) nickEl.innerText = phone;
                     const avatarLetterEl = document.getElementById('profile-avatar-letter');
                     if (avatarLetterEl) avatarLetterEl.innerText = phone.charAt(0).toUpperCase();
-                    showToast(currentLocale === 'hi' ? 'âœ“ à¤œà¤®à¤¾ à¤¸à¥à¤°à¤•à¥à¤·à¤¾ à¤µà¤¿à¤¶à¥‡à¤·à¤¤à¤¾à¤à¤‚ à¤…à¤‚à¤¶à¤¾à¤‚à¤•à¤¿à¤¤, à¤œà¤®à¤¾ à¤•à¤°à¤¨à¤¾ à¤¶à¥à¤°à¥‚ à¤•à¤°à¥‡à¤‚!' : 'âœ“ Deposit security features calibrated, start depositing!', false);
+                    showToast(currentLocale === 'hi' ? '✓ जमा सुरक्षा विशेषताएं अंशांकित, जमा करना शुरू करें!' : '✓ Deposit security features calibrated, start depositing!', false);
                 }
             } catch (e) {
                 console.error('Failed to proactively correct nickname before deposit:', e);
@@ -141,7 +141,7 @@ async function openDepositModal() {
                 const list = methodsRes.result || methodsRes.data || [];
                 
                 if (list.length === 0) {
-                    container.innerHTML = `<div style="text-align: center; padding: 20px; color: #EF4444; font-size: 0.85rem;">${currentLocale === 'hi' ? 'âš ï¸ à¤•à¥‹à¤ˆ à¤œà¤®à¤¾ à¤šà¥ˆà¤¨à¤² à¤‰à¤ªà¤²à¤¬à¥à¤§ à¤¨à¤¹à¥€à¤‚ à¤¹à¥ˆà¥¤' : 'âš ï¸ No deposit channels available.'}</div>`;
+                    container.innerHTML = `<div style="text-align: center; padding: 20px; color: #EF4444; font-size: 0.85rem;">${currentLocale === 'hi' ? '⚠️ कोई जमा चैनल उपलब्ध नहीं है।' : '⚠️ No deposit channels available.'}</div>`;
                     return;
                 }
                 
@@ -165,7 +165,7 @@ async function openDepositModal() {
                     const borderStyle = isSelected ? '2px solid var(--primary)' : '1px solid rgba(0,0,0,0.08)';
                     const bgStyle = isSelected ? 'rgba(91,81,249,0.04)' : '#FFF';
                     const shadowStyle = isSelected ? '0 4px 12px rgba(91,81,249,0.08)' : 'none';
-                    const checkIcon = isSelected ? 'âœ“' : '';
+                    const checkIcon = isSelected ? '✓' : '';
                     const checkBorder = isSelected ? 'var(--primary)' : 'rgba(0,0,0,0.2)';
                     const checkBg = isSelected ? 'var(--primary)' : 'transparent';
                     
@@ -173,18 +173,18 @@ async function openDepositModal() {
                     let displayName = m.name;
                     if (!displayName || displayName.includes('?') || displayName === 'null') {
                         if (m.assetClass === 'FIAT') {
-                            displayName = currentLocale === 'hi' ? `à¤«à¤¼à¤¿à¤à¤Ÿ à¤—à¥‡à¤Ÿà¤µà¥‡ à¤°à¥ˆà¤ªà¤¿à¤¡ à¤•à¥à¤²à¥€à¤¯à¤°à¥‡à¤‚à¤¸ (${m.asset?.symbol || 'USD'})` : `Fiat Gateway Rapid Clearance (${m.asset?.symbol || 'USD'})`;
+                            displayName = currentLocale === 'hi' ? `फ़िएट गेटवे रैपिड क्लीयरेंस (${m.asset?.symbol || 'USD'})` : `Fiat Gateway Rapid Clearance (${m.asset?.symbol || 'USD'})`;
                         } else {
-                            displayName = m.name || (currentLocale === 'hi' ? 'à¤•à¥à¤°à¤¿à¤ªà¥à¤Ÿà¥‹à¤•à¤°à¥‡à¤‚à¤¸à¥€ à¤œà¤®à¤¾ à¤šà¥ˆà¤¨à¤²' : 'Cryptocurrency Deposit Channel');
+                            displayName = m.name || (currentLocale === 'hi' ? 'क्रिप्टोकरेंसी जमा चैनल' : 'Cryptocurrency Deposit Channel');
                         }
                     }
                     
                     let displayDesc = m.description;
                     if (!displayDesc || displayDesc.includes('?') || displayDesc === 'null') {
                         if (m.assetClass === 'FIAT') {
-                            displayDesc = currentLocale === 'hi' ? 'à¤¨à¥‡à¤Ÿ à¤¬à¥ˆà¤‚à¤•à¤¿à¤‚à¤—/à¤•à¤¾à¤‰à¤‚à¤Ÿà¤° and à¤…à¤¨à¥à¤¯ à¤«à¤¼à¤¿à¤à¤Ÿ à¤šà¥ˆà¤¨à¤²à¥‹à¤‚ à¤•à¥‡ à¤®à¤¾à¤§à¥à¤¯à¤® à¤¸à¥‡ à¤¬à¤¡à¤¼à¥‡ à¤œà¤®à¤¾ à¤•à¥à¤²à¥€à¤¯à¤°à¥‡à¤‚à¤¸ à¤•à¤¾ à¤¸à¤®à¤°à¥à¤¥à¤¨ à¤•à¤°à¤¤à¤¾ à¤¹à¥ˆ' : 'Supports large deposit clearance through net banking/counter and other fiat channels';
+                            displayDesc = currentLocale === 'hi' ? 'नेट बैंकिंग/काउंटर and अन्य फ़िएट चैनलों के माध्यम से बड़े जमा क्लीयरेंस का समर्थन करता है' : 'Supports large deposit clearance through net banking/counter and other fiat channels';
                         } else {
-                            displayDesc = currentLocale === 'hi' ? 'à¤¬à¥à¤²à¥‰à¤•à¤šà¥‡à¤¨ à¤¨à¥‡à¤Ÿà¤µà¤°à¥à¤• à¤•à¥‡ à¤®à¤¾à¤§à¥à¤¯à¤® à¤¸à¥‡ à¤¤à¥à¤µà¤°à¤¿à¤¤ à¤œà¤®à¤¾ à¤•à¥à¤²à¥€à¤¯à¤°à¥‡à¤‚à¤¸ à¤•à¤¾ à¤¸à¤®à¤°à¥à¤¥à¤¨ à¤•à¤°à¤¤à¤¾ à¤¹à¥ˆ' : 'Supports instant deposit clearance through blockchain network';
+                            displayDesc = currentLocale === 'hi' ? 'ब्लॉकचेन नेटवर्क के माध्यम से त्वरित जमा क्लीयरेंस का समर्थन करता है' : 'Supports instant deposit clearance through blockchain network';
                         }
                     }
                     
@@ -209,11 +209,11 @@ async function openDepositModal() {
                 
                 selectDepositChannel(0);
             } else {
-                container.innerHTML = `<div style="text-align: center; padding: 20px; color: #EF4444; font-size: 0.85rem;">${currentLocale === 'hi' ? 'âš ï¸ à¤œà¤®à¤¾ à¤šà¥ˆà¤¨à¤² à¤ªà¥à¤°à¤¾à¤ªà¥à¤¤ à¤•à¤°à¤¨à¥‡ à¤®à¥‡à¤‚ à¤µà¤¿à¤«à¤²:' : 'âš ï¸ Failed to load deposit channels:'} ${methodsRes.errorMessage || ''}</div>`;
+                container.innerHTML = `<div style="text-align: center; padding: 20px; color: #EF4444; font-size: 0.85rem;">${currentLocale === 'hi' ? '⚠️ जमा चैनल प्राप्त करने में विफल:' : '⚠️ Failed to load deposit channels:'} ${methodsRes.errorMessage || ''}</div>`;
             }
         } catch (e) {
             console.error('Failed to load deposit channels:', e);
-            container.innerHTML = `<div style="text-align: center; padding: 20px; color: #EF4444; font-size: 0.85rem;">${currentLocale === 'hi' ? 'âš ï¸ à¤œà¤®à¤¾ à¤šà¥ˆà¤¨à¤² à¤²à¥‹à¤¡ à¤•à¤°à¤¤à¥‡ à¤¸à¤®à¤¯ à¤¨à¥‡à¤Ÿà¤µà¤°à¥à¤• à¤…à¤ªà¤µà¤¾à¤¦!' : 'âš ï¸ Network exception loading deposit channels!'}</div>`;
+            container.innerHTML = `<div style="text-align: center; padding: 20px; color: #EF4444; font-size: 0.85rem;">${currentLocale === 'hi' ? '⚠️ जमा चैनल लोड करते समय नेटवर्क अपवाद!' : '⚠️ Network exception loading deposit channels!'}</div>`;
         }
     })();
 }
@@ -231,7 +231,7 @@ function selectDepositChannel(idx) {
                 card.style.boxShadow = '0 4px 12px rgba(91,81,249,0.08)';
                 check.style.border = '1.5px solid var(--primary)';
                 check.style.background = 'var(--primary)';
-                check.innerText = 'âœ“';
+                check.innerText = '✓';
             } else {
                 card.style.border = '1px solid rgba(0,0,0,0.08)';
                 card.style.background = '#FFF';
@@ -259,7 +259,7 @@ function selectDepositChannel(idx) {
         cryptoDetails.style.display = 'none';
         fiatDetails.style.display = 'flex';
         
-        document.getElementById('channel-desc').innerText = currentLocale === 'hi' ? `à¤«à¤¼à¤¿à¤à¤Ÿ à¤¸à¥à¤¥à¤¾à¤¨à¤¾à¤‚à¤¤à¤°à¤£ à¤šà¥ˆà¤¨à¤² | à¤¸à¥€à¤®à¤¾: ${m.target?.minDepositAmount || '100'} - ${m.target?.maxDepositAmount || '1000000'} ${m.asset?.symbol || 'HKD'}` : `Fiat Transfer Channel | Limit: ${m.target?.minDepositAmount || '100'} - ${m.target?.maxDepositAmount || '1000000'} ${m.asset?.symbol || 'HKD'}`;
+        document.getElementById('channel-desc').innerText = currentLocale === 'hi' ? `फ़िएट स्थानांतरण चैनल | सीमा: ${m.target?.minDepositAmount || '100'} - ${m.target?.maxDepositAmount || '1000000'} ${m.asset?.symbol || 'HKD'}` : `Fiat Transfer Channel | Limit: ${m.target?.minDepositAmount || '100'} - ${m.target?.maxDepositAmount || '1000000'} ${m.asset?.symbol || 'HKD'}`;
         document.getElementById('fiat-bank-name').value = m.target?.bankName || '';
         document.getElementById('fiat-account-name').value = m.target?.accountName || '';
         document.getElementById('fiat-account-number').value = m.target?.accountNumber || '';
@@ -274,8 +274,8 @@ function selectDepositChannel(idx) {
         cryptoDetails.style.display = 'block';
         fiatDetails.style.display = 'none';
         
-        document.getElementById('channel-desc').innerText = currentLocale === 'hi' ? `${m.target?.network || 'USDT'} à¤°à¥ˆà¤ªà¤¿à¤¡ à¤šà¥ˆà¤¨à¤² | à¤¸à¥€à¤®à¤¾: ${m.target?.minDepositAmount || '10'} - ${m.target?.maxDepositAmount || '50000'} USDT` : `${m.target?.network || 'USDT'} Rapid Channel | Limit: ${m.target?.minDepositAmount || '10'} - ${m.target?.maxDepositAmount || '50000'} USDT`;
-        document.getElementById('channel-receiving-address').value = m.target?.address || (currentLocale === 'hi' ? 'à¤•à¥‹à¤ˆ à¤ªà¤¤à¤¾ à¤•à¥‰à¤¨à¥à¤«à¤¼à¤¿à¤—à¤° à¤¨à¤¹à¥€à¤‚ à¤•à¤¿à¤¯à¤¾ à¤—à¤¯à¤¾' : 'No address configured');
+        document.getElementById('channel-desc').innerText = currentLocale === 'hi' ? `${m.target?.network || 'USDT'} रैपिड चैनल | सीमा: ${m.target?.minDepositAmount || '10'} - ${m.target?.maxDepositAmount || '50000'} USDT` : `${m.target?.network || 'USDT'} Rapid Channel | Limit: ${m.target?.minDepositAmount || '10'} - ${m.target?.maxDepositAmount || '50000'} USDT`;
+        document.getElementById('channel-receiving-address').value = m.target?.address || (currentLocale === 'hi' ? 'कोई पता कॉन्फ़िगर नहीं किया गया' : 'No address configured');
     }
     
     // Track current selected channel index and recalculate rate display conversion
@@ -287,7 +287,7 @@ function copyDepositAddress() {
     const address = document.getElementById('channel-receiving-address').value;
     if (!address || address === 'Fetching...') return;
     navigator.clipboard.writeText(address);
-    showToast(currentLocale === 'hi' ? 'âœ“ à¤œà¤®à¤¾ à¤ªà¥à¤°à¤¾à¤ªà¥à¤¤ à¤•à¤°à¤¨à¥‡ à¤•à¤¾ à¤ªà¤¤à¤¾ à¤•à¥à¤²à¤¿à¤ªà¤¬à¥‹à¤°à¥à¤¡ à¤ªà¤° à¤•à¥‰à¤ªà¥€ à¤•à¤¿à¤¯à¤¾ à¤—à¤¯à¤¾!' : 'âœ“ Deposit address copied to clipboard!', false);
+    showToast(currentLocale === 'hi' ? '✓ जमा प्राप्त करने का पता क्लिपबोर्ड पर कॉपी किया गया!' : '✓ Deposit address copied to clipboard!', false);
 }
 
 function triggerDepositUpload() {
@@ -301,7 +301,7 @@ function handleDepositFileSelect(event) {
     
     // Validate file type
     if (!file.type.startsWith('image/')) {
-        showToast(currentLocale === 'hi' ? 'âš ï¸ à¤•à¥ƒà¤ªà¤¯à¤¾ à¤à¤• à¤µà¥ˆà¤§ à¤µà¤¾à¤‰à¤šà¤° à¤›à¤µà¤¿ à¤…à¤ªà¤²à¥‹à¤¡ à¤•à¤°à¥‡à¤‚!' : 'âš ï¸ Please upload a valid voucher image!', true);
+        showToast(currentLocale === 'hi' ? '⚠️ कृपया एक वैध वाउचर छवि अपलोड करें!' : '⚠️ Please upload a valid voucher image!', true);
         return;
     }
     
@@ -342,20 +342,20 @@ function handleDepositFileSelect(event) {
             // Highly compress to 0.7 quality and convert to blob
             canvas.toBlob(async function(blob) {
                 if (!blob) {
-                    showToast(currentLocale === 'hi' ? 'âš ï¸ à¤›à¤µà¤¿ à¤ªà¥à¤°à¤¸à¤‚à¤¸à¥à¤•à¤°à¤£ à¤µà¤¿à¤«à¤²!' : 'âš ï¸ Image processing failed!', true);
+                    showToast(currentLocale === 'hi' ? '⚠️ छवि प्रसंस्करण विफल!' : '⚠️ Image processing failed!', true);
                     return;
                 }
                 
                 // Show loading state
                 if (submitBtn) {
                     submitBtn.disabled = true;
-                    submitBtn.innerText = currentLocale === 'hi' ? 'à¤•à¥à¤²à¤¾à¤‰à¤¡ à¤ªà¤° à¤¸à¥à¤°à¤•à¥à¤·à¤¿à¤¤ à¤°à¥‚à¤ª à¤¸à¥‡ à¤…à¤ªà¤²à¥‹à¤¡ à¤•à¤¿à¤¯à¤¾ à¤œà¤¾ à¤°à¤¹à¤¾ à¤¹à¥ˆ...' : 'Securing upload of voucher to cloud...';
+                    submitBtn.innerText = currentLocale === 'hi' ? 'क्लाउड पर सुरक्षित रूप से अपलोड किया जा रहा है...' : 'Securing upload of voucher to cloud...';
                 }
                 if (placeholder) {
                     placeholder.innerHTML = `
-                        <div style="font-size: 1.8rem; margin-bottom: 8px;">â³</div>
-                        <div style="font-weight: 700; font-size: 0.85rem; color: var(--primary);">currentLocale === 'hi' ? 'à¤¸à¥à¤°à¤•à¥à¤·à¤¿à¤¤ à¤°à¥‚à¤ª à¤¸à¥‡ à¤…à¤ªà¤²à¥‹à¤¡ à¤•à¤¿à¤¯à¤¾ à¤œà¤¾ à¤°à¤¹à¤¾ à¤¹à¥ˆ, à¤•à¥ƒà¤ªà¤¯à¤¾ à¤ªà¥à¤°à¤¤à¥€à¤•à¥à¤·à¤¾ à¤•à¤°à¥‡à¤‚...' : 'Securing upload, please wait...'</div>
-                        <div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 4px;">currentLocale === 'hi' ? 'à¤¸à¥à¤°à¤•à¥à¤·à¤¿à¤¤ à¤°à¥‚à¤ª à¤¸à¥‡ à¤…à¤ªà¤²à¥‹à¤¡ à¤•à¤¿à¤¯à¤¾ à¤œà¤¾ à¤°à¤¹à¤¾ à¤¹à¥ˆ...' : 'Securing upload...'</div>
+                        <div style="font-size: 1.8rem; margin-bottom: 8px;">⏳</div>
+                        <div style="font-weight: 700; font-size: 0.85rem; color: var(--primary);">currentLocale === 'hi' ? 'सुरक्षित रूप से अपलोड किया जा रहा है, कृपया प्रतीक्षा करें...' : 'Securing upload, please wait...'</div>
+                        <div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 4px;">currentLocale === 'hi' ? 'सुरक्षित रूप से अपलोड किया जा रहा है...' : 'Securing upload...'</div>
                     `;
                 }
                 
@@ -368,12 +368,12 @@ function handleDepositFileSelect(event) {
                     }, true);
                     
                     if (presignedRes.code !== 200) {
-                        throw new Error(presignedRes.errorMessage || (currentLocale === 'hi' ? 'à¤…à¤ªà¤²à¥‹à¤¡ à¤ªà¥à¤°à¤¾à¤§à¤¿à¤•à¤°à¤£ à¤ªà¥à¤°à¤¾à¤ªà¥à¤¤ à¤•à¤°à¤¨à¥‡ à¤®à¥‡à¤‚ à¤µà¤¿à¤«à¤²' : 'Failed to obtain upload authorization'));
+                        throw new Error(presignedRes.errorMessage || (currentLocale === 'hi' ? 'अपलोड प्राधिकरण प्राप्त करने में विफल' : 'Failed to obtain upload authorization'));
                     }
                     
                     const { uploadUrl, downloadUrl, path: storagePath } = presignedRes.result || presignedRes.data || {};
                     if (!uploadUrl || !downloadUrl) {
-                        throw new Error(currentLocale === 'hi' ? 'à¤ªà¥à¤°à¤¾à¤§à¤¿à¤•à¤°à¤£ à¤¡à¥‡à¤Ÿà¤¾ à¤…à¤ªà¤µà¤¾à¤¦' : 'Authorization data exception');
+                        throw new Error(currentLocale === 'hi' ? 'प्राधिकरण डेटा अपवाद' : 'Authorization data exception');
                     }
                     
                     // 2. PUT binary image directly to GCS (routing through local proxy on dev to solve GCS CORS block)
@@ -396,7 +396,7 @@ function handleDepositFileSelect(event) {
                     });
                     
                     if (!putRes.ok) {
-                        throw new Error(currentLocale === 'hi' ? 'à¤¨à¥‡à¤Ÿà¤µà¤°à¥à¤• à¤…à¤ªà¤²à¥‹à¤¡ à¤µà¤¿à¤«à¤²' : 'Network upload failed');
+                        throw new Error(currentLocale === 'hi' ? 'नेटवर्क अपलोड विफल' : 'Network upload failed');
                     }
                     
                     // 3. Confirm GCS upload completion
@@ -405,7 +405,7 @@ function handleDepositFileSelect(event) {
                     }, true);
                     
                     if (confirmRes.code !== 200) {
-                        throw new Error(confirmRes.errorMessage || (currentLocale === 'hi' ? 'à¤…à¤ªà¤²à¥‹à¤¡ à¤ªà¥à¤·à¥à¤Ÿà¤¿ à¤µà¤¿à¤«à¤²' : 'Upload confirmation failed'));
+                        throw new Error(confirmRes.errorMessage || (currentLocale === 'hi' ? 'अपलोड पुष्टि विफल' : 'Upload confirmation failed'));
                     }
                     
                     // 4. Update preview and store URL in hidden field
@@ -414,18 +414,18 @@ function handleDepositFileSelect(event) {
                     if (placeholder) placeholder.style.display = 'none';
                     if (previewContainer) previewContainer.style.display = 'flex';
                     
-                    showToast(currentLocale === 'hi' ? 'âœ“ à¤µà¤¾à¤‰à¤šà¤° à¤›à¤µà¤¿ à¤…à¤ªà¤²à¥‹à¤¡ à¤•à¥€ à¤—à¤ˆ à¤”à¤° à¤¤à¥ˆà¤¯à¤¾à¤° à¤¹à¥ˆ!' : 'âœ“ Voucher image uploaded and ready!', false);
+                    showToast(currentLocale === 'hi' ? '✓ वाउचर छवि अपलोड की गई और तैयार है!' : '✓ Voucher image uploaded and ready!', false);
                     
                 } catch (err) {
                     console.error('Cloud upload error:', err);
-                    showToast(currentLocale === 'hi' ? `âš ï¸ à¤µà¤¾à¤‰à¤šà¤° à¤…à¤ªà¤²à¥‹à¤¡ à¤µà¤¿à¤«à¤²: ${err.message || err}` : `âš ï¸ Voucher upload failed: ${err.message || err}`, true);
+                    showToast(currentLocale === 'hi' ? `⚠️ वाउचर अपलोड विफल: ${err.message || err}` : `⚠️ Voucher upload failed: ${err.message || err}`, true);
                     
                     // Reset placeholder HTML
                     if (placeholder) {
                         placeholder.innerHTML = `
-                            <div style="font-size: 1.8rem; margin-bottom: 8px;">ðŸ“¸</div>
-                            <div style="font-weight: 700; font-size: 0.85rem; color: var(--primary);">currentLocale === 'hi' ? 'à¤šà¥à¤¨à¤¨à¥‡/à¤…à¤ªà¤²à¥‹à¤¡ à¤•à¤°à¤¨à¥‡ à¤•à¥‡ à¤²à¤¿à¤ à¤•à¥à¤²à¤¿à¤• à¤•à¤°à¥‡à¤‚' : 'Click to select/upload voucher screenshot'</div>
-                            <div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 4px;">currentLocale === 'hi' ? 'PNG, JPG, JPEG à¤ªà¥à¤°à¤¾à¤°à¥‚à¤ª à¤•à¤¾ à¤¸à¤®à¤°à¥à¤¥à¤¨ à¤•à¤°à¤¤à¤¾ à¤¹à¥ˆ' : 'Supports PNG, JPG, JPEG format images'</div>
+                            <div style="font-size: 1.8rem; margin-bottom: 8px;">📸</div>
+                            <div style="font-weight: 700; font-size: 0.85rem; color: var(--primary);">currentLocale === 'hi' ? 'चुनने/अपलोड करने के लिए क्लिक करें' : 'Click to select/upload voucher screenshot'</div>
+                            <div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 4px;">currentLocale === 'hi' ? 'PNG, JPG, JPEG प्रारूप का समर्थन करता है' : 'Supports PNG, JPG, JPEG format images'</div>
                         `;
                         placeholder.style.display = 'block';
                     }
@@ -434,7 +434,7 @@ function handleDepositFileSelect(event) {
                 } finally {
                     if (submitBtn) {
                         submitBtn.disabled = false;
-                        submitBtn.innerText = currentLocale === 'hi' ? 'à¤­à¥à¤—à¤¤à¤¾à¤¨ à¤•à¥€ à¤ªà¥à¤·à¥à¤Ÿà¤¿ à¤•à¤°à¥‡à¤‚, à¤œà¤®à¤¾ à¤…à¤¨à¥à¤°à¥‹à¤§ à¤¸à¤¬à¤®à¤¿à¤Ÿ à¤•à¤°à¥‡à¤‚' : 'Confirm payment, submit deposit request';
+                        submitBtn.innerText = currentLocale === 'hi' ? 'भुगतान की पुष्टि करें, जमा अनुरोध सबमिट करें' : 'Confirm payment, submit deposit request';
                     }
                 }
             }, 'image/jpeg', 0.7);
@@ -454,11 +454,11 @@ async function handleDepositFormSubmit(event) {
     const remittanceCode = document.getElementById('deposit-remittance-code').value.trim();
     
     if (isNaN(amt) || amt <= 0) {
-        showToast(currentLocale === 'hi' ? 'âš ï¸ à¤•à¥ƒà¤ªà¤¯à¤¾ à¤µà¥ˆà¤§ à¤œà¤®à¤¾ à¤°à¤¾à¤¶à¤¿ à¤¦à¤°à¥à¤œ à¤•à¤°à¥‡à¤‚!' : 'âš ï¸ Please enter a valid deposit amount!', true);
+        showToast(currentLocale === 'hi' ? '⚠️ कृपया वैध जमा राशि दर्ज करें!' : '⚠️ Please enter a valid deposit amount!', true);
         return;
     }
     if (!methodAssetIdStr) {
-        showToast(currentLocale === 'hi' ? 'âš ï¸ à¤•à¥ƒà¤ªà¤¯à¤¾ à¤à¤• à¤µà¥ˆà¤§ à¤œà¤®à¤¾ à¤šà¥ˆà¤¨à¤² à¤šà¥à¤¨à¥‡à¤‚!' : 'âš ï¸ Please select a valid deposit channel!', true);
+        showToast(currentLocale === 'hi' ? '⚠️ कृपया एक वैध जमा चैनल चुनें!' : '⚠️ Please select a valid deposit channel!', true);
         return;
     }
     
@@ -477,35 +477,35 @@ async function handleDepositFormSubmit(event) {
                 
                 if (!isNaN(minLimit) && requiredFiat < minLimit) {
                     const fiatSym = m.asset?.symbol || 'INR';
-                    showToast(currentLocale === 'hi' ? `âš ï¸ à¤¨à¥à¤¯à¥‚à¤¨à¤¤à¤® à¤œà¤®à¤¾ à¤°à¤¾à¤¶à¤¿ ${minLimit.toFixed(2)} ${fiatSym} à¤¹à¥ˆ!` : `âš ï¸ Minimum deposit amount is ${minLimit.toFixed(2)} ${fiatSym}!`, true);
+                    showToast(currentLocale === 'hi' ? `⚠️ न्यूनतम जमा राशि ${minLimit.toFixed(2)} ${fiatSym} है!` : `⚠️ Minimum deposit amount is ${minLimit.toFixed(2)} ${fiatSym}!`, true);
                     return;
                 }
                 if (!isNaN(maxLimit) && maxLimit > 0 && requiredFiat > maxLimit) {
                     const fiatSym = m.asset?.symbol || 'INR';
-                    showToast(currentLocale === 'hi' ? `âš ï¸ à¤…à¤§à¤¿à¤•à¤¤à¤® à¤œà¤®à¤¾ à¤°à¤¾à¤¶à¤¿ ${maxLimit.toFixed(2)} ${fiatSym} à¤¹à¥ˆ!` : `âš ï¸ Maximum deposit amount is ${maxLimit.toFixed(2)} ${fiatSym}!`, true);
+                    showToast(currentLocale === 'hi' ? `⚠️ अधिकतम जमा राशि ${maxLimit.toFixed(2)} ${fiatSym} है!` : `⚠️ Maximum deposit amount is ${maxLimit.toFixed(2)} ${fiatSym}!`, true);
                     return;
                 }
             }
         } else {
             if (!isNaN(minLimit) && amt < minLimit) {
-                showToast(currentLocale === 'hi' ? `âš ï¸ à¤¨à¥à¤¯à¥‚à¤¨à¤¤à¤® à¤œà¤®à¤¾ à¤°à¤¾à¤¶à¤¿ ${minLimit.toFixed(2)} USDT à¤¹à¥ˆ!` : `âš ï¸ Minimum deposit amount is ${minLimit.toFixed(2)} USDT!`, true);
+                showToast(currentLocale === 'hi' ? `⚠️ न्यूनतम जमा राशि ${minLimit.toFixed(2)} USDT है!` : `⚠️ Minimum deposit amount is ${minLimit.toFixed(2)} USDT!`, true);
                 return;
             }
             if (!isNaN(maxLimit) && maxLimit > 0 && amt > maxLimit) {
-                showToast(currentLocale === 'hi' ? `âš ï¸ à¤…à¤§à¤¿à¤•à¤¤à¤® à¤œà¤®à¤¾ à¤°à¤¾à¤¶à¤¿ ${maxLimit.toFixed(2)} USDT à¤¹à¥ˆ!` : `âš ï¸ Maximum deposit amount is ${maxLimit.toFixed(2)} USDT!`, true);
+                showToast(currentLocale === 'hi' ? `⚠️ अधिकतम जमा राशि ${maxLimit.toFixed(2)} USDT है!` : `⚠️ Maximum deposit amount is ${maxLimit.toFixed(2)} USDT!`, true);
                 return;
             }
         }
     }
     
     if (!proofUrl) {
-        showToast(currentLocale === 'hi' ? 'âš ï¸ à¤•à¥ƒà¤ªà¤¯à¤¾ à¤œà¤®à¤¾ à¤µà¤¾à¤‰à¤šà¤° à¤¸à¥à¤•à¥à¤°à¥€à¤¨à¤¶à¥‰à¤Ÿ à¤…à¤ªà¤²à¥‹à¤¡ à¤•à¤°à¥‡à¤‚!' : 'âš ï¸ Please upload deposit voucher screenshot!', true);
+        showToast(currentLocale === 'hi' ? '⚠️ कृपया जमा वाउचर स्क्रीनशॉट अपलोड करें!' : '⚠️ Please upload deposit voucher screenshot!', true);
         return;
     }
     
     const submitBtn = document.getElementById('deposit-submit-btn');
     submitBtn.disabled = true;
-    submitBtn.innerText = currentLocale === 'hi' ? 'à¤œà¤®à¤¾ à¤…à¤¨à¥à¤°à¥‹à¤§ à¤¸à¤¬à¤®à¤¿à¤Ÿ à¤•à¤¿à¤¯à¤¾ à¤œà¤¾ à¤°à¤¹à¤¾ à¤¹à¥ˆ...' : 'Submitting deposit request...';
+    submitBtn.innerText = currentLocale === 'hi' ? 'जमा अनुरोध सबमिट किया जा रहा है...' : 'Submitting deposit request...';
     
     try {
         // Build stable sorted JSON body exactly matching SIGN-SPEC-1.0 to avoid precision loss on paymentMethodAssetId BigInt
@@ -513,20 +513,20 @@ async function handleDepositFormSubmit(event) {
         
         const depositRes = await apiFetchWithRawBody('POST', '/finance/deposits', bodyStr, true);
         if (depositRes.code === 200) {
-            showToast(currentLocale === 'hi' ? `âœ“ $${amt.toFixed(2)} USDT à¤œà¤®à¤¾ à¤…à¤¨à¥à¤°à¥‹à¤§ à¤¸à¤«à¤²à¤¤à¤¾à¤ªà¥‚à¤°à¥à¤µà¤• à¤¸à¤¬à¤®à¤¿à¤Ÿ à¤•à¤¿à¤¯à¤¾ à¤—à¤¯à¤¾! à¤ªà¥à¤°à¤¸à¤‚à¤¸à¥à¤•à¤°à¤£ à¤•à¥€ à¤ªà¥à¤°à¤¤à¥€à¤•à¥à¤·à¤¾ à¤•à¤°à¥‡à¤‚à¥¤` : `âœ“ $${amt.toFixed(2)} USDT deposit request successfully submitted! Waiting for processing.`, false);
+            showToast(currentLocale === 'hi' ? `✓ $${amt.toFixed(2)} USDT जमा अनुरोध सफलतापूर्वक सबमिट किया गया! प्रसंस्करण की प्रतीक्षा करें।` : `✓ $${amt.toFixed(2)} USDT deposit request successfully submitted! Waiting for processing.`, false);
             closeDepositModal();
             loadUserAssets();
         } else {
-            const errMsg = depositRes.errorMessage || (currentLocale === 'hi' ? 'à¤œà¤®à¤¾ à¤µà¤¿à¤«à¤²' : 'Deposit failed');
+            const errMsg = depositRes.errorMessage || (currentLocale === 'hi' ? 'जमा विफल' : 'Deposit failed');
             const errCode = depositRes.code || '';
-            showToast(currentLocale === 'hi' ? `à¤œà¤®à¤¾ à¤µà¤¿à¤«à¤² [${errCode}]: ${errMsg}` : `Deposit failed [${errCode}]: ${errMsg}`, true);
+            showToast(currentLocale === 'hi' ? `जमा विफल [${errCode}]: ${errMsg}` : `Deposit failed [${errCode}]: ${errMsg}`, true);
         }
     } catch (e) {
         console.error(e);
-        showToast(currentLocale === 'hi' ? 'à¤œà¤®à¤¾ à¤…à¤¨à¥à¤°à¥‹à¤§ à¤¨à¥‡à¤Ÿà¤µà¤°à¥à¤• à¤…à¤ªà¤µà¤¾à¤¦!' : 'Deposit request network exception!', true);
+        showToast(currentLocale === 'hi' ? 'जमा अनुरोध नेटवर्क अपवाद!' : 'Deposit request network exception!', true);
     } finally {
         submitBtn.disabled = false;
-        submitBtn.innerText = currentLocale === 'hi' ? 'à¤­à¥à¤—à¤¤à¤¾à¤¨ à¤•à¥€ à¤ªà¥à¤·à¥à¤Ÿà¤¿ à¤•à¤°à¥‡à¤‚, à¤œà¤®à¤¾ à¤…à¤¨à¥à¤°à¥‹à¤§ à¤¸à¤¬à¤®à¤¿à¤Ÿ à¤•à¤°à¥‡à¤‚' : 'Confirm payment, submit deposit request';
+        submitBtn.innerText = currentLocale === 'hi' ? 'भुगतान की पुष्टि करें, जमा अनुरोध सबमिट करें' : 'Confirm payment, submit deposit request';
     }
 }
 
@@ -612,10 +612,10 @@ async function openWithdrawModal() {
     const cachedKyc = localStorage.getItem('matp_user_kyc') || 'NOT_VERIFIED';
     if (cachedKyc !== 'VERIFIED') {
         if (cachedKyc === 'PENDING') {
-            showToast(currentLocale === 'hi' ? 'âš ï¸ à¤†à¤ªà¤•à¤¾ à¤•à¥‡à¤µà¤¾à¤ˆà¤¸à¥€ à¤¸à¤¤à¥à¤¯à¤¾à¤ªà¤¨ à¤¸à¤®à¥€à¤•à¥à¤·à¤¾à¤§à¥€à¤¨ à¤¹à¥ˆ, à¤•à¥ƒà¤ªà¤¯à¤¾ à¤¨à¤¿à¤•à¤¾à¤¸à¥€ à¤¸à¥‡ à¤ªà¤¹à¤²à¥‡ à¤¸à¤®à¥€à¤•à¥à¤·à¤¾ à¤ªà¥‚à¤°à¥€ à¤¹à¥‹à¤¨à¥‡ à¤•à¥€ à¤ªà¥à¤°à¤¤à¥€à¤•à¥à¤·à¤¾ à¤•à¤°à¥‡à¤‚!' : 'âš ï¸ Your KYC verification is under review, please wait for approval before withdrawing!', true);
+            showToast(currentLocale === 'hi' ? '⚠️ आपका केवाईसी सत्यापन समीक्षाधीन है, कृपया निकासी से पहले समीक्षा पूरी होने की प्रतीक्षा करें!' : '⚠️ Your KYC verification is under review, please wait for approval before withdrawing!', true);
             return;
         } else {
-            showToast(currentLocale === 'hi' ? 'âš ï¸ à¤¨à¤¿à¤•à¤¾à¤¸à¥€ à¤¸à¥‡ à¤ªà¤¹à¤²à¥‡ à¤†à¤ªà¤•à¥‹ à¤•à¥‡à¤µà¤¾à¤ˆà¤¸à¥€ à¤ªà¥‚à¤°à¤¾ à¤•à¤°à¤¨à¤¾ à¤¹à¥‹à¤—à¤¾ à¤”à¤° à¤¸à¥à¤µà¥€à¤•à¥ƒà¤¤ à¤¹à¥‹à¤¨à¤¾ à¤¹à¥‹à¤—à¤¾!' : 'âš ï¿½  You need to complete KYC verification and be approved before withdrawing!', true);
+            showToast(currentLocale === 'hi' ? '⚠️ निकासी से पहले आपको केवाईसी पूरा करना होगा और स्वीकृत होना होगा!' : '⚠�  You need to complete KYC verification and be approved before withdrawing!', true);
             setTimeout(() => {
                 openKycModal();
             }, 1500);
@@ -683,9 +683,9 @@ async function openWithdrawModal() {
 
         if (kycStatus !== 'VERIFIED') {
             if (kycStatus === 'PENDING') {
-                showToast(currentLocale === 'hi' ? 'âš ï¸ à¤†à¤ªà¤•à¤¾ à¤•à¥‡à¤µà¤¾à¤ˆà¤¸à¥€ à¤¸à¤¤à¥à¤¯à¤¾à¤ªà¤¨ à¤¸à¤®à¥€à¤•à¥à¤·à¤¾à¤§à¥€à¤¨ à¤¹à¥ˆ, à¤•à¥ƒà¤ªà¤¯à¤¾ à¤¨à¤¿à¤•à¤¾à¤¸à¥€ à¤¸à¥‡ à¤ªà¤¹à¤²à¥‡ à¤¸à¤®à¥€à¤•à¥à¤·à¤¾ à¤ªà¥‚à¤°à¥€ à¤¹à¥‹à¤¨à¥‡ à¤•à¥€ à¤ªà¥à¤°à¤¤à¥€à¤•à¥à¤·à¤¾ à¤•à¤°à¥‡à¤‚!' : 'âš ï¿½  Your KYC verification is under review, please wait for approval before withdrawing!', true);
+                showToast(currentLocale === 'hi' ? '⚠️ आपका केवाईसी सत्यापन समीक्षाधीन है, कृपया निकासी से पहले समीक्षा पूरी होने की प्रतीक्षा करें!' : '⚠�  Your KYC verification is under review, please wait for approval before withdrawing!', true);
             } else {
-                showToast(currentLocale === 'hi' ? 'âš ï¸ à¤¨à¤¿à¤•à¤¾à¤¸à¥€ à¤¸à¥‡ à¤ªà¤¹à¤²à¥‡ à¤†à¤ªà¤•à¥‹ à¤•à¥‡à¤µà¤¾à¤ˆà¤¸à¥€ à¤ªà¥‚à¤°à¤¾ à¤•à¤°à¤¨à¤¾ à¤¹à¥‹à¤—à¤¾ à¤”à¤° à¤¸à¥à¤µà¥€à¤•à¥ƒà¤¤ à¤¹à¥‹à¤¨à¤¾ à¤¹à¥‹à¤—à¤¾!' : 'âš ï¿½  You need to complete KYC verification and be approved before withdrawing!', true);
+                showToast(currentLocale === 'hi' ? '⚠️ निकासी से पहले आपको केवाईसी पूरा करना होगा और स्वीकृत होना होगा!' : '⚠�  You need to complete KYC verification and be approved before withdrawing!', true);
                 setTimeout(() => {
                     openKycModal();
                 }, 1500);
@@ -707,7 +707,7 @@ async function openWithdrawModal() {
                     document.getElementById('selected-withdraw-method-address-cached').value = cryptoAccount.address;
                     const selWNetCached = document.getElementById('selected-withdraw-method-network-cached');
                     if (selWNetCached) selWNetCached.value = cryptoAccount.network || 'TRC20';
-                    if (bindingTip) bindingTip.innerText = currentLocale === 'hi' ? 'âœ“ à¤¨à¤¿à¤•à¤¾à¤¸à¥€ à¤¬à¤Ÿà¥à¤† à¤ªà¤¤à¤¾ à¤¸à¥à¤°à¤•à¥à¤·à¤¿à¤¤ à¤°à¥‚à¤ª à¤¸à¥‡ à¤¬à¤¾à¤§à¥à¤¯ à¤¹à¥ˆ' : 'âœ“ Withdrawal wallet address safely bound';
+                    if (bindingTip) bindingTip.innerText = currentLocale === 'hi' ? '✓ निकासी बटुआ पता सुरक्षित रूप से बाध्य है' : '✓ Withdrawal wallet address safely bound';
                 }
                 
                 const upiAccount = data.upi;
@@ -716,7 +716,7 @@ async function openWithdrawModal() {
                     document.getElementById('withdraw-upi-address').value = upiAccount.upi;
                     document.getElementById('selected-withdraw-upi-id').value = methodId;
                     document.getElementById('selected-withdraw-upi-address-cached').value = upiAccount.upi;
-                    if (upiTip) upiTip.innerText = currentLocale === 'hi' ? 'âœ“ à¤¯à¥‚à¤ªà¥€à¤†à¤ˆ à¤–à¤¾à¤¤à¤¾ à¤¸à¥à¤°à¤•à¥à¤·à¤¿à¤¤ à¤°à¥‚à¤ª à¤¸à¥‡ à¤¬à¤¾à¤§à¥à¤¯ à¤¹à¥ˆ' : 'âœ“ UPI account safely bound';
+                    if (upiTip) upiTip.innerText = currentLocale === 'hi' ? '✓ यूपीआई खाता सुरक्षित रूप से बाध्य है' : '✓ UPI account safely bound';
                 }
                 
                 const bankAccount = data.bank;
@@ -730,7 +730,7 @@ async function openWithdrawModal() {
                     document.getElementById('selected-withdraw-bank-name-cached').value = bankAccount.bankName;
                     document.getElementById('selected-withdraw-bank-number-cached').value = bankAccount.accountNumber;
                     document.getElementById('selected-withdraw-bank-ifsc-cached').value = bankAccount.ifscCode || bankAccount.ifsc || '';
-                    if (bankTip) bankTip.innerText = currentLocale === 'hi' ? 'âœ“ à¤¬à¥ˆà¤‚à¤• à¤•à¤¾à¤°à¥à¤¡ à¤µà¤¿à¤µà¤°à¤£ à¤¸à¥à¤°à¤•à¥à¤·à¤¿à¤¤ à¤°à¥‚à¤ª à¤¸à¥‡ à¤¬à¤¾à¤§à¥à¤¯ à¤¹à¥ˆà¤‚' : 'âœ“ Bank card details safely bound';
+                    if (bankTip) bankTip.innerText = currentLocale === 'hi' ? '✓ बैंक कार्ड विवरण सुरक्षित रूप से बाध्य हैं' : '✓ Bank card details safely bound';
                 }
                 
                 updateWithdrawMethodCards();
@@ -774,7 +774,7 @@ function calculateWithdrawFee() {
     
     const balEl = document.getElementById('withdraw-available-balance');
     if (!rate) {
-        if (balEl) balEl.innerText = activeTab === 'crypto' ? `$${userUsdtBalance.toFixed(5)}` : 'æ­£åœ¨åŒæ­¥æ±‡çŽ‡...';
+        if (balEl) balEl.innerText = activeTab === 'crypto' ? `$${userUsdtBalance.toFixed(5)}` : '正在同步汇率...';
         return;
     }
     if (balEl) {
@@ -797,22 +797,22 @@ function calculateWithdrawFee() {
         if (activeTab === 'crypto') {
             if (label) {
                 label.innerText = currentLocale === 'hi' 
-                    ? `à¤¨à¤¿à¤•à¤¾à¤¸à¥€ à¤°à¤¾à¤¶à¤¿ (à¤¨à¥à¤¯à¥‚à¤¨à¤¤à¤® à¤¨à¤¿à¤•à¤¾à¤¸à¥€ à¤°à¤¾à¤¶à¤¿: ${baseMinLimit} USDT)` 
+                    ? `निकासी राशि (न्यूनतम निकासी राशि: ${baseMinLimit} USDT)` 
                     : `Withdrawal amount (Mini withdrawal amount: ${baseMinLimit} USDT)`;
             }
             amountInput.placeholder = currentLocale === 'hi' 
-                ? `à¤¨à¥à¤¯à¥‚à¤¨à¤¤à¤® à¤¨à¤¿à¤•à¤¾à¤¸à¥€ ${baseMinLimit} USDT` 
+                ? `न्यूनतम निकासी ${baseMinLimit} USDT` 
                 : `Min withdrawal ${baseMinLimit} USDT`;
             amountInput.min = String(baseMinLimit);
         } else {
             const minInrVal = Math.ceil(baseMinLimit * rate);
             if (label) {
                 label.innerText = currentLocale === 'hi' 
-                    ? `à¤¨à¤¿à¤•à¤¾à¤¸à¥€ à¤°à¤¾à¤¶à¤¿ (à¤¨à¥à¤¯à¥‚à¤¨à¤¤à¤® à¤¨à¤¿à¤•à¤¾à¤¸à¥€ à¤°à¤¾à¤¶à¤¿: ${minInrVal})` 
+                    ? `निकासी राशि (न्यूनतम निकासी राशि: ${minInrVal})` 
                     : `Withdrawal amount (Mini withdrawal amount: ${minInrVal})`;
             }
             amountInput.placeholder = currentLocale === 'hi' 
-                ? `à¤¨à¥à¤¯à¥‚à¤¨à¤¤à¤® à¤¨à¤¿à¤•à¤¾à¤¸à¥€ ${minInrVal}` 
+                ? `न्यूनतम निकासी ${minInrVal}` 
                 : `Min withdrawal ${minInrVal}`;
             amountInput.min = String(minInrVal);
         }
@@ -1060,7 +1060,7 @@ async function savePaymentField(method) {
     if (method === 'upi') {
         const upiVal = document.getElementById('edit-upi-val').value.trim();
         if (!upiVal) {
-            showToast(currentLocale === 'hi' ? 'âš ï¸ à¤•à¥ƒà¤ªà¤¯à¤¾ à¤…à¤ªà¤¨à¤¾ à¤¯à¥‚à¤ªà¥€à¤†à¤ˆ à¤–à¤¾à¤¤à¤¾ à¤¦à¤°à¥à¤œ à¤•à¤°à¥‡à¤‚!' : 'âš ï¸ Please enter your UPI account!', true);
+            showToast(currentLocale === 'hi' ? '⚠️ कृपया अपना यूपीआई खाता दर्ज करें!' : '⚠️ Please enter your UPI account!', true);
             return;
         }
         body = { upi: upiVal };
@@ -1070,7 +1070,7 @@ async function savePaymentField(method) {
         const ifsc = document.getElementById('edit-bank-ifsc').value.trim();
         
         if (!bankName || !accNum || !ifsc) {
-            showToast(currentLocale === 'hi' ? 'âš ï¸ à¤•à¥ƒà¤ªà¤¯à¤¾ à¤ªà¥‚à¤°à¤¾ à¤¬à¥ˆà¤‚à¤• à¤µà¤¿à¤µà¤°à¤£ à¤­à¤°à¥‡à¤‚!' : 'âš ï¸ Please fill in complete bank details!', true);
+            showToast(currentLocale === 'hi' ? '⚠️ कृपया पूरा बैंक विवरण भरें!' : '⚠️ Please fill in complete bank details!', true);
             return;
         }
         body = { bankName: bankName, accountNumber: accNum, ifsc: ifsc };
@@ -1079,23 +1079,23 @@ async function savePaymentField(method) {
         const network = document.getElementById('edit-crypto-network').value.trim();
         const memo = document.getElementById('edit-crypto-memo').value.trim();
         if (!address) {
-            showToast(currentLocale === 'hi' ? 'âš ï¸ à¤•à¥ƒà¤ªà¤¯à¤¾ à¤…à¤ªà¤¨à¤¾ à¤¨à¤¿à¤•à¤¾à¤¸à¥€ à¤ªà¤¤à¤¾ à¤¦à¤°à¥à¤œ à¤•à¤°à¥‡à¤‚!' : 'âš ï¸ Please enter your withdrawal address!', true);
+            showToast(currentLocale === 'hi' ? '⚠️ कृपया अपना निकासी पता दर्ज करें!' : '⚠️ Please enter your withdrawal address!', true);
             return;
         }
         if (!network) {
-            showToast(currentLocale === 'hi' ? 'âš ï¸ à¤•à¥ƒà¤ªà¤¯à¤¾ à¤à¤• à¤¨à¥‡à¤Ÿà¤µà¤°à¥à¤• à¤šà¥à¤¨à¥‡à¤‚!' : 'âš ï¸ Please select a network!', true);
+            showToast(currentLocale === 'hi' ? '⚠️ कृपया एक नेटवर्क चुनें!' : '⚠️ Please select a network!', true);
             return;
         }
         body = { address: address, network: network, memo: memo || '' };
     }
     
-    showToast(currentLocale === 'hi' ? 'âš™ï¸ à¤–à¤¾à¤¤à¤¾ à¤µà¤¿à¤µà¤°à¤£ à¤¬à¤¾à¤§à¥à¤¯ à¤•à¤¿à¤¯à¤¾ à¤œà¤¾ à¤°à¤¹à¤¾ à¤¹à¥ˆ...' : 'âš™ï¸ Binding account details...', false);
+    showToast(currentLocale === 'hi' ? '⚙️ खाता विवरण बाध्य किया जा रहा है...' : '⚙️ Binding account details...', false);
     
     try {
         const res = await apiFetch('POST', url, body, true);
         const savedData = res.data || res.result || {};
         if (res.code === 200) {
-            showToast(currentLocale === 'hi' ? 'âœ“ à¤–à¤¾à¤¤à¤¾ à¤¸à¥à¤°à¤•à¥à¤·à¤¿à¤¤ à¤°à¥‚à¤ª à¤¸à¥‡ à¤¬à¤¾à¤§à¥à¤¯!' : 'âœ“ Account bound successfully!', false);
+            showToast(currentLocale === 'hi' ? '✓ खाता सुरक्षित रूप से बाध्य!' : '✓ Account bound successfully!', false);
             
             // Robust check to parse nested VO structures or direct/flat objects safely
             let upiObj = null;
@@ -1204,7 +1204,7 @@ async function savePaymentField(method) {
                         if (selWAddrCached) selWAddrCached.value = cryptoAccount.address;
                         if (selWNetCached) selWNetCached.value = cryptoAccount.network || 'TRC20';
                         const bindingTip = document.getElementById('withdraw-binding-tip');
-                        if (bindingTip) bindingTip.innerText = currentLocale === 'hi' ? 'âœ“ à¤¨à¤¿à¤•à¤¾à¤¸à¥€ à¤¬à¤Ÿà¥à¤† à¤ªà¤¤à¤¾ à¤¸à¥à¤°à¤•à¥à¤·à¤¿à¤¤ à¤°à¥‚à¤ª à¤¸à¥‡ à¤¬à¤¾à¤§à¥à¤¯ à¤¹à¥ˆ' : 'âœ“ Withdrawal wallet address safely bound';
+                        if (bindingTip) bindingTip.innerText = currentLocale === 'hi' ? '✓ निकासी बटुआ पता सुरक्षित रूप से बाध्य है' : '✓ Withdrawal wallet address safely bound';
                     }
                     
                     const upiAccount = data.upi;
@@ -1217,7 +1217,7 @@ async function savePaymentField(method) {
                         if (selWUpiId) selWUpiId.value = methodId;
                         if (selWUpiAddrCached) selWUpiAddrCached.value = upiAccount.upi;
                         const upiTip = document.getElementById('withdraw-upi-tip');
-                        if (upiTip) upiTip.innerText = currentLocale === 'hi' ? 'âœ“ à¤¯à¥‚à¤ªà¥€à¤†à¤ˆ à¤–à¤¾à¤¤à¤¾ à¤¸à¥à¤°à¤•à¥à¤·à¤¿à¤¤ à¤°à¥‚à¤ª à¤¸à¥‡ à¤¬à¤¾à¤§à¥à¤¯ à¤¹à¥ˆ' : 'âœ“ UPI account safely bound';
+                        if (upiTip) upiTip.innerText = currentLocale === 'hi' ? '✓ यूपीआई खाता सुरक्षित रूप से बाध्य है' : '✓ UPI account safely bound';
                     }
                     
                     const bankAccount = data.bank;
@@ -1240,7 +1240,7 @@ async function savePaymentField(method) {
                         if (selWBankNumberCached) selWBankNumberCached.value = bankAccount.accountNumber;
                         if (selWBankIfscCached) selWBankIfscCached.value = bankAccount.ifscCode || bankAccount.ifsc || '';
                         const bankTip = document.getElementById('withdraw-bank-tip');
-                        if (bankTip) bankTip.innerText = currentLocale === 'hi' ? 'âœ“ à¤¬à¥ˆà¤‚à¤• à¤•à¤¾à¤°à¥à¤¡ à¤µà¤¿à¤µà¤°à¤£ à¤¸à¥à¤°à¤•à¥à¤·à¤¿à¤¤ à¤°à¥‚à¤ª à¤¸à¥‡ à¤¬à¤¾à¤§à¥à¤¯ à¤¹à¥ˆà¤‚' : 'âœ“ Bank card details safely bound';
+                        if (bankTip) bankTip.innerText = currentLocale === 'hi' ? '✓ बैंक कार्ड विवरण सुरक्षित रूप से बाध्य हैं' : '✓ Bank card details safely bound';
                     }
                 }
             } catch (err) {
@@ -1252,11 +1252,11 @@ async function savePaymentField(method) {
             }
             togglePaymentEdit(method, false);
         } else {
-            showToast(res.errorMessage || (currentLocale === 'hi' ? 'à¤¬à¤¾à¤‡à¤‚à¤¡à¤¿à¤‚à¤— à¤µà¤¿à¤«à¤²' : 'Binding failed'), true);
+            showToast(res.errorMessage || (currentLocale === 'hi' ? 'बाइंडिंग विफल' : 'Binding failed'), true);
         }
     } catch (e) {
         console.error(e);
-        showToast(currentLocale === 'hi' ? 'à¤¬à¤¾à¤‡à¤‚à¤¡à¤¿à¤‚à¤— à¤…à¤¨à¥à¤°à¥‹à¤§ à¤¨à¥‡à¤Ÿà¤µà¤°à¥à¤• à¤…à¤ªà¤µà¤¾à¤¦!' : 'Binding request network exception!', true);
+        showToast(currentLocale === 'hi' ? 'बाइंडिंग अनुरोध नेटवर्क अपवाद!' : 'Binding request network exception!', true);
     }
 }
 
@@ -1266,14 +1266,14 @@ async function handleWithdrawFormSubmit(event) {
     
     const amt = parseFloat(document.getElementById('withdraw-amount').value);
     if (isNaN(amt) || amt <= 0) {
-        showToast(currentLocale === 'hi' ? 'âš ï¸ à¤•à¥ƒà¤ªà¤¯à¤¾ à¤µà¥ˆà¤§ à¤¨à¤¿à¤•à¤¾à¤¸à¥€ à¤°à¤¾à¤¶à¤¿ à¤¦à¤°à¥à¤œ à¤•à¤°à¥‡à¤‚!' : 'âš ï¸ Please enter a valid withdrawal amount!', true);
+        showToast(currentLocale === 'hi' ? '⚠️ कृपया वैध निकासी राशि दर्ज करें!' : '⚠️ Please enter a valid withdrawal amount!', true);
         return;
     }
     
     const activeTab = document.getElementById('current-withdraw-tab').value;
     let rate = PLATFORM_EXCHANGE_RATES['USDT'];
     if (!rate) {
-        showToast(currentLocale === 'hi' ? 'âš ï¸ à¤µà¤¿à¤¨à¤¿à¤®à¤¯ à¤¦à¤° à¤…à¤­à¥€ à¤¸à¤¿à¤‚à¤• à¤¨à¤¹à¥€à¤‚ à¤¹à¥à¤ˆ à¤¹à¥ˆ, à¤•à¥ƒà¤ªà¤¯à¤¾ à¤ªà¥à¤¨à¤ƒ à¤ªà¥à¤°à¤¯à¤¾à¤¸ à¤•à¤°à¥‡à¤‚!' : 'âš ï¸ Exchange rate not synced yet, please retry later!', true);
+        showToast(currentLocale === 'hi' ? '⚠️ विनिमय दर अभी सिंक नहीं हुई है, कृपया पुनः प्रयास करें!' : '⚠️ Exchange rate not synced yet, please retry later!', true);
         return;
     }
     
@@ -1287,15 +1287,15 @@ async function handleWithdrawFormSubmit(event) {
 
     if (activeTab === 'crypto') {
         if (amt > userUsdtBalance) {
-            showToast(currentLocale === 'hi' ? 'âš ï¸ à¤¨à¤¿à¤•à¤¾à¤¸à¥€ à¤µà¤¿à¤«à¤²! à¤°à¤¾à¤¶à¤¿ à¤µà¤°à¥à¤¤à¤®à¤¾à¤¨ à¤¶à¥‡à¤· à¤°à¤¾à¤¶à¤¿ à¤¸à¥‡ à¤…à¤§à¤¿à¤• à¤¹à¥ˆà¥¤' : 'âš ï¸ Withdrawal failed! Amount exceeds current balance.', true);
+            showToast(currentLocale === 'hi' ? '⚠️ निकासी विफल! राशि वर्तमान शेष राशि से अधिक है।' : '⚠️ Withdrawal failed! Amount exceeds current balance.', true);
             return;
         }
         if (amt < baseMinLimit) {
-            showToast(currentLocale === 'hi' ? `âš ï¸ à¤¨à¥à¤¯à¥‚à¤¨à¤¤à¤® à¤¨à¤¿à¤•à¤¾à¤¸à¥€ ${baseMinLimit} USDT à¤¹à¥ˆ!` : `âš ï¸ Min withdrawal amount is ${baseMinLimit} USDT!`, true);
+            showToast(currentLocale === 'hi' ? `⚠️ न्यूनतम निकासी ${baseMinLimit} USDT है!` : `⚠️ Min withdrawal amount is ${baseMinLimit} USDT!`, true);
             return;
         }
         if (baseMaxLimit > 0 && amt > baseMaxLimit) {
-            showToast(currentLocale === 'hi' ? `âš ï¸ à¤…à¤§à¤¿à¤•à¤¤à¤® à¤¨à¤¿à¤•à¤¾à¤¸à¥€ ${baseMaxLimit} USDT à¤¹à¥ˆ!` : `âš ï¸ Max withdrawal amount is ${baseMaxLimit} USDT!`, true);
+            showToast(currentLocale === 'hi' ? `⚠️ अधिकतम निकासी ${baseMaxLimit} USDT है!` : `⚠️ Max withdrawal amount is ${baseMaxLimit} USDT!`, true);
             return;
         }
     } else {
@@ -1303,15 +1303,15 @@ async function handleWithdrawFormSubmit(event) {
         const minInr = baseMinLimit * rate;
         const maxInr = baseMaxLimit * rate;
         if (amt > userInrBalance) {
-            showToast(currentLocale === 'hi' ? 'âš ï¸ à¤¨à¤¿à¤•à¤¾à¤¸à¥€ à¤µà¤¿à¤«à¤²! à¤°à¤¾à¤¶à¤¿ à¤µà¤°à¥à¤¤à¤®à¤¾à¤¨ à¤¶à¥‡à¤· à¤°à¤¾à¤¶à¤¿ à¤¸à¥‡ à¤…à¤§à¤¿à¤• à¤¹à¥ˆà¥¤' : 'âš ï¸ Withdrawal failed! Amount exceeds current balance.', true);
+            showToast(currentLocale === 'hi' ? '⚠️ निकासी विफल! राशि वर्तमान शेष राशि से अधिक है।' : '⚠️ Withdrawal failed! Amount exceeds current balance.', true);
             return;
         }
         if (amt < minInr) {
-            showToast(currentLocale === 'hi' ? `âš ï¸ à¤¨à¥à¤¯à¥‚à¤¨à¤¤à¤® à¤¨à¤¿à¤•à¤¾à¤¸à¥€ ${Math.ceil(minInr)} INR à¤¹à¥ˆ!` : `âš ï¸ Min withdrawal amount is ${Math.ceil(minInr)} INR!`, true);
+            showToast(currentLocale === 'hi' ? `⚠️ न्यूनतम निकासी ${Math.ceil(minInr)} INR है!` : `⚠️ Min withdrawal amount is ${Math.ceil(minInr)} INR!`, true);
             return;
         }
         if (maxInr > 0 && amt > maxInr) {
-            showToast(currentLocale === 'hi' ? `âš ï¸ à¤…à¤§à¤¿à¤•à¤¤à¤® à¤¨à¤¿à¤•à¤¾à¤¸à¥€ ${Math.floor(maxInr)} INR à¤¹à¥ˆ!` : `âš ï¸ Max withdrawal amount is ${Math.floor(maxInr)} INR!`, true);
+            showToast(currentLocale === 'hi' ? `⚠️ अधिकतम निकासी ${Math.floor(maxInr)} INR है!` : `⚠️ Max withdrawal amount is ${Math.floor(maxInr)} INR!`, true);
             return;
         }
     }
@@ -1320,26 +1320,26 @@ async function handleWithdrawFormSubmit(event) {
     if (activeTab === 'crypto') {
         methodId = document.getElementById('selected-withdraw-method-id').value;
         if (!methodId) {
-            showToast(currentLocale === 'hi' ? 'âš ï¸ à¤•à¥ƒà¤ªà¤¯à¤¾ à¤ªà¤¹à¤²à¥‡ à¤¯à¥‚à¤ªà¥€à¤†à¤ˆ/à¤¬à¥ˆà¤‚à¤•/à¤•à¥à¤°à¤¿à¤ªà¥à¤Ÿà¥‹ à¤•à¥‹ à¤¬à¤¾à¤‡à¤‚à¤¡ à¤•à¤°à¤¨à¥‡ à¤•à¥‡ à¤²à¤¿à¤ "à¤ªà¥à¤°à¤¬à¤‚à¤§à¤¿à¤¤ à¤•à¤°à¥‡à¤‚" à¤ªà¤° à¤•à¥à¤²à¤¿à¤• à¤•à¤°à¥‡à¤‚!' : 'âš ï¸ Please click "Manage" to bind your Crypto account first!', true);
+            showToast(currentLocale === 'hi' ? '⚠️ कृपया पहले यूपीआई/बैंक/क्रिप्टो को बाइंड करने के लिए "प्रबंधित करें" पर क्लिक करें!' : '⚠️ Please click "Manage" to bind your Crypto account first!', true);
             return;
         }
     } else if (activeTab === 'upi') {
         methodId = document.getElementById('selected-withdraw-upi-id').value;
         if (!methodId) {
-            showToast(currentLocale === 'hi' ? 'âš ï¸ à¤•à¥ƒà¤ªà¤¯à¤¾ à¤ªà¤¹à¤²à¥‡ à¤¯à¥‚à¤ªà¥€à¤†à¤ˆ/à¤¬à¥ˆà¤‚à¤•/à¤•à¥à¤°à¤¿à¤ªà¥à¤Ÿà¥‹ à¤•à¥‹ à¤¬à¤¾à¤‡à¤‚à¤¡ à¤•à¤°à¤¨à¥‡ à¤•à¥‡ à¤²à¤¿à¤ "à¤ªà¥à¤°à¤¬à¤‚à¤§à¤¿à¤¤ à¤•à¤°à¥‡à¤‚" à¤ªà¤° à¤•à¥à¤²à¤¿à¤• à¤•à¤°à¥‡à¤‚!' : 'âš ï¸ Please click "Manage" to bind your UPI account first!', true);
+            showToast(currentLocale === 'hi' ? '⚠️ कृपया पहले यूपीआई/बैंक/क्रिप्टो को बाइंड करने के लिए "प्रबंधित करें" पर क्लिक करें!' : '⚠️ Please click "Manage" to bind your UPI account first!', true);
             return;
         }
     } else if (activeTab === 'bank') {
         methodId = document.getElementById('selected-withdraw-bank-id').value;
         if (!methodId) {
-            showToast(currentLocale === 'hi' ? 'âš ï¸ à¤•à¥ƒà¤ªà¤¯à¤¾ à¤ªà¤¹à¤²à¥‡ à¤¯à¥‚à¤ªà¥€à¤†à¤ˆ/à¤¬à¥ˆà¤‚à¤•/à¤•à¥à¤°à¤¿à¤ªà¥à¤Ÿà¥‹ à¤•à¥‹ à¤¬à¤¾à¤‡à¤‚à¤¡ à¤•à¤°à¤¨à¥‡ à¤•à¥‡ à¤²à¤¿à¤ "à¤ªà¥à¤°à¤¬à¤‚à¤§à¤¿à¤¤ à¤•à¤°à¥‡à¤‚" à¤ªà¤° à¤•à¥à¤²à¤¿à¤• à¤•à¤°à¥‡à¤‚!' : 'âš ï¸ Please click "Manage" to bind your Bank card first!', true);
+            showToast(currentLocale === 'hi' ? '⚠️ कृपया पहले यूपीआई/बैंक/क्रिप्टो को बाइंड करने के लिए "प्रबंधित करें" पर क्लिक करें!' : '⚠️ Please click "Manage" to bind your Bank card first!', true);
             return;
         }
     }
     
     const submitBtn = document.getElementById('withdraw-submit-btn');
     submitBtn.disabled = true;
-    submitBtn.innerText = currentLocale === 'hi' ? 'à¤¨à¤¿à¤•à¤¾à¤¸à¥€ à¤…à¤¨à¥à¤°à¥‹à¤§ à¤¸à¤¬à¤®à¤¿à¤Ÿ à¤•à¤¿à¤¯à¤¾ à¤œà¤¾ à¤°à¤¹à¤¾ à¤¹à¥ˆ...' : 'Submitting withdrawal request...';
+    submitBtn.innerText = currentLocale === 'hi' ? 'निकासी अनुरोध सबमिट किया जा रहा है...' : 'Submitting withdrawal request...';
     
     try {
         const submittedAmount = activeTab === 'crypto' ? amt * rate : amt;
@@ -1348,18 +1348,18 @@ async function handleWithdrawFormSubmit(event) {
         const withdrawRes = await apiFetchWithRawBody('POST', '/finance/withdrawals', bodyStr, true);
         if (withdrawRes.code === 200) {
             if (activeTab === 'crypto') {
-                showToast(currentLocale === 'hi' ? `âœ“ $${amt.toFixed(2)} USDT à¤¨à¤¿à¤•à¤¾à¤¸à¥€ à¤…à¤¨à¥à¤°à¥‹à¤§ à¤¸à¤«à¤²à¤¤à¤¾à¤ªà¥‚à¤°à¥à¤µà¤• à¤¸à¤¬à¤®à¤¿à¤Ÿ à¤•à¤¿à¤¯à¤¾ à¤—à¤¯à¤¾!` : `âœ“ $${amt.toFixed(2)} USDT withdrawal request successfully submitted!`, false);
+                showToast(currentLocale === 'hi' ? `✓ $${amt.toFixed(2)} USDT निकासी अनुरोध सफलतापूर्वक सबमिट किया गया!` : `✓ $${amt.toFixed(2)} USDT withdrawal request successfully submitted!`, false);
             } else {
-                showToast(currentLocale === 'hi' ? `âœ“ \u20b9${amt.toFixed(2)} INR à¤¨à¤¿à¤•à¤¾à¤¸à¥€ à¤…à¤¨à¥à¤°à¥‹à¤§ à¤¸à¤«à¤²à¤¤à¤¾à¤ªà¥‚à¤°à¥à¤µà¤• à¤¸à¤¬à¤®à¤¿à¤Ÿ à¤•à¤¿à¤¯à¤¾ à¤—à¤¯à¤¾!` : `âœ“ \u20b9${amt.toFixed(2)} INR withdrawal request successfully submitted!`, false);
+                showToast(currentLocale === 'hi' ? `✓ \u20b9${amt.toFixed(2)} INR निकासी अनुरोध सफलतापूर्वक सबमिट किया गया!` : `✓ \u20b9${amt.toFixed(2)} INR withdrawal request successfully submitted!`, false);
             }
             closeWithdrawModal();
             loadUserAssets();
         } else {
-            showToast(withdrawRes.errorMessage || (currentLocale === 'hi' ? 'à¤¨à¤¿à¤•à¤¾à¤¸à¥€ à¤µà¤¿à¤«à¤²' : 'Withdrawal failed'), true);
+            showToast(withdrawRes.errorMessage || (currentLocale === 'hi' ? 'निकासी विफल' : 'Withdrawal failed'), true);
         }
     } catch (e) {
         console.error(e);
-        showToast(currentLocale === 'hi' ? 'à¤¨à¤¿à¤•à¤¾à¤¸à¥€ à¤…à¤¨à¥à¤°à¥‹à¤§ à¤¨à¥‡à¤Ÿà¤µà¤°à¥à¤• à¤…à¤ªà¤µà¤¾à¤¦!' : 'Withdrawal request network exception!', true);
+        showToast(currentLocale === 'hi' ? 'निकासी अनुरोध नेटवर्क अपवाद!' : 'Withdrawal request network exception!', true);
     } finally {
         submitBtn.disabled = false;
         submitBtn.innerText = currentLocale === 'hi' ? '\u091c\u093e\u0930\u0940 \u0930\u0916\u0947\u0902' : 'Continue';
@@ -1386,8 +1386,8 @@ function calculateDepositConversion() {
     if (symbol === 'USDT' || symbol === 'USD') {
         const isHi = currentLocale === 'hi';
         tipEl.innerHTML = isHi 
-            ? `à¤µà¤°à¥à¤¤à¤®à¤¾à¤¨ à¤¦à¤°: 1 USDT â‰ˆ 1.00 USDT (à¤…à¤¨à¥à¤®à¤¾à¤¨à¤¿à¤¤ à¤•à¥à¤°à¥‡à¤¡à¤¿à¤Ÿ: <span class="green" style="font-weight: 700;">${amt.toFixed(2)} USDT</span>)`
-            : `Current Rate: 1 USDT â‰ˆ 1.00 USDT (Expected Credit: <span class="green" style="font-weight: 700;">${amt.toFixed(2)} USDT</span>)`;
+            ? `वर्तमान दर: 1 USDT ≈ 1.00 USDT (अनुमानित क्रेडिट: <span class="green" style="font-weight: 700;">${amt.toFixed(2)} USDT</span>)`
+            : `Current Rate: 1 USDT ≈ 1.00 USDT (Expected Credit: <span class="green" style="font-weight: 700;">${amt.toFixed(2)} USDT</span>)`;
         return;
     }
     
@@ -1398,7 +1398,7 @@ function calculateDepositConversion() {
     const submitBtn = document.getElementById('deposit-submit-btn');
     if (!rate || !usdtRate) {
         tipEl.innerHTML = currentLocale === 'hi'
-            ? `à¤¸à¥à¤°à¤•à¥à¤·à¤¿à¤¤ à¤°à¥‚à¤ª à¤¸à¥‡ à¤°à¥€à¤¯à¤²-à¤Ÿà¤¾à¤‡à¤® à¤µà¤¿à¤¨à¤¿à¤®à¤¯ à¤¦à¤° à¤¸à¤¿à¤‚à¤• à¤•à¥€ à¤œà¤¾ à¤°à¤¹à¥€ à¤¹à¥ˆ, à¤•à¥ƒà¤ªà¤¯à¤¾ à¤ªà¥à¤°à¤¤à¥€à¤•à¥à¤·à¤¾ à¤•à¤°à¥‡à¤‚...`
+            ? `सुरक्षित रूप से रीयल-टाइम विनिमय दर सिंक की जा रही है, कृपया प्रतीक्षा करें...`
             : `Syncing real-time exchange rates, please wait...`;
         if (submitBtn) submitBtn.disabled = true;
         return;
@@ -1411,8 +1411,8 @@ function calculateDepositConversion() {
     
     const isHi = currentLocale === 'hi';
     tipEl.innerHTML = isHi
-        ? `à¤µà¤°à¥à¤¤à¤®à¤¾à¤¨ à¤¦à¤°: 1 USDT â‰ˆ <b>${usdtToFiatRate.toFixed(4)} ${symbol}</b> (à¤†à¤µà¤¶à¥à¤¯à¤• à¤­à¥à¤—à¤¤à¤¾à¤¨: <span class="green" style="font-weight: 700;">${requiredFiat.toFixed(2)} ${symbol}</span>)`
-        : `Current Rate: 1 USDT â‰ˆ <b>${usdtToFiatRate.toFixed(4)} ${symbol}</b> (Required Payment: <span class="green" style="font-weight: 700;">${requiredFiat.toFixed(2)} ${symbol}</span>)`;
+        ? `वर्तमान दर: 1 USDT ≈ <b>${usdtToFiatRate.toFixed(4)} ${symbol}</b> (आवश्यक भुगतान: <span class="green" style="font-weight: 700;">${requiredFiat.toFixed(2)} ${symbol}</span>)`
+        : `Current Rate: 1 USDT ≈ <b>${usdtToFiatRate.toFixed(4)} ${symbol}</b> (Required Payment: <span class="green" style="font-weight: 700;">${requiredFiat.toFixed(2)} ${symbol}</span>)`;
 }
 
 window.calculateDepositConversion = calculateDepositConversion;
