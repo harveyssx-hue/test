@@ -1,4 +1,4 @@
-async function ensureRiskLevelsLoaded() {
+﻿async function ensureRiskLevelsLoaded() {
     if (!window.cachedRiskLevels || window.cachedRiskLevels.length === 0) {
         try {
             const rlRes = await apiFetch('GET', '/users/risk-levels', null, true);
@@ -31,12 +31,12 @@ function populateRiskLevelFilter(selectId) {
     if (!select) return;
     const levels = window.cachedRiskLevels || [];
     const currentVal = select.value;
-    select.innerHTML = '<option value="ALL">全部层级</option>';
+    select.innerHTML = '<option value="ALL">å…¨éƒ¨å±‚çº§</option>';
     levels.forEach(l => {
         if (l.enabled) {
             const opt = document.createElement('option');
             opt.value = l.id;
-            opt.textContent = `${l.name} (等级 ${l.level || 0})`;
+            opt.textContent = `${l.name} (ç­‰çº§ ${l.level || 0})`;
             select.appendChild(opt);
         }
     });
@@ -108,10 +108,10 @@ async function loadDepositList() {
                     // No user matches phone filter, display empty list immediately
                     const bodyEl = document.getElementById('deposit-table-body');
                     if (bodyEl) {
-                        bodyEl.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 30px 0;">暂无符合条件的充值记录</td></tr>`;
+                        bodyEl.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 30px 0;">æš‚æ— ç¬¦åˆæ¡ä»¶çš„å……å€¼è®°å½•</td></tr>`;
                     }
                     const indicator = document.getElementById(`deposit-page-indicator`);
-                    if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
+                    if (indicator) indicator.innerText = `ç¬¬ 1 / 1 é¡µ (å…± 0 æ¡)`;
                     return;
                 }
             }
@@ -179,9 +179,9 @@ async function loadDepositList() {
                 }
                 
                 if (filteredList.length === 0) {
-                    bodyEl.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 30px 0;">暂无符合条件的充值记录</td></tr>`;
+                    bodyEl.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 30px 0;">æš‚æ— ç¬¦åˆæ¡ä»¶çš„å……å€¼è®°å½•</td></tr>`;
                     const indicator = document.getElementById(`deposit-page-indicator`);
-                    if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
+                    if (indicator) indicator.innerText = `ç¬¬ 1 / 1 é¡µ (å…± 0 æ¡)`;
                     return;
                 }
                 
@@ -204,13 +204,13 @@ async function loadDepositList() {
             
             bodyEl.innerHTML = renderList.map(d => {
                 const date = d.createdAt ? new Date(parseInt(d.createdAt)).toLocaleString() : '--';
-                const proofLink = d.paymentProof ? `<a href="javascript:void(0)" onclick="viewProofImage('${d.id}')" style="color: var(--primary); font-weight: 600; text-decoration: underline;">查看凭证 🔗</a>` : '无';
+                const proofLink = d.paymentProof ? `<a href="javascript:void(0)" onclick="viewProofImage('${d.id}')" style="color: var(--primary); font-weight: 600; text-decoration: underline;">æŸ¥çœ‹å‡­è¯ ðŸ”—</a>` : 'æ— ';
                 
                 let typeBadge = '';
                 if (d.depositType === 'FIAT') {
-                    typeBadge = `<span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: rgba(59, 130, 246, 0.1); color: #3B82F6; font-weight: bold; display: inline-block;">💵 FIAT 法币</span>`;
+                    typeBadge = `<span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: rgba(59, 130, 246, 0.1); color: #3B82F6; font-weight: bold; display: inline-block;">ðŸ’µ FIAT æ³•å¸</span>`;
                 } else if (d.depositType === 'CRYPTO') {
-                    typeBadge = `<span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: rgba(16, 185, 129, 0.1); color: #10B981; font-weight: bold; display: inline-block;">🪙 CRYPTO 加密</span>`;
+                    typeBadge = `<span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: rgba(16, 185, 129, 0.1); color: #10B981; font-weight: bold; display: inline-block;">ðŸª™ CRYPTO åŠ å¯†</span>`;
                 } else {
                     typeBadge = `<span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: rgba(148, 163, 184, 0.1); color: #94A3B8; font-weight: bold; display: inline-block;">${d.depositType || 'UNKNOWN'}</span>`;
                 }
@@ -226,25 +226,25 @@ async function loadDepositList() {
                     inrAmt = usdtAmt * rate;
                 }
                 
-                let amountDetails = `<span style="font-weight: 700; color: var(--primary); font-size: 0.88rem;">₹${inrAmt.toFixed(2)} INR</span>`;
-                amountDetails += `<br><span style="font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap;">入账: <b>${usdtAmt.toFixed(2)} USDT</b> (汇率: ${rate.toFixed(2)})</span>`;
+                let amountDetails = `<span style="font-weight: 700; color: var(--primary); font-size: 0.88rem;">â‚¹${inrAmt.toFixed(2)} INR</span>`;
+                amountDetails += `<br><span style="font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap;">å…¥è´¦: <b>${usdtAmt.toFixed(2)} USDT</b> (æ±‡çŽ‡: ${rate.toFixed(2)})</span>`;
 
                 let actionHtml = '';
                 if (d.status === 'PENDING' || d.status === 'CONFIRMED') {
                     actionHtml = `
                         <div style="display: flex; gap: 6px; justify-content: center;">
-                            <button class="action-btn btn-approve" style="padding: 4px 8px; font-size: 0.75rem;" onclick="handleDepositReview('${d.id}', 'credit')">入账</button>
-                            <button class="action-btn btn-reject" style="padding: 4px 8px; font-size: 0.75rem;" onclick="handleDepositReview('${d.id}', 'reject')">拒绝</button>
+                            <button class="action-btn btn-approve" style="padding: 4px 8px; font-size: 0.75rem;" onclick="handleDepositReview('${d.id}', 'credit')">å…¥è´¦</button>
+                            <button class="action-btn btn-reject" style="padding: 4px 8px; font-size: 0.75rem;" onclick="handleDepositReview('${d.id}', 'reject')">æ‹’ç»</button>
                         </div>
                     `;
                 } else {
-                    actionHtml = `<span style="color: var(--text-muted); font-size: 0.75rem;">已归档</span>`;
+                    actionHtml = `<span style="color: var(--text-muted); font-size: 0.75rem;">å·²å½’æ¡£</span>`;
                 }
                 
                 const remittanceDisplay = d.remittanceCode ? (d.remittanceCode.length > 8 ? d.remittanceCode.substring(0, 8) + '...' : d.remittanceCode) : '--';
                 const userPhone = userPhoneMap[String(d.userId)] || '--';
-                const userRiskObj = userRiskMap[String(d.userId)] || { name: '未分组', level: 0 };
-                const riskLevelName = userRiskObj.name || '未分组';
+                const userRiskObj = userRiskMap[String(d.userId)] || { name: 'æœªåˆ†ç»„', level: 0 };
+                const riskLevelName = userRiskObj.name || 'æœªåˆ†ç»„';
                 const riskLevelBadge = `<br><span style="font-size: 0.68rem; color: #38BDF8; font-weight: 600;">${riskLevelName}</span>`;
                 
                 return `
@@ -266,31 +266,31 @@ async function loadDepositList() {
                 `;
             }).join('');
         } else {
-            showToast(res.errorMessage || '获取充值列表失败！', true);
+            showToast(res.errorMessage || 'èŽ·å–å……å€¼åˆ—è¡¨å¤±è´¥ï¼', true);
         }
     } catch (e) {
         console.error(e);
-        showToast('获取充值列表网络异常！', true);
+        showToast('èŽ·å–å……å€¼åˆ—è¡¨ç½‘ç»œå¼‚å¸¸ï¼', true);
     }
 }
 
 async function handleDepositReview(id, action) {
-    const actionLabel = action === 'credit' ? '确认入账并上账' : '拒绝并撤销该充值单';
-    if (!confirm(`您确定要对充值单 ${id} 执行 [${actionLabel}] 操作吗？`)) return;
+    const actionLabel = action === 'credit' ? 'ç¡®è®¤å…¥è´¦å¹¶ä¸Šè´¦' : 'æ‹’ç»å¹¶æ’¤é”€è¯¥å……å€¼å•';
+    if (!confirm(`æ‚¨ç¡®å®šè¦å¯¹å……å€¼å• ${id} æ‰§è¡Œ [${actionLabel}] æ“ä½œå—ï¼Ÿ`)) return;
     
-    showToast(`正在提交充值审计指令 [${action}]...`, false);
+    showToast(`æ­£åœ¨æäº¤å……å€¼å®¡è®¡æŒ‡ä»¤ [${action}]...`, false);
     try {
         const res = await apiFetch('POST', `/finance/deposits/${id}/${action}`, {}, true);
         if (res.code === 200) {
-            showToast(`✓ 充值单 ${id} 处理成功：已完成${action === 'credit' ? '入账' : '驳回'}！`, false);
+            showToast(`âœ“ å……å€¼å• ${id} å¤„ç†æˆåŠŸï¼šå·²å®Œæˆ${action === 'credit' ? 'å…¥è´¦' : 'é©³å›ž'}ï¼`, false);
             loadDashboardStats();
             loadDepositList();
         } else {
-            showToast(res.errorMessage || '充值审计操作失败！', true);
+            showToast(res.errorMessage || 'å……å€¼å®¡è®¡æ“ä½œå¤±è´¥ï¼', true);
         }
     } catch (e) {
         console.error(e);
-        showToast('提交充值审计网络异常！', true);
+        showToast('æäº¤å……å€¼å®¡è®¡ç½‘ç»œå¼‚å¸¸ï¼', true);
     }
 }
 
@@ -414,10 +414,10 @@ async function loadWithdrawList() {
                     // No user matches phone filter, display empty list immediately
                     const bodyEl = document.getElementById('withdraw-table-body');
                     if (bodyEl) {
-                        bodyEl.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 30px 0;">暂无符合条件的提现记录</td></tr>`;
+                        bodyEl.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 30px 0;">æš‚æ— ç¬¦åˆæ¡ä»¶çš„æçŽ°è®°å½•</td></tr>`;
                     }
                     const indicator = document.getElementById(`withdraw-page-indicator`);
-                    if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
+                    if (indicator) indicator.innerText = `ç¬¬ 1 / 1 é¡µ (å…± 0 æ¡)`;
                     return;
                 }
             }
@@ -481,9 +481,9 @@ async function loadWithdrawList() {
                 }
                 
                 if (filteredList.length === 0) {
-                    bodyEl.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 30px 0;">暂无符合条件的提现记录</td></tr>`;
+                    bodyEl.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 30px 0;">æš‚æ— ç¬¦åˆæ¡ä»¶çš„æçŽ°è®°å½•</td></tr>`;
                     const indicator = document.getElementById(`withdraw-page-indicator`);
-                    if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
+                    if (indicator) indicator.innerText = `ç¬¬ 1 / 1 é¡µ (å…± 0 æ¡)`;
                     return;
                 }
                 
@@ -507,8 +507,8 @@ async function loadWithdrawList() {
             bodyEl.innerHTML = renderList.map(w => {
                 const date = w.createdAt ? new Date(parseInt(w.createdAt)).toLocaleString() : '--';
                 const userPhone = userPhoneMap[String(w.userId)] || '--';
-                const userRiskObj = userRiskMap[String(w.userId)] || { name: '未分组', level: 0 };
-                const riskLevelName = userRiskObj.name || '未分组';
+                const userRiskObj = userRiskMap[String(w.userId)] || { name: 'æœªåˆ†ç»„', level: 0 };
+                const riskLevelName = userRiskObj.name || 'æœªåˆ†ç»„';
                 const riskLevelBadge = `<br><span style="font-size: 0.68rem; color: #38BDF8; font-weight: 600;">${riskLevelName}</span>`;
                 
                 let channelName = '--';
@@ -519,11 +519,11 @@ async function loadWithdrawList() {
                     const network = crypto.network || w.targetSnapshot?.method?.name || 'TRC20';
                     const address = crypto.address || '--';
                     const memo = crypto.memo ? ` (Memo: ${crypto.memo})` : '';
-                    channelName = `<span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: rgba(16, 185, 129, 0.1); color: #10B981; font-weight: bold; display: inline-block;">🪙 CRYPTO [${network}]</span>`;
+                    channelName = `<span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: rgba(16, 185, 129, 0.1); color: #10B981; font-weight: bold; display: inline-block;">ðŸª™ CRYPTO [${network}]</span>`;
                     targetAddress = `
                         <div style="display: flex; flex-direction: column; gap: 4px;">
                             <span style="font-family: monospace; font-size: 0.8rem; color: var(--text-primary); font-weight: 600; word-break: break-all;">${address}${memo}</span>
-                            <button class="action-btn btn-approve" style="padding: 2px 6px; font-size: 0.68rem; background: var(--primary); color: #FFF; border-radius: 4px; height: 20px; line-height: 1; width: fit-content; margin-top: 2px;" onclick="copyToClipboard('${address}', '接收地址已成功复制到剪贴板！')">📋 复制收款地址</button>
+                            <button class="action-btn btn-approve" style="padding: 2px 6px; font-size: 0.68rem; background: var(--primary); color: #FFF; border-radius: 4px; height: 20px; line-height: 1; width: fit-content; margin-top: 2px;" onclick="copyToClipboard('${address}', 'æŽ¥æ”¶åœ°å€å·²æˆåŠŸå¤åˆ¶åˆ°å‰ªè´´æ¿ï¼')">ðŸ“‹ å¤åˆ¶æ”¶æ¬¾åœ°å€</button>
                         </div>
                     `;
                 } else if (w.withdrawType === 'FIAT') {
@@ -533,13 +533,13 @@ async function loadWithdrawList() {
                     const name = fiat.accountName || '--';
                     const isUpi = !!fiat.upi;
                     const acc = fiat.upi || fiat.accountNumber || '--';
-                    const labelText = isUpi ? 'UPI ID' : '银行账号';
-                    channelName = `<span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: rgba(59, 130, 246, 0.1); color: #3B82F6; font-weight: bold; display: inline-block;">💵 FIAT [${methodName}${bank ? ' - ' + bank : ''}]</span>`;
+                    const labelText = isUpi ? 'UPI ID' : 'é“¶è¡Œè´¦å·';
+                    channelName = `<span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: rgba(59, 130, 246, 0.1); color: #3B82F6; font-weight: bold; display: inline-block;">ðŸ’µ FIAT [${methodName}${bank ? ' - ' + bank : ''}]</span>`;
                     targetAddress = `<div style="font-size: 0.8rem; color: var(--text-primary); line-height: 1.4;">
-                        <span>收款姓名: <b>${name}</b></span><br>
+                        <span>æ”¶æ¬¾å§“å: <b>${name}</b></span><br>
                         <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 2px;">
                             <span>${labelText}: <span style="font-family: monospace; font-weight: 600; color: ${isUpi ? '#3B82F6' : 'var(--text-primary)'};">${acc}</span></span>
-                            <button class="action-btn btn-approve" style="padding: 2px 6px; font-size: 0.68rem; background: var(--primary); color: #FFF; border-radius: 4px; height: 20px; line-height: 1; width: fit-content;" onclick="copyToClipboard('${acc}', '${labelText}已成功复制到剪贴板！')">📋 复制收款账号</button>
+                            <button class="action-btn btn-approve" style="padding: 2px 6px; font-size: 0.68rem; background: var(--primary); color: #FFF; border-radius: 4px; height: 20px; line-height: 1; width: fit-content;" onclick="copyToClipboard('${acc}', '${labelText}å·²æˆåŠŸå¤åˆ¶åˆ°å‰ªè´´æ¿ï¼')">ðŸ“‹ å¤åˆ¶æ”¶æ¬¾è´¦å·</button>
                         </div>
                     </div>`;
                 } else {
@@ -576,32 +576,32 @@ async function loadWithdrawList() {
                     inrActual = usdtActual * rate;
                 }
 
-                let amountDetails = `<span style="font-weight: 700; color: #EF4444; font-size: 0.88rem;">₹${inrAmt.toFixed(2)} INR</span>`;
-                amountDetails += `<br><span style="font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap;">出账: <b>${usdtAmt.toFixed(2)} USDT</b> (汇率: ${rate.toFixed(2)})</span>`;
+                let amountDetails = `<span style="font-weight: 700; color: #EF4444; font-size: 0.88rem;">â‚¹${inrAmt.toFixed(2)} INR</span>`;
+                amountDetails += `<br><span style="font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap;">å‡ºè´¦: <b>${usdtAmt.toFixed(2)} USDT</b> (æ±‡çŽ‡: ${rate.toFixed(2)})</span>`;
                 
                 if (inrFee > 0) {
-                    amountDetails += `<br><span style="font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap;">实到: <b>₹${inrActual.toFixed(2)} INR</b> (服务费: ₹${inrFee.toFixed(2)})</span>`;
+                    amountDetails += `<br><span style="font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap;">å®žåˆ°: <b>â‚¹${inrActual.toFixed(2)} INR</b> (æœåŠ¡è´¹: â‚¹${inrFee.toFixed(2)})</span>`;
                 } else {
-                    amountDetails += `<br><span style="font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap;">实到: <b>₹${inrAmt.toFixed(2)} INR</b> (免手续费)</span>`;
+                    amountDetails += `<br><span style="font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap;">å®žåˆ°: <b>â‚¹${inrAmt.toFixed(2)} INR</b> (å…æ‰‹ç»­è´¹)</span>`;
                 }
 
                 let actionHtml = '';
                 if (w.status === 'PENDING') {
                     actionHtml = `
                         <div style="display: flex; gap: 6px; justify-content: center;">
-                            <button class="action-btn btn-accept" style="padding: 4px 8px; font-size: 0.75rem;" onclick="handleWithdrawReview('${w.id}', 'accept')">受理</button>
-                            <button class="action-btn btn-reject" style="padding: 4px 8px; font-size: 0.75rem;" onclick="handleWithdrawReview('${w.id}', 'reject')">拒绝</button>
+                            <button class="action-btn btn-accept" style="padding: 4px 8px; font-size: 0.75rem;" onclick="handleWithdrawReview('${w.id}', 'accept')">å—ç†</button>
+                            <button class="action-btn btn-reject" style="padding: 4px 8px; font-size: 0.75rem;" onclick="handleWithdrawReview('${w.id}', 'reject')">æ‹’ç»</button>
                         </div>
                     `;
                 } else if (w.status === 'ACCEPTED') {
                     actionHtml = `
                         <div style="display: flex; gap: 6px; justify-content: center;">
-                            <button class="action-btn btn-approve" style="padding: 4px 8px; font-size: 0.75rem;" onclick="handleWithdrawReview('${w.id}', 'complete')">放款完成</button>
-                            <button class="action-btn btn-reject" style="padding: 4px 8px; font-size: 0.75rem;" onclick="handleWithdrawReview('${w.id}', 'fail')">失败</button>
+                            <button class="action-btn btn-approve" style="padding: 4px 8px; font-size: 0.75rem;" onclick="handleWithdrawReview('${w.id}', 'complete')">æ”¾æ¬¾å®Œæˆ</button>
+                            <button class="action-btn btn-reject" style="padding: 4px 8px; font-size: 0.75rem;" onclick="handleWithdrawReview('${w.id}', 'fail')">å¤±è´¥</button>
                         </div>
                     `;
                 } else {
-                    actionHtml = `<span style="color: var(--text-muted); font-size: 0.75rem;">已归档</span>`;
+                    actionHtml = `<span style="color: var(--text-muted); font-size: 0.75rem;">å·²å½’æ¡£</span>`;
                 }
                 
                 return `
@@ -623,63 +623,50 @@ async function loadWithdrawList() {
                 `;
             }).join('');
         } else {
-            showToast(res.errorMessage || '获取提现列表失败！', true);
+            showToast(res.errorMessage || 'èŽ·å–æçŽ°åˆ—è¡¨å¤±è´¥ï¼', true);
         }
     } catch (e) {
         console.error(e);
-        showToast('获取提现列表网络异常！', true);
+        showToast('èŽ·å–æçŽ°åˆ—è¡¨ç½‘ç»œå¼‚å¸¸ï¼', true);
     }
 }
 
 async function handleWithdrawReview(id, action) {
     const dict = {
-        'accept': '受理提现单（进入放款队列）',
-        'complete': '确放款已到账（清算完成）',
-        'reject': '拒绝提现申请（资金原路解冻）',
-        'fail': '放款失败记账（资金退回）'
+        'accept': 'å—ç†æçŽ°å•ï¼ˆè¿›å…¥æ”¾æ¬¾é˜Ÿåˆ—ï¼‰',
+        'complete': 'ç¡®æ”¾æ¬¾å·²åˆ°è´¦ï¼ˆæ¸…ç®—å®Œæˆï¼‰',
+        'reject': 'æ‹’ç»æçŽ°ç”³è¯·ï¼ˆèµ„é‡‘åŽŸè·¯è§£å†»ï¼‰',
+        'fail': 'æ”¾æ¬¾å¤±è´¥è®°è´¦ï¼ˆèµ„é‡‘é€€å›žï¼‰'
     };
     const actionLabel = dict[action] || action;
-    if (!confirm(`您确定要对提现单 ${id} 执行 [${actionLabel}] 操作吗？`)) return;
+    if (!confirm(`æ‚¨ç¡®å®šè¦å¯¹æçŽ°å• ${id} æ‰§è¡Œ [${actionLabel}] æ“ä½œå—ï¼Ÿ`)) return;
     
-    showToast(`正在提交提现审计指令 [${action}]...`, false);
+    showToast(`æ­£åœ¨æäº¤æçŽ°å®¡è®¡æŒ‡ä»¤ [${action}]...`, false);
     try {
         const res = await apiFetch('POST', `/finance/withdrawals/${id}/${action}`, {}, true);
         if (res.code === 200) {
-            showToast(`✓ 提现单 ${id} 处理成功：已执行${actionLabel}！`, false);
+            showToast(`âœ“ æçŽ°å• ${id} å¤„ç†æˆåŠŸï¼šå·²æ‰§è¡Œ${actionLabel}ï¼`, false);
             loadDashboardStats();
             loadWithdrawList();
         } else {
-            showToast(res.errorMessage || '提现审计操作失败！', true);
+            showToast(res.errorMessage || 'æçŽ°å®¡è®¡æ“ä½œå¤±è´¥ï¼', true);
         }
     } catch (e) {
         console.error(e);
-        showToast('提交提现审计网络异常！', true);
+        showToast('æäº¤æçŽ°å®¡è®¡ç½‘ç»œå¼‚å¸¸ï¼', true);
     }
 }
 
 let cachedPaymentChannels = [];
 
 async function loadPaymentChannels() {
-    const activeBtn = document.getElementById('btn-sub-methods');
-    if (activeBtn && activeBtn.classList.contains('active')) {
-        currentPaymentSubTab = 'payment';
-    }
-
-    if (currentPaymentSubTab !== 'payment') {
-        if (currentPaymentSubTab === 'crypto') {
-            await loadCryptoTargetsList();
-        } else if (currentPaymentSubTab === 'fiat') {
-            await loadFiatTargetsList();
-        } else if (currentPaymentSubTab === 'bindings') {
-            await loadBindingsList();
-        }
-        return;
-    }
-
+    if (!currentAdmin) return;
+    await ensureAssetsLoaded();
+    
     const tableBody = document.getElementById('payment-table-body');
     if (!tableBody) return;
     
-    tableBody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 50px 0;">🔄 正在拉取平台支付通道列表...</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 50px 0;">ðŸ”„ æ­£åœ¨æ‹‰å–å¹³å°æ”¯ä»˜é€šé“åˆ—è¡¨...</td></tr>`;
     
     const pageConf = window.adminPages.payment;
     
@@ -687,11 +674,11 @@ async function loadPaymentChannels() {
         const res = await apiFetch('GET', `/finance/payment-methods?page=${pageConf.current}&pageSize=${pageConf.size}`, null, true);
         if (res.code === 200) {
             const list = res.result || res.data || [];
-            cachedPaymentChannels = list; // Cache for edit lookup
+            cachedPaymentChannels = list;
             if (list.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 50px 0;">🫙 平台暂无已配置的支付通道</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 50px 0;">ðŸ«™ å¹³å°æš‚æ— å·²é…ç½®çš„æ”¯ä»˜é€šé“</td></tr>`;
                 const indicator = document.getElementById(`payment-page-indicator`);
-                if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
+                if (indicator) indicator.innerText = `ç¬¬ 1 / 1 é¡µ (å…± 0 æ¡)`;
                 return;
             }
             
@@ -705,966 +692,560 @@ async function loadPaymentChannels() {
             
             tableBody.innerHTML = list.map(m => {
                 const statusBadge = m.enabled 
-                    ? `<span class="kyc-badge-status kyc-status-APPROVED" style="font-size:0.75rem; padding: 2px 8px; border-radius: 4px;">已启用</span>`
-                    : `<span class="kyc-badge-status kyc-status-NONE" style="font-size:0.75rem; padding: 2px 8px; border-radius: 4px;">已禁用</span>`;
+                    ? `<span class="kyc-badge-status kyc-status-APPROVED" style="font-size:0.75rem; padding: 2px 8px; border-radius: 4px;">å·²å¯ç”¨</span>`
+                    : `<span class="kyc-badge-status kyc-status-NONE" style="font-size:0.75rem; padding: 2px 8px; border-radius: 4px;">å·²ç¦ç”¨</span>`;
                 
                 const actionBtn = m.enabled
-                    ? `<button class="action-btn btn-reject" onclick="togglePaymentChannelStatus('${m.id}', false)" style="padding: 4px 8px; font-size: 0.72rem; cursor: pointer;">禁用</button>`
-                    : `<button class="action-btn btn-approve" onclick="togglePaymentChannelStatus('${m.id}', true)" style="padding: 4px 8px; font-size: 0.72rem; cursor: pointer;">启用</button>`;
+                    ? `<button class="action-btn btn-reject" onclick="togglePaymentChannelStatus('${m.id}', false)" style="padding: 4px 8px; font-size: 0.72rem; cursor: pointer;">ç¦ç”¨</button>`
+                    : `<button class="action-btn btn-approve" onclick="togglePaymentChannelStatus('${m.id}', true)" style="padding: 4px 8px; font-size: 0.72rem; cursor: pointer;">å¯ç”¨</button>`;
                 
-                const editBtn = `<button class="action-btn btn-view" onclick="openPaymentEditModal('${m.id}')" style="padding: 4px 8px; font-size: 0.72rem; margin-left: 5px; cursor: pointer; background: rgba(59, 130, 246, 0.08); color: var(--blue);">📝 编辑</button>`;
- 
-                const deleteBtn = `<button class="action-btn btn-reject" onclick="deletePaymentChannel('${m.id}')" style="padding: 4px 8px; font-size: 0.72rem; background: rgba(239, 68, 68, 0.08); color: var(--red); margin-left: 5px; cursor: pointer;">删除</button>`;
+                const editBtn = `<button class="action-btn btn-view" onclick="openPaymentEditModal('${m.id}')" style="padding: 4px 8px; font-size: 0.72rem; margin-left: 5px; cursor: pointer; background: rgba(59, 130, 246, 0.08); color: var(--blue);">ðŸ“ ç¼–è¾‘</button>`;
+  
+                const deleteBtn = `<button class="action-btn btn-reject" onclick="deletePaymentChannel('${m.id}')" style="padding: 4px 8px; font-size: 0.72rem; background: rgba(239, 68, 68, 0.08); color: var(--red); margin-left: 5px; cursor: pointer;">åˆ é™¤</button>`;
+                
+                const bindBtn = `<button class="action-btn btn-view" onclick="openBindPaymentRiskLevelsModal('${m.id}')" style="padding: 4px 8px; font-size: 0.72rem; background: rgba(91, 81, 249, 0.08); color: var(--primary); margin-left: 5px; cursor: pointer;">ðŸ”— ç»‘å®šå±‚çº§</button>`;
                 
                 const iconHtml = m.iconUrl 
                     ? `<img src="${m.iconUrl}" style="max-height: 24px; max-width: 24px; border-radius: 4px; object-fit: contain;" onerror="this.onerror=null; this.src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';">`
-                    : `<span style="font-size:1.1rem;">💳</span>`;
- 
+                    : `<span style="font-size:1.1rem;">ðŸ’³</span>`;
+                
+                // Format account details based on paymentMethodType
+                let detailsHtml = '';
+                if (m.paymentMethodType === 'CRYPTO_WALLET') {
+                    detailsHtml = `
+                        <div style="font-size: 0.75rem; line-height: 1.3;">
+                            <b>ç½‘ç»œ:</b> <span style="font-family: monospace; color: var(--primary);">${m.network || '--'}</span><br>
+                            <b>åœ°å€:</b> <span style="font-family: monospace; word-break: break-all;">${m.address || '--'}</span>
+                            ${m.receivingMemo ? `<br><b>Memo:</b> <span style="font-family: monospace; color: #F59E0B;">${m.receivingMemo}</span>` : ''}
+                        </div>
+                    `;
+                } else if (m.paymentMethodType === 'BANK_TRANSFER' || m.paymentMethodType === 'CARD') {
+                    detailsHtml = `
+                        <div style="font-size: 0.75rem; line-height: 1.3;">
+                            <b>é“¶è¡Œ:</b> <span>${m.bankName || '--'}</span> (${m.branchName || '--'})<br>
+                            <b>è´¦æˆ·:</b> <span>${m.accountName || '--'}</span><br>
+                            <b>å¼€æˆ·äºº:</b> <span>${m.accountHolderName || '--'}</span><br>
+                            <b>è´¦å·:</b> <span style="font-family: monospace; font-weight: 600;">${m.accountNumber || '--'}</span>
+                            ${m.swiftCode ? `<br><b>SWIFT:</b> <span style="font-family: monospace;">${m.swiftCode}</span>` : ''}
+                            ${m.iban ? `<br><b>IBAN:</b> <span style="font-family: monospace;">${m.iban}</span>` : ''}
+                        </div>
+                    `;
+                } else if (m.paymentMethodType === 'UPI') {
+                    detailsHtml = `
+                        <div style="font-size: 0.75rem; line-height: 1.3;">
+                            <b>UPI ID:</b> <span style="font-family: monospace; font-weight: 600; color: var(--primary);">${m.accountNumber || '--'}</span><br>
+                            <b>å§“å:</b> <span>${m.accountHolderName || '--'}</span>
+                        </div>
+                    `;
+                } else {
+                    detailsHtml = `
+                        <div style="font-size: 0.75rem; line-height: 1.3;">
+                            <b>è´¦å·:</b> <span style="font-family: monospace; font-weight: 600;">${m.accountNumber || '--'}</span><br>
+                            <b>å§“å:</b> <span>${m.accountHolderName || '--'}</span>
+                        </div>
+                    `;
+                }
+                
+                // Show QR code indicator if exists
+                if (m.qrCodeUrl) {
+                    detailsHtml += `
+                        <div style="margin-top: 4px; display: flex; align-items: center; gap: 4px;">
+                            <span style="font-size: 0.65rem; color: #10B981; font-weight: bold; background: rgba(16,185,129,0.08); padding: 1px 4px; border-radius: 3px;">ðŸ–¼ï¸ é™„äºŒç»´ç </span>
+                            <a href="${m.qrCodeUrl}" target="_blank" style="font-size: 0.65rem; color: var(--primary); text-decoration: underline;">æŸ¥çœ‹</a>
+                        </div>
+                    `;
+                }
+                
+                const assetSymbol = translateAsset(m.assetId);
+                const limitText = `
+                    <div style="font-size: 0.75rem; line-height: 1.3; font-family: 'Outfit';">
+                        <b>Min:</b> ${m.minDepositAmount || 0} ${assetSymbol}<br>
+                        <b>Max:</b> ${m.maxDepositAmount || 0} ${assetSymbol}
+                    </div>
+                `;
+
                 return `
                     <tr>
-                        <td style="font-family: monospace; font-size: 0.8rem;">${m.id}</td>
-                        <td style="text-align: center; vertical-align: middle;">${iconHtml}</td>
-                        <td style="font-weight: 600; color: var(--text-primary);">${m.name || '--'}</td>
+                        <td style="font-family: monospace; font-size: 0.72rem;">${m.id}</td>
                         <td>
-                            <span style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: rgba(0,0,0,0.04); font-family: monospace; font-weight: 600;">
-                                ${m.assetClass || '--'}
-                            </span>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                ${iconHtml}
+                                <div style="font-weight: 600; color: var(--text-primary);">${m.name || '--'}</div>
+                            </div>
                         </td>
                         <td>
-                            <span style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: ${m.bizType === 'DEPOSIT' ? 'rgba(16,185,129,0.08)' : 'rgba(91,81,249,0.08)'}; color: ${m.bizType === 'DEPOSIT' ? 'var(--green)' : 'var(--primary)'}; font-weight: 600;">
-                                ${m.bizType || '--'}
-                            </span>
+                            <div style="font-weight: bold; color: var(--primary); font-size: 0.72rem;">${m.paymentMethodType || '--'}</div>
+                            <div style="font-size: 0.68rem; color: var(--text-secondary); font-family: monospace;">Asset: ${assetSymbol}</div>
                         </td>
-                        <td style="font-size: 0.8rem; color: var(--text-secondary);">${m.channelType || '--'}</td>
-                        <td style="font-size: 0.8rem; color: var(--text-secondary);">${m.actionType || '--'}</td>
-                        <td style="font-weight: 600; text-align: center;">${m.orderIndex || 0}</td>
+                        <td>${detailsHtml}</td>
+                        <td>${limitText}</td>
+                        <td style="font-size: 0.75rem;">
+                            <b>æŽ’åº:</b> ${m.orderIndex || 0}<br>
+                            <b>æƒé‡:</b> ${m.priority || 0}
+                        </td>
                         <td>${statusBadge}</td>
                         <td>
-                            <div style="display: flex; align-items: center;">
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 4px; flex-wrap: wrap;">
                                 ${actionBtn}
                                 ${editBtn}
                                 ${deleteBtn}
+                                ${bindBtn}
                             </div>
                         </td>
                     </tr>
                 `;
             }).join('');
         } else {
-            tableBody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--red); padding: 50px 0;">⚠️ 获取支付通道失败：${res.errorMessage || '错误'}</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--red); padding: 50px 0;">âš ï¸ èŽ·å–æ”¯ä»˜é€šé“å¤±è´¥ï¼š${res.errorMessage || 'é”™è¯¯'}</td></tr>`;
         }
     } catch (e) {
         console.error('Failed to load payment channels:', e);
-        tableBody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--red); padding: 50px 0;">⚠️ 发生网络异常，无法拉取支付通道列表！</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--red); padding: 50px 0;">âš ï¸ å‘ç”Ÿç½‘ç»œå¼‚å¸¸ï¼Œæ— æ³•æ‹‰å–æ”¯ä»˜é€šé“åˆ—è¡¨ï¼</td></tr>`;
     }
 }
 
 async function togglePaymentChannelStatus(channelId, enable) {
-    showToast(enable ? '正在启用通道...' : '正在禁用通道...', false);
+    showToast(enable ? 'æ­£åœ¨å¯ç”¨é€šé“...' : 'æ­£åœ¨ç¦ç”¨é€šé“...', false);
     try {
         const res = await apiFetch('POST', `/finance/payment-methods/${channelId}/update-status`, { enabled: enable }, true);
         if (res.code === 200) {
-            showToast(enable ? '✓ 通道已成功启用！' : '✓ 通道已成功禁用！', false);
+            showToast(enable ? 'âœ“ é€šé“å·²æˆåŠŸå¯ç”¨ï¼' : 'âœ“ é€šé“å·²æˆåŠŸç¦ç”¨ï¼', false);
             loadPaymentChannels();
         } else {
-            showToast(res.errorMessage || '修改通道状态失败！', true);
+            showToast(res.errorMessage || 'ä¿®æ”¹é€šé“çŠ¶æ€å¤±è´¥ï¼', true);
         }
     } catch (e) {
         console.error('Failed to update channel status:', e);
-        showToast('修改通道状态网络异常！', true);
+        showToast('ä¿®æ”¹é€šé“çŠ¶æ€ç½‘ç»œå¼‚å¸¸ï¼', true);
     }
 }
 
 async function deletePaymentChannel(channelId) {
-    if (!confirm('⚠️ 您确定要永久删除该支付通道吗？删除后将无法恢复且影响用户充值端展示！')) return;
-    showToast('正在删除通道...', false);
+    if (!confirm('âš ï¸ æ‚¨ç¡®å®šè¦æ°¸ä¹…åˆ é™¤è¯¥æ”¯ä»˜é€šé“å—ï¼Ÿåˆ é™¤åŽå°†æ— æ³•æ¢å¤ä¸”å½±å“ç”¨æˆ·å……å€¼ç«¯å±•ç¤ºï¼')) return;
+    showToast('æ­£åœ¨åˆ é™¤é€šé“...', false);
     try {
         const res = await apiFetch('POST', `/finance/payment-methods/${channelId}/delete`, {}, true);
         if (res.code === 200) {
-            showToast('✓ 支付通道已成功删除！', false);
+            showToast('âœ“ æ”¯ä»˜é€šé“å·²æˆåŠŸåˆ é™¤ï¼', false);
             loadPaymentChannels();
         } else {
-            showToast(res.errorMessage || '删除通道失败！', true);
+            showToast(res.errorMessage || 'åˆ é™¤é€šé“å¤±è´¥ï¼', true);
         }
     } catch (e) {
         console.error('Failed to delete channel:', e);
-        showToast('删除通道网络异常！', true);
+        showToast('åˆ é™¤é€šé“ç½‘ç»œå¼‚å¸¸ï¼', true);
     }
 }
 
-function openPaymentAddModal() {
+let cachedAssets = [];
+async function ensureAssetsLoaded() {
+    if (cachedAssets && cachedAssets.length > 0) return cachedAssets;
+    try {
+        const res = await apiFetch('GET', '/assets?page=1&pageSize=1000', null, true);
+        if (res.code === 200) {
+            cachedAssets = res.result || res.data || [];
+        }
+    } catch (e) {
+        console.error("Failed to load assets:", e);
+    }
+    return cachedAssets;
+}
+
+function translateAsset(assetId) {
+    const asset = cachedAssets.find(a => String(a.id) === String(assetId));
+    if (asset) return asset.symbol;
+    const symbolMap = {
+        '1183348576672026624': 'USDT',
+        '1183348576672026625': 'BTC',
+        '1183348576642666496': 'BTC',
+        '1183348576630083584': 'ETH',
+        '1126151490264633349': 'USD',
+        '1126151490264633456': 'INR',
+        '1126151490264633373': 'HKD',
+        '1126151490264633358': 'EUR'
+    };
+    return symbolMap[String(assetId)] || `Asset(${assetId})`;
+}
+
+export function togglePaymentTypeFields(prefix) {
+    const type = document.getElementById(`payment-${prefix}-paymentMethodType`).value;
+    const cryptoSec = document.getElementById(`payment-${prefix}-crypto-sec`);
+    const bankSec = document.getElementById(`payment-${prefix}-bank-sec`);
+    const walletSec = document.getElementById(`payment-${prefix}-wallet-sec`);
+    const qrSec = document.getElementById(`payment-${prefix}-qrcode-container`);
+    
+    if (cryptoSec) cryptoSec.style.display = 'none';
+    if (bankSec) bankSec.style.display = 'none';
+    if (walletSec) walletSec.style.display = 'none';
+    if (qrSec) qrSec.style.display = 'none';
+    
+    if (type === 'CRYPTO_WALLET') {
+        if (cryptoSec) cryptoSec.style.display = 'flex';
+        if (qrSec) qrSec.style.display = 'block';
+    } else if (type === 'BANK_TRANSFER' || type === 'CARD') {
+        if (bankSec) bankSec.style.display = 'flex';
+    } else {
+        // UPI / ALIPAY / WECHAT_PAY / PAYPAL, etc.
+        if (walletSec) walletSec.style.display = 'flex';
+        if (qrSec) qrSec.style.display = 'block';
+    }
+}
+
+export async function openPaymentAddModal() {
+    const modal = document.getElementById('payment-add-modal');
+    if (!modal) return;
+    
+    // Populate assets dropdown
+    const assets = await ensureAssetsLoaded();
+    const assetSelect = document.getElementById('payment-add-assetId');
+    if (assetSelect) {
+        assetSelect.innerHTML = assets.map(a => `<option value="${a.id}">${a.symbol} (${a.name})</option>`).join('');
+    }
+    
+    // Reset fields
     document.getElementById('payment-add-name').value = '';
-    document.getElementById('payment-add-orderIndex').value = '1';
-    document.getElementById('payment-add-memo').value = '';
+    document.getElementById('payment-add-paymentMethodType').value = 'CRYPTO_WALLET';
+    document.getElementById('payment-add-hintDescription').value = '';
+    document.getElementById('payment-add-address').value = '';
+    document.getElementById('payment-add-network').value = 'TRC20';
+    document.getElementById('payment-add-receivingMemo').value = '';
+    document.getElementById('payment-add-accountHolderName').value = '';
+    document.getElementById('payment-add-accountName').value = '';
+    document.getElementById('payment-add-accountNumber').value = '';
+    document.getElementById('payment-add-bankName').value = '';
+    document.getElementById('payment-add-branchName').value = '';
+    document.getElementById('payment-add-swiftCode').value = '';
+    document.getElementById('payment-add-iban').value = '';
+    document.getElementById('payment-add-regionCode').value = 'HK';
+    document.getElementById('payment-add-walletAccountNumber').value = '';
+    document.getElementById('payment-add-walletAccountHolderName').value = '';
+    document.getElementById('payment-add-qrCodeUrl').value = '';
+    document.getElementById('payment-add-minDepositAmount').value = '10';
+    document.getElementById('payment-add-maxDepositAmount').value = '10000';
+    document.getElementById('payment-add-orderIndex').value = '10';
+    document.getElementById('payment-add-priority').value = '100';
+    document.getElementById('payment-add-qrCodeExpiredAt').value = '';
+    document.getElementById('payment-add-presetDepositItems').value = '';
     document.getElementById('payment-add-iconUrl').value = '';
+    document.getElementById('payment-add-helpContent').value = '';
+    document.getElementById('payment-add-memo').value = '';
     
-    // Set default selections
-    document.getElementById('payment-add-assetClass').value = 'CRYPTO';
-    document.getElementById('payment-add-bizType').value = 'DEPOSIT';
-    document.getElementById('payment-add-channelType').value = 'PAYMENT_GATEWAY';
-    document.getElementById('payment-add-paymentMethodType').value = 'CARD';
-    document.getElementById('payment-add-receivingTargetType').value = 'CRYPTO';
-    document.getElementById('payment-add-actionType').value = 'SHOW_ADDRESS';
-    
-    const preview = document.getElementById('payment-add-iconPreview');
-    if (preview) {
-        preview.src = '';
-        preview.style.display = 'none';
+    const qrPreview = document.getElementById('payment-add-qrCodePreview');
+    if (qrPreview) {
+        qrPreview.src = '';
+        qrPreview.style.display = 'none';
     }
-    const fileInput = document.getElementById('payment-add-iconFile');
-    if (fileInput) fileInput.value = '';
-
-    document.getElementById('payment-add-modal').classList.add('active');
+    const iconPreview = document.getElementById('payment-add-iconPreview');
+    if (iconPreview) {
+        iconPreview.src = '';
+        iconPreview.style.display = 'none';
+    }
+    
+    togglePaymentTypeFields('add');
+    
+    modal.style.display = 'flex';
+    modal.classList.add('active');
 }
 
-function closePaymentAddModal() {
-    document.getElementById('payment-add-modal').classList.remove('active');
+export function closePaymentAddModal() {
+    const modal = document.getElementById('payment-add-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('active');
+    }
+}
+
+export async function openPaymentEditModal(channelId) {
+    const modal = document.getElementById('payment-edit-modal');
+    if (!modal) return;
+    
+    const m = cachedPaymentChannels.find(item => String(item.id) === String(channelId));
+    if (!m) {
+        showToast('æœªæ‰¾åˆ°é€šé“é…ç½®æ•°æ®ï¼', true);
+        return;
+    }
+    
+    // Populate assets dropdown
+    const assets = await ensureAssetsLoaded();
+    const assetSelect = document.getElementById('payment-edit-assetId');
+    if (assetSelect) {
+        assetSelect.innerHTML = assets.map(a => `<option value="${a.id}">${a.symbol} (${a.name})</option>`).join('');
+    }
+    
+    // Set values
+    document.getElementById('payment-edit-id').value = m.id;
+    document.getElementById('payment-edit-name').value = m.name || '';
+    document.getElementById('payment-edit-assetId').value = m.assetId || '';
+    document.getElementById('payment-edit-paymentMethodType').value = m.paymentMethodType || 'CRYPTO_WALLET';
+    document.getElementById('payment-edit-hintDescription').value = m.hintDescription || '';
+    document.getElementById('payment-edit-address').value = m.address || '';
+    document.getElementById('payment-edit-network').value = m.network || '';
+    document.getElementById('payment-edit-receivingMemo').value = m.receivingMemo || '';
+    document.getElementById('payment-edit-accountHolderName').value = m.accountHolderName || '';
+    document.getElementById('payment-edit-accountName').value = m.accountName || '';
+    document.getElementById('payment-edit-accountNumber').value = m.accountNumber || '';
+    document.getElementById('payment-edit-bankName').value = m.bankName || '';
+    document.getElementById('payment-edit-branchName').value = m.branchName || '';
+    document.getElementById('payment-edit-swiftCode').value = m.swiftCode || '';
+    document.getElementById('payment-edit-iban').value = m.iban || '';
+    document.getElementById('payment-edit-regionCode').value = m.regionCode || 'HK';
+    document.getElementById('payment-edit-walletAccountNumber').value = m.accountNumber || '';
+    document.getElementById('payment-edit-walletAccountHolderName').value = m.accountHolderName || '';
+    document.getElementById('payment-edit-qrCodeUrl').value = m.qrCodeUrl || '';
+    document.getElementById('payment-edit-minDepositAmount').value = m.minDepositAmount || '0';
+    document.getElementById('payment-edit-maxDepositAmount').value = m.maxDepositAmount || '0';
+    document.getElementById('payment-edit-orderIndex').value = m.orderIndex || '0';
+    document.getElementById('payment-edit-priority').value = m.priority || '0';
+    document.getElementById('payment-edit-qrCodeExpiredAt').value = m.qrCodeExpiredAt || '';
+    document.getElementById('payment-edit-presetDepositItems').value = m.presetDepositItems ? m.presetDepositItems.join(',') : '';
+    document.getElementById('payment-edit-iconUrl').value = m.iconUrl || '';
+    document.getElementById('payment-edit-helpContent').value = m.helpContent || '';
+    document.getElementById('payment-edit-memo').value = m.memo || '';
+    
+    // Set previews
+    const qrPreview = document.getElementById('payment-edit-qrCodePreview');
+    if (qrPreview) {
+        if (m.qrCodeUrl) {
+            qrPreview.src = m.qrCodeUrl;
+            qrPreview.style.display = 'block';
+        } else {
+            qrPreview.src = '';
+            qrPreview.style.display = 'none';
+        }
+    }
+    const iconPreview = document.getElementById('payment-edit-iconPreview');
+    if (iconPreview) {
+        if (m.iconUrl) {
+            iconPreview.src = m.iconUrl;
+            iconPreview.style.display = 'block';
+        } else {
+            iconPreview.src = '';
+            iconPreview.style.display = 'none';
+        }
+    }
+    
+    togglePaymentTypeFields('edit');
+    
+    modal.style.display = 'flex';
+    modal.classList.add('active');
+}
+
+export function closePaymentEditModal() {
+    const modal = document.getElementById('payment-edit-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('active');
+    }
+}
+
+function collectPaymentFormData(prefix) {
+    const name = document.getElementById(`payment-${prefix}-name`).value.trim();
+    const assetId = parseInt(document.getElementById(`payment-${prefix}-assetId`).value);
+    const paymentMethodType = document.getElementById(`payment-${prefix}-paymentMethodType`).value;
+    const hintDescription = document.getElementById(`payment-${prefix}-hintDescription`).value.trim();
+    const minDepositAmount = parseFloat(document.getElementById(`payment-${prefix}-minDepositAmount`).value || '0');
+    const maxDepositAmount = parseFloat(document.getElementById(`payment-${prefix}-maxDepositAmount`).value || '0');
+    const orderIndex = parseInt(document.getElementById(`payment-${prefix}-orderIndex`).value || '0');
+    const priority = parseInt(document.getElementById(`payment-${prefix}-priority`).value || '0');
+    const qrCodeExpiredAt = document.getElementById(`payment-${prefix}-qrCodeExpiredAt`).value.trim();
+    const presetDepositStr = document.getElementById(`payment-${prefix}-presetDepositItems`).value.trim();
+    const iconUrl = document.getElementById(`payment-${prefix}-iconUrl`).value.trim();
+    const helpContent = document.getElementById(`payment-${prefix}-helpContent`).value.trim();
+    const memo = document.getElementById(`payment-${prefix}-memo`).value.trim();
+    
+    const body = {
+        name: name,
+        assetId: assetId,
+        paymentMethodType: paymentMethodType,
+        hintDescription: hintDescription,
+        minDepositAmount: minDepositAmount,
+        maxDepositAmount: maxDepositAmount,
+        orderIndex: orderIndex,
+        priority: priority,
+        iconUrl: iconUrl,
+        helpContent: helpContent,
+        memo: memo,
+        enabled: true,
+        translations: [
+            { localeTag: 'en', displayName: name, isDefault: true, description: hintDescription, helpContent: helpContent },
+            { localeTag: 'zh-Hans', displayName: name, isDefault: false, description: hintDescription, helpContent: helpContent }
+        ]
+    };
+    
+    if (qrCodeExpiredAt) body.qrCodeExpiredAt = qrCodeExpiredAt;
+    
+    if (presetDepositStr) {
+        body.presetDepositItems = presetDepositStr.split(',').map(s => s.trim()).filter(Boolean);
+    }
+    
+    // Set type-specific fields
+    if (paymentMethodType === 'CRYPTO_WALLET') {
+        body.address = document.getElementById(`payment-${prefix}-address`).value.trim();
+        body.network = document.getElementById(`payment-${prefix}-network`).value.trim();
+        body.receivingMemo = document.getElementById(`payment-${prefix}-receivingMemo`).value.trim();
+        body.qrCodeUrl = document.getElementById(`payment-${prefix}-qrCodeUrl`).value.trim();
+    } else if (paymentMethodType === 'BANK_TRANSFER' || paymentMethodType === 'CARD') {
+        body.accountHolderName = document.getElementById(`payment-${prefix}-accountHolderName`).value.trim();
+        body.accountName = document.getElementById(`payment-${prefix}-accountName`).value.trim();
+        body.accountNumber = document.getElementById(`payment-${prefix}-accountNumber`).value.trim();
+        body.bankName = document.getElementById(`payment-${prefix}-bankName`).value.trim();
+        body.branchName = document.getElementById(`payment-${prefix}-branchName`).value.trim();
+        body.swiftCode = document.getElementById(`payment-${prefix}-swiftCode`).value.trim();
+        body.iban = document.getElementById(`payment-${prefix}-iban`).value.trim();
+        body.regionCode = document.getElementById(`payment-${prefix}-regionCode`).value.trim();
+    } else {
+        // UPI / ALIPAY / WECHAT_PAY etc.
+        body.accountNumber = document.getElementById(`payment-${prefix}-walletAccountNumber`).value.trim();
+        body.accountHolderName = document.getElementById(`payment-${prefix}-walletAccountHolderName`).value.trim();
+        body.qrCodeUrl = document.getElementById(`payment-${prefix}-qrCodeUrl`).value.trim();
+    }
+    
+    return body;
 }
 
 async function submitNewPaymentChannel(event) {
     event.preventDefault();
+    const body = collectPaymentFormData('add');
     
-    const name = document.getElementById('payment-add-name').value.trim();
-    const orderIndex = parseInt(document.getElementById('payment-add-orderIndex').value || '1');
-    const assetClass = document.getElementById('payment-add-assetClass').value;
-    const bizType = document.getElementById('payment-add-bizType').value;
-    const channelType = document.getElementById('payment-add-channelType').value;
-    const paymentMethodType = document.getElementById('payment-add-paymentMethodType').value;
-    const receivingTargetType = document.getElementById('payment-add-receivingTargetType').value;
-    const actionType = document.getElementById('payment-add-actionType').value;
-    const iconUrl = document.getElementById('payment-add-iconUrl').value.trim();
-    const memo = document.getElementById('payment-add-memo').value.trim();
-    
-    if (!name) {
-        showToast('通道名称不能为空！', true);
-        return;
-    }
-    
-    showToast('正在创建支付通道...', false);
-    
-    const body = {
-        name: name,
-        orderIndex: orderIndex,
-        assetClass: assetClass,
-        bizType: bizType,
-        channelType: channelType,
-        paymentMethodType: paymentMethodType,
-        receivingTargetType: receivingTargetType,
-        actionType: actionType,
-        iconUrl: iconUrl,
-        memo: memo,
-        enabled: true,
-        translations: [
-            { localeTag: 'en', displayName: name, isDefault: true, description: memo },
-            { localeTag: 'zh-Hans', displayName: name, isDefault: false, description: memo }
-        ]
-    };
+    showToast('æ­£åœ¨åˆ›å»ºæ”¯ä»˜é€šé“...', false);
     try {
         const res = await apiFetch('POST', '/finance/payment-methods', body, true);
         if (res.code === 200) {
-            showToast('✓ 新支付通道已成功发布并激活！', false);
+            showToast('âœ“ æ–°æ”¯ä»˜é€šé“å·²æˆåŠŸå‘å¸ƒå¹¶æ¿€æ´»ï¼', false);
             closePaymentAddModal();
             loadPaymentChannels();
         } else {
-            showToast(res.errorMessage || '发布支付通道失败！', true);
+            showToast(res.errorMessage || 'å‘å¸ƒæ”¯ä»˜é€šé“å¤±è´¥ï¼', true);
         }
     } catch (e) {
         console.error('Failed to submit new payment method:', e);
-        showToast('发布支付通道网络异常！', true);
+        showToast('å‘å¸ƒæ”¯ä»˜é€šé“ç½‘ç»œå¼‚å¸¸ï¼', true);
     }
-}
-
-function openPaymentEditModal(channelId) {
-    const m = cachedPaymentChannels.find(item => String(item.id) === String(channelId));
-    if (!m) {
-        showToast('未找到通道配置数据！', true);
-        return;
-    }
-    
-    document.getElementById('payment-edit-id').value = m.id;
-    document.getElementById('payment-edit-name').value = m.name || '';
-    document.getElementById('payment-edit-orderIndex').value = m.orderIndex || 0;
-    document.getElementById('payment-edit-assetClass').value = m.assetClass || 'CRYPTO';
-    document.getElementById('payment-edit-bizType').value = m.bizType || 'DEPOSIT';
-    document.getElementById('payment-edit-channelType').value = m.channelType || 'PAYMENT_GATEWAY';
-    document.getElementById('payment-edit-paymentMethodType').value = m.paymentMethodType || 'CARD';
-    document.getElementById('payment-edit-receivingTargetType').value = m.receivingTargetType || 'CRYPTO';
-    document.getElementById('payment-edit-actionType').value = m.actionType || 'SHOW_ADDRESS';
-    document.getElementById('payment-edit-iconUrl').value = m.iconUrl || '';
-    document.getElementById('payment-edit-memo').value = m.memo || '';
-    
-    // Set preview
-    const preview = document.getElementById('payment-edit-iconPreview');
-    if (preview) {
-        if (m.iconUrl) {
-            preview.src = m.iconUrl;
-            preview.style.display = 'block';
-        } else {
-            preview.src = '';
-            preview.style.display = 'none';
-        }
-    }
-    const fileInput = document.getElementById('payment-edit-iconFile');
-    if (fileInput) fileInput.value = '';
-    
-    document.getElementById('payment-edit-modal').classList.add('active');
-}
-
-function closePaymentEditModal() {
-    document.getElementById('payment-edit-modal').classList.remove('active');
 }
 
 async function submitEditPaymentChannel(event) {
     event.preventDefault();
-    
     const id = document.getElementById('payment-edit-id').value;
-    const name = document.getElementById('payment-edit-name').value.trim();
-    const orderIndex = parseInt(document.getElementById('payment-edit-orderIndex').value || '1');
-    const assetClass = document.getElementById('payment-edit-assetClass').value;
-    const bizType = document.getElementById('payment-edit-bizType').value;
-    const channelType = document.getElementById('payment-edit-channelType').value;
-    const paymentMethodType = document.getElementById('payment-edit-paymentMethodType').value;
-    const receivingTargetType = document.getElementById('payment-edit-receivingTargetType').value;
-    const actionType = document.getElementById('payment-edit-actionType').value;
-    const iconUrl = document.getElementById('payment-edit-iconUrl').value.trim();
-    const memo = document.getElementById('payment-edit-memo').value.trim();
+    const body = collectPaymentFormData('edit');
     
-    if (!name) {
-        showToast('通道名称不能为空！', true);
-        return;
-    }
-    
-    showToast('正在保存支付通道配置...', false);
-    
-    const body = {
-        name: name,
-        orderIndex: orderIndex,
-        assetClass: assetClass,
-        bizType: bizType,
-        channelType: channelType,
-        paymentMethodType: paymentMethodType,
-        receivingTargetType: receivingTargetType,
-        actionType: actionType,
-        iconUrl: iconUrl,
-        memo: memo,
-        enabled: true,
-        translations: [
-            { localeTag: 'en', displayName: name, isDefault: true, description: memo },
-            { localeTag: 'zh-Hans', displayName: name, isDefault: false, description: memo }
-        ]
-    };
+    showToast('æ­£åœ¨ä¿å­˜æ”¯ä»˜é€šé“é…ç½®...', false);
     try {
         const res = await apiFetch('PUT', `/finance/payment-methods/${id}`, body, true);
         if (res.code === 200) {
-            showToast('✓ 支付通道修改已成功保存！', false);
+            showToast('âœ“ æ”¯ä»˜é€šé“ä¿®æ”¹å·²æˆåŠŸä¿å­˜ï¼', false);
             closePaymentEditModal();
             loadPaymentChannels();
         } else {
-            showToast(res.errorMessage || '保存支付通道修改失败！', true);
+            showToast(res.errorMessage || 'ä¿å­˜æ”¯ä»˜é€šé“ä¿®æ”¹å¤±è´¥ï¼', true);
         }
     } catch (e) {
         console.error('Failed to submit edit payment method:', e);
-        showToast('保存通道修改网络异常！', true);
+        showToast('ä¿å­˜é€šé“ä¿®æ”¹ç½‘ç»œå¼‚å¸¸ï¼', true);
     }
 }
 
-async function uploadPaymentChannelIcon(fileInputId, urlInputId, previewImgId) {
-    const fileInput = document.getElementById(fileInputId);
-    if (!fileInput || !fileInput.files || fileInput.files.length === 0) return;
+export async function openBindPaymentRiskLevelsModal(paymentMethodId) {
+    const modal = document.getElementById('bind-payment-risk-levels-modal');
+    if (!modal) return;
     
-    const file = fileInput.files[0];
-    showToast('⏳ 正在上传通道图标...', false);
+    document.getElementById('bind-payment-id').value = paymentMethodId;
+    
+    const container = document.getElementById('bind-risk-levels-checkbox-container');
+    if (container) {
+        container.innerHTML = 'â³ æ­£åœ¨åŠ è½½å±‚çº§ä¿¡æ¯...';
+    }
     
     try {
-        // 1. Get presigned upload URL
-        const presignedRes = await apiFetch('POST', '/upload/presigned', {
-            contentType: file.type || 'image/png',
-            fileName: file.name || 'icon.png',
-            type: 'payment'
+        // Load available risk levels
+        await ensureRiskLevelsLoaded();
+        
+        // Fetch current bindings
+        const bindingsRes = await apiFetch('GET', `/finance/payment-methods/${paymentMethodId}/risk-level-bindings`, null, true);
+        const boundIds = bindingsRes.code === 200 ? (bindingsRes.result || bindingsRes.data || []) : [];
+        
+        if (container) {
+            if (!window.cachedRiskLevels || window.cachedRiskLevels.length === 0) {
+                container.innerHTML = 'âš ï¸ ç³»ç»Ÿæœªé…ç½®ä»»ä½•ç”¨æˆ·é£ŽæŽ§å±‚çº§ï¼';
+                return;
+            }
+            
+            container.innerHTML = window.cachedRiskLevels.map(rl => {
+                const isChecked = boundIds.includes(rl.id) ? 'checked' : '';
+                return `
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 0.78rem; cursor: pointer; color: var(--text-primary);">
+                        <input type="checkbox" class="payment-bind-risk-checkbox" value="${rl.id}" ${isChecked}>
+                        <span>${rl.name} (Level ${rl.level || 0})</span>
+                    </label>
+                `;
+            }).join('');
+        }
+        
+    } catch (e) {
+        console.error("Failed to load payment risk level bindings:", e);
+        if (container) container.innerHTML = 'âŒ å±‚çº§æˆ–ç»‘å®šæ•°æ®èŽ·å–å¤±è´¥';
+    }
+    
+    modal.style.display = 'flex';
+    modal.classList.add('active');
+}
+
+export function closeBindPaymentRiskLevelsModal() {
+    const modal = document.getElementById('bind-payment-risk-levels-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('active');
+    }
+}
+
+export async function submitPaymentRiskLevelBindings(event) {
+    if (event) event.preventDefault();
+    const paymentMethodId = document.getElementById('bind-payment-id').value;
+    
+    const checkboxes = document.querySelectorAll('.payment-bind-risk-checkbox:checked');
+    const riskLevelIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+    
+    showToast('æ­£åœ¨ä¿å­˜é£ŽæŽ§å¯è§å±‚çº§è®¾ç½®...', false);
+    try {
+        const res = await apiFetch('PUT', `/finance/payment-methods/${paymentMethodId}/risk-level-bindings`, {
+            riskLevelIds: riskLevelIds
         }, true);
         
-        if (presignedRes.code !== 200) {
-            throw new Error(presignedRes.errorMessage || '获取上传凭证失败');
-        }
-        
-        const { uploadUrl, downloadUrl, path: storagePath } = presignedRes.result || presignedRes.data || {};
-        if (!uploadUrl || !downloadUrl) {
-            throw new Error('上传凭证解析异常');
-        }
-        
-        // 2. Perform direct upload to storage, routing through GCS proxy on dev
-        let finalPutUrl = uploadUrl;
-        const isLocalDev = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
-        if (isLocalDev && !uploadUrl.includes('upload-local')) {
-            finalPutUrl = '/upload-gcs?url=' + encodeURIComponent(uploadUrl);
-        } else if (!isLocalDev) {
-            if (uploadUrl.startsWith('https://storage.googleapis.com/')) {
-                finalPutUrl = uploadUrl.replace('https://storage.googleapis.com/', '/upload-gcs/');
-            }
-        }
-        
-        const putRes = await fetch(finalPutUrl, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': file.type || 'image/png'
-            },
-            body: file
-        });
-        
-        if (!putRes.ok) {
-            throw new Error('文件写入直传存储失败');
-        }
-        
-        // 3. Confirm upload
-        const confirmRes = await apiFetch('POST', '/upload/confirm', {
-            path: storagePath
-        }, true);
-        
-        if (confirmRes.code !== 200) {
-            throw new Error(confirmRes.errorMessage || '确认上传失败');
-        }
-        
-        // 4. Update fields
-        document.getElementById(urlInputId).value = downloadUrl;
-        const preview = document.getElementById(previewImgId);
-        if (preview) {
-            preview.src = downloadUrl;
-            preview.style.display = 'block';
-        }
-        
-        showToast('✓ 图标上传成功！', false);
-    } catch (e) {
-        console.error('Icon upload failed:', e);
-        showToast(`❌ 图标上传失败: ${e.message}`, true);
-    }
-}
-
-export // --- PLATFORM RECEIVING ACCOUNTS SUB-TABS ORCHESTRATION ---
-let currentPaymentSubTab = 'payment';
-
-export async function switchPaymentSubTab(subTab, element) {
-    currentPaymentSubTab = subTab;
-    
-    // Update sub-tab button active class
-    const btns = document.querySelectorAll('.payment-sub-tab-btn');
-    btns.forEach(btn => btn.classList.remove('active'));
-    if (element) {
-        element.classList.add('active');
-    } else {
-        const activeBtn = document.getElementById(`btn-sub-${subTab === 'payment' ? 'methods' : subTab}`);
-        if (activeBtn) activeBtn.classList.add('active');
-    }
-    
-    // Show correct content div
-    const contents = document.querySelectorAll('.payment-sub-content');
-    contents.forEach(content => content.classList.remove('active'));
-    const activeContent = document.getElementById(`sub-content-${subTab}`);
-    if (activeContent) activeContent.classList.add('active');
-    
-    // Load data for the active sub-tab
-    if (subTab === 'payment') {
-        await loadPaymentChannels();
-    } else if (subTab === 'crypto') {
-        await loadCryptoTargetsList();
-    } else if (subTab === 'fiat') {
-        await loadFiatTargetsList();
-    } else if (subTab === 'bindings') {
-        await loadBindingsList();
-    }
-}
-window.switchPaymentSubTab = switchPaymentSubTab;
-
-// --- SUB-TAB 2: CRYPTO RECEIVING TARGETS CONTROLLERS ---
-export let cachedCryptoTargets = [];
-
-export async function loadCryptoTargetsList() {
-    const tableBody = document.getElementById('crypto-table-body');
-    if (!tableBody) return;
-    
-    tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 50px 0;">🔄 正在拉取加密收款账号库...</td></tr>`;
-    
-    const pageConf = window.adminPages.crypto || { current: 1, size: 10 };
-    window.adminPages.crypto = pageConf;
-    
-    try {
-        const res = await apiFetch('GET', `/finance/platform-crypto-receiving-targets?page=${pageConf.current}&pageSize=${pageConf.size}`, null, true);
         if (res.code === 200) {
-            const list = res.result || res.data || [];
-            cachedCryptoTargets = list;
-            if (list.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 50px 0;">🫙 平台暂无已录入的加密收款账号</td></tr>`;
-                const indicator = document.getElementById(`crypto-page-indicator`);
-                if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
-                return;
-            }
-            
-            const pagingObj = res.paging || {
-                page: pageConf.current,
-                pageSize: pageConf.size,
-                records: list.length,
-                pages: 1
-            };
-            updateAdminPageIndicator('crypto', pagingObj);
-            
-            tableBody.innerHTML = list.map(t => {
-                const statusBadge = t.status === 'ACTIVE'
-                    ? `<span class="kyc-badge-status kyc-status-APPROVED" style="font-size:0.75rem; padding: 2px 8px; border-radius: 4px;">可用</span>`
-                    : `<span class="kyc-badge-status kyc-status-NONE" style="font-size:0.75rem; padding: 2px 8px; border-radius: 4px;">禁用</span>`;
-                
-                const editBtn = `<button class="action-btn btn-view" onclick="openCryptoTargetEditModal('${t.id}')" style="padding: 4px 8px; font-size: 0.72rem; cursor: pointer; background: rgba(59, 130, 246, 0.08); color: var(--blue);">📝 编辑</button>`;
-                const deleteBtn = `<button class="action-btn btn-reject" onclick="deleteCryptoTarget('${t.id}')" style="padding: 4px 8px; font-size: 0.72rem; background: rgba(239, 68, 68, 0.08); color: var(--red); margin-left: 5px; cursor: pointer;">删除</button>`;
-                
-                return `
-                    <tr>
-                        <td style="font-family: monospace; font-size: 0.8rem;">${t.id}</td>
-                        <td style="font-weight: 700; color: var(--primary);">${String(t.assetId) === '1183348576672026624' ? 'USDT' : (String(t.assetId) === '1183348576672026625' ? 'BTC' : t.assetId)}</td>
-                        <td style="font-weight: 600; color: var(--text-secondary);">${t.network || '--'}</td>
-                        <td style="font-family: monospace; font-size: 0.8rem; color: var(--text-primary);" title="${t.address}">${t.address || '--'}</td>
-                        <td style="font-family: monospace; font-size: 0.8rem;">${t.memo || '--'}</td>
-                        <td>${t.minDepositAmount || '0'} ~ ${t.maxDepositAmount || '无限制'}</td>
-                        <td style="font-weight: 600; text-align: center;">${t.priority || 0}</td>
-                        <td>${statusBadge}</td>
-                        <td>
-                            <div style="display: flex; align-items: center;">
-                                ${editBtn}
-                                ${deleteBtn}
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
+            showToast('âœ“ å¯è§é£ŽæŽ§å±‚çº§è®¾ç½®å·²æ›´æ–°ï¼', false);
+            closeBindPaymentRiskLevelsModal();
+            loadPaymentChannels();
         } else {
-            tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--red); padding: 50px 0;">⚠️ 获取加密收款账号失败：${res.errorMessage || '错误'}</td></tr>`;
+            showToast(res.errorMessage || 'å¯è§é£ŽæŽ§å±‚çº§ä¿®æ”¹å¤±è´¥ï¼', true);
         }
     } catch (e) {
-        console.error('Failed to load crypto targets:', e);
-        tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--red); padding: 50px 0;">⚠️ 网络异常，无法拉取加密账号列表！</td></tr>`;
+        console.error("Submit risk level bindings failed:", e);
+        showToast('å¯è§å±‚çº§ä¿å­˜ç½‘ç»œå¼‚å¸¸ï¼', true);
     }
 }
-window.loadCryptoTargetsList = loadCryptoTargetsList;
 
-export function openCryptoTargetAddModal() {
-    document.getElementById('crypto-target-id').value = '';
-    document.getElementById('crypto-target-assetId').value = '1183348576672026624'; // USDT
-    document.getElementById('crypto-target-network').value = 'TRC20';
-    document.getElementById('crypto-target-address').value = '';
-    document.getElementById('crypto-target-memo').value = '';
-    document.getElementById('crypto-target-minDeposit').value = '10';
-    document.getElementById('crypto-target-maxDeposit').value = '100000';
-    document.getElementById('crypto-target-priority').value = '100';
-    document.getElementById('crypto-target-label').value = '';
-    document.getElementById('crypto-target-qrCode').value = '';
-    
-    document.getElementById('crypto-modal-title').innerText = '🪙 新增加密收款账号';
-    document.getElementById('crypto-target-modal').classList.add('active');
-}
-window.openCryptoTargetAddModal = openCryptoTargetAddModal;
+window.loadPaymentChannels = loadPaymentChannels;
+window.togglePaymentChannelStatus = togglePaymentChannelStatus;
+window.deletePaymentChannel = deletePaymentChannel;
+window.togglePaymentTypeFields = togglePaymentTypeFields;
+window.openPaymentAddModal = openPaymentAddModal;
+window.closePaymentAddModal = closePaymentAddModal;
+window.openPaymentEditModal = openPaymentEditModal;
+window.closePaymentEditModal = closePaymentEditModal;
+window.submitNewPaymentChannel = submitNewPaymentChannel;
+window.submitEditPaymentChannel = submitEditPaymentChannel;
+window.openBindPaymentRiskLevelsModal = openBindPaymentRiskLevelsModal;
+window.closeBindPaymentRiskLevelsModal = closeBindPaymentRiskLevelsModal;
+window.submitPaymentRiskLevelBindings = submitPaymentRiskLevelBindings;
 
-export function openCryptoTargetEditModal(id) {
-    const t = cachedCryptoTargets.find(item => String(item.id) === String(id));
-    if (!t) {
-        showToast('未找到该加密账号配置数据！', true);
-        return;
-    }
-    
-    document.getElementById('crypto-target-id').value = t.id;
-    document.getElementById('crypto-target-assetId').value = t.assetId || '1183348576672026624';
-    document.getElementById('crypto-target-network').value = t.network || '';
-    document.getElementById('crypto-target-address').value = t.address || '';
-    document.getElementById('crypto-target-memo').value = t.memo || '';
-    document.getElementById('crypto-target-minDeposit').value = t.minDepositAmount || '10';
-    document.getElementById('crypto-target-maxDeposit').value = t.maxDepositAmount || '100000';
-    document.getElementById('crypto-target-priority').value = t.priority || '100';
-    document.getElementById('crypto-target-label').value = t.addressLabel || '';
-    document.getElementById('crypto-target-qrCode').value = t.qrCodeUrl || '';
-    
-    document.getElementById('crypto-modal-title').innerText = '📝 编辑加密收款账号';
-    document.getElementById('crypto-target-modal').classList.add('active');
-}
-window.openCryptoTargetEditModal = openCryptoTargetEditModal;
-
-export function closeCryptoTargetModal() {
-    document.getElementById('crypto-target-modal').classList.remove('active');
-}
-window.closeCryptoTargetModal = closeCryptoTargetModal;
-
-export async function submitCryptoTargetForm(event) {
-    event.preventDefault();
-    
-    const id = document.getElementById('crypto-target-id').value;
-    const assetId = document.getElementById('crypto-target-assetId').value;
-    const network = document.getElementById('crypto-target-network').value.trim();
-    const address = document.getElementById('crypto-target-address').value.trim();
-    const memo = document.getElementById('crypto-target-memo').value.trim();
-    const minDeposit = document.getElementById('crypto-target-minDeposit').value;
-    const maxDeposit = document.getElementById('crypto-target-maxDeposit').value;
-    const priority = parseInt(document.getElementById('crypto-target-priority').value || '100');
-    const label = document.getElementById('crypto-target-label').value.trim();
-    const qrCode = document.getElementById('crypto-target-qrCode').value.trim();
-    
-    if (!network || !address) {
-        showToast('区块链网络名称和收款钱包地址不能为空！', true);
-        return;
-    }
-    
-    showToast('正在保存加密账号配置...', false);
-    
-    const payloadStr = `{"assetId":${assetId},"network":${JSON.stringify(network)},"address":${JSON.stringify(address)},"memo":${JSON.stringify(memo)},"minDepositAmount":"${minDeposit}","maxDepositAmount":"${maxDeposit}","priority":${priority},"addressLabel":${JSON.stringify(label)},"qrCodeUrl":${JSON.stringify(qrCode)},"status":"ACTIVE"${id ? `,"id":${id}` : ''}}`;
-    
-    try {
-        let res;
-        if (id) {
-            res = await apiFetchWithRawBody('PUT', `/finance/platform-crypto-receiving-targets/${id}`, payloadStr, true);
-        } else {
-            res = await apiFetchWithRawBody('POST', '/finance/platform-crypto-receiving-targets', payloadStr, true);
-        }
-        
-        if (res.code === 200) {
-            showToast('✓ 加密收款账号保存成功！', false);
-            closeCryptoTargetModal();
-            loadCryptoTargetsList();
-        } else {
-            showToast(res.errorMessage || '保存加密账号失败！', true);
-        }
-    } catch (e) {
-        console.error('Failed to submit crypto target:', e);
-        showToast('保存配置网络异常！', true);
-    }
-}
-window.submitCryptoTargetForm = submitCryptoTargetForm;
-
-export async function deleteCryptoTarget(id) {
-    if (!confirm('⚠️ 警告：您确定要永久删除该加密收款账号吗？删除后所有引用该账号的资产绑定都会失效！')) return;
-    
-    showToast('正在删除收款账号...', false);
-    try {
-        const res = await apiFetch('POST', `/finance/platform-crypto-receiving-targets/${id}/delete`, {}, true);
-        if (res.code === 200) {
-            showToast('✓ 加密账号已成功删除！', false);
-            loadCryptoTargetsList();
-        } else {
-            showToast(res.errorMessage || '删除加密账号失败！', true);
-        }
-    } catch (e) {
-        console.error('Failed to delete crypto target:', e);
-        showToast('删除操作网络异常！', true);
-    }
-}
-window.deleteCryptoTarget = deleteCryptoTarget;
-
-// --- SUB-TAB 3: FIAT RECEIVING TARGETS CONTROLLERS ---
-export let cachedFiatTargets = [];
-
-export async function loadFiatTargetsList() {
-    const tableBody = document.getElementById('fiat-table-body');
-    if (!tableBody) return;
-    
-    tableBody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--text-muted); padding: 50px 0;">🔄 正在拉取法币收款账号库...</td></tr>`;
-    
-    const pageConf = window.adminPages.fiat || { current: 1, size: 10 };
-    window.adminPages.fiat = pageConf;
-    
-    try {
-        const res = await apiFetch('GET', `/finance/platform-fiat-receiving-targets?page=${pageConf.current}&pageSize=${pageConf.size}`, null, true);
-        if (res.code === 200) {
-            const list = res.result || res.data || [];
-            cachedFiatTargets = list;
-            if (list.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--text-muted); padding: 50px 0;">🫙 平台暂无已录入的法币收款账户</td></tr>`;
-                const indicator = document.getElementById(`fiat-page-indicator`);
-                if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
-                return;
-            }
-            
-            const pagingObj = res.paging || {
-                page: pageConf.current,
-                pageSize: pageConf.size,
-                records: list.length,
-                pages: 1
-            };
-            updateAdminPageIndicator('fiat', pagingObj);
-            
-            tableBody.innerHTML = list.map(t => {
-                const statusBadge = t.status === 'ACTIVE'
-                    ? `<span class="kyc-badge-status kyc-status-APPROVED" style="font-size:0.75rem; padding: 2px 8px; border-radius: 4px;">可用</span>`
-                    : `<span class="kyc-badge-status kyc-status-NONE" style="font-size:0.75rem; padding: 2px 8px; border-radius: 4px;">禁用</span>`;
-                
-                const editBtn = `<button class="action-btn btn-view" onclick="openFiatTargetEditModal('${t.id}')" style="padding: 4px 8px; font-size: 0.72rem; cursor: pointer; background: rgba(59, 130, 246, 0.08); color: var(--blue);">📝 编辑</button>`;
-                const deleteBtn = `<button class="action-btn btn-reject" onclick="deleteFiatTarget('${t.id}')" style="padding: 4px 8px; font-size: 0.72rem; background: rgba(239, 68, 68, 0.08); color: var(--red); margin-left: 5px; cursor: pointer;">删除</button>`;
-                
-                return `
-                    <tr>
-                        <td style="font-family: monospace; font-size: 0.8rem;">${t.id}</td>
-                        <td style="font-weight: 700; color: var(--primary);">${String(t.assetId) === '1126151490264633349' ? 'USD' : (String(t.assetId) === '1126151490264633456' ? 'INR' : t.assetId)}</td>
-                        <td style="font-weight: 600; color: var(--text-secondary);">${t.bankName || '--'}</td>
-                        <td style="font-weight: 600; color: var(--text-primary);">${t.accountName || '--'}</td>
-                        <td style="font-family: monospace; font-size: 0.8rem; color: var(--text-primary);">${t.accountNumber || '--'}</td>
-                        <td style="font-family: monospace; font-size: 0.8rem;">${t.swiftCode || '--'}</td>
-                        <td style="font-family: monospace; font-size: 0.8rem;">${t.iban || '--'}</td>
-                        <td style="font-size: 0.75rem; font-weight: 600; color: var(--text-secondary);">${t.accountType || '--'}</td>
-                        <td style="font-weight: 600; text-align: center;">${t.priority || 0}</td>
-                        <td>${statusBadge}</td>
-                        <td>
-                            <div style="display: flex; align-items: center;">
-                                ${editBtn}
-                                ${deleteBtn}
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        } else {
-            tableBody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--red); padding: 50px 0;">⚠️ 获取法币收款账户失败：${res.errorMessage || '错误'}</td></tr>`;
-        }
-    } catch (e) {
-        console.error('Failed to load fiat targets:', e);
-        tableBody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--red); padding: 50px 0;">⚠️ 网络异常，无法拉取法币账户列表！</td></tr>`;
-    }
-}
-window.loadFiatTargetsList = loadFiatTargetsList;
-
-export function openFiatTargetAddModal() {
-    document.getElementById('fiat-target-id').value = '';
-    document.getElementById('fiat-target-assetId').value = '1126151490264633349'; // USD
-    document.getElementById('fiat-target-bank').value = '';
-    document.getElementById('fiat-target-name').value = '';
-    document.getElementById('fiat-target-number').value = '';
-    document.getElementById('fiat-target-swift').value = '';
-    document.getElementById('fiat-target-iban').value = '';
-    document.getElementById('fiat-target-region').value = 'HK';
-    document.getElementById('fiat-target-type').value = 'BUSINESS';
-    document.getElementById('fiat-target-branch').value = '';
-    document.getElementById('fiat-target-minDeposit').value = '100';
-    document.getElementById('fiat-target-maxDeposit').value = '50000';
-    document.getElementById('fiat-target-priority').value = '100';
-    
-    document.getElementById('fiat-modal-title').innerText = '🏦 新增法币收款账号';
-    document.getElementById('fiat-target-modal').classList.add('active');
-}
-window.openFiatTargetAddModal = openFiatTargetAddModal;
-
-export function openFiatTargetEditModal(id) {
-    const t = cachedFiatTargets.find(item => String(item.id) === String(id));
-    if (!t) {
-        showToast('未找到该法币账号配置数据！', true);
-        return;
-    }
-    
-    document.getElementById('fiat-target-id').value = t.id;
-    document.getElementById('fiat-target-assetId').value = t.assetId || '1126151490264633349';
-    document.getElementById('fiat-target-bank').value = t.bankName || '';
-    document.getElementById('fiat-target-name').value = t.accountName || '';
-    document.getElementById('fiat-target-number').value = t.accountNumber || '';
-    document.getElementById('fiat-target-swift').value = t.swiftCode || '';
-    document.getElementById('fiat-target-iban').value = t.iban || '';
-    document.getElementById('fiat-target-region').value = t.regionCode || 'HK';
-    document.getElementById('fiat-target-type').value = t.accountType || 'BUSINESS';
-    document.getElementById('fiat-target-branch').value = t.branchName || '';
-    document.getElementById('fiat-target-minDeposit').value = t.minDepositAmount || '100';
-    document.getElementById('fiat-target-maxDeposit').value = t.maxDepositAmount || '50000';
-    document.getElementById('fiat-target-priority').value = t.priority || '100';
-    
-    document.getElementById('fiat-modal-title').innerText = '📝 编辑法币收款账号';
-    document.getElementById('fiat-target-modal').classList.add('active');
-}
-window.openFiatTargetEditModal = openFiatTargetEditModal;
-
-export function closeFiatTargetModal() {
-    document.getElementById('fiat-target-modal').classList.remove('active');
-}
-window.closeFiatTargetModal = closeFiatTargetModal;
-
-export async function submitFiatTargetForm(event) {
-    event.preventDefault();
-    
-    const id = document.getElementById('fiat-target-id').value;
-    const assetId = document.getElementById('fiat-target-assetId').value;
-    const bank = document.getElementById('fiat-target-bank').value.trim();
-    const name = document.getElementById('fiat-target-name').value.trim();
-    const number = document.getElementById('fiat-target-number').value.trim();
-    const swift = document.getElementById('fiat-target-swift').value.trim();
-    const iban = document.getElementById('fiat-target-iban').value.trim();
-    const region = document.getElementById('fiat-target-region').value.trim();
-    const type = document.getElementById('fiat-target-type').value;
-    const branch = document.getElementById('fiat-target-branch').value.trim();
-    const minDeposit = document.getElementById('fiat-target-minDeposit').value;
-    const maxDeposit = document.getElementById('fiat-target-maxDeposit').value;
-    const priority = parseInt(document.getElementById('fiat-target-priority').value || '100');
-    
-    if (!bank || !name || !number) {
-        showToast('银行名称、开户姓名和账户账号不能为空！', true);
-        return;
-    }
-    
-    showToast('正在保存法币银行账号...', false);
-    
-    const payloadStr = `{"assetId":${assetId},"bankName":${JSON.stringify(bank)},"accountName":${JSON.stringify(name)},"accountNumber":${JSON.stringify(number)},"swiftCode":${JSON.stringify(swift)},"iban":${JSON.stringify(iban)},"regionCode":${JSON.stringify(region)},"accountType":${JSON.stringify(type)},"branchName":${JSON.stringify(branch)},"minDepositAmount":"${minDeposit}","maxDepositAmount":"${maxDeposit}","priority":${priority},"status":"ACTIVE"${id ? `,"id":${id}` : ''}}`;
-    
-    try {
-        let res;
-        if (id) {
-            res = await apiFetchWithRawBody('PUT', `/finance/platform-fiat-receiving-targets/${id}`, payloadStr, true);
-        } else {
-            res = await apiFetchWithRawBody('POST', '/finance/platform-fiat-receiving-targets', payloadStr, true);
-        }
-        
-        if (res.code === 200) {
-            showToast('✓ 法币银行收款账号保存成功！', false);
-            closeFiatTargetModal();
-            loadFiatTargetsList();
-        } else {
-            showToast(res.errorMessage || '保存法币账号失败！', true);
-        }
-    } catch (e) {
-        console.error('Failed to submit fiat target:', e);
-        showToast('保存配置网络异常！', true);
-    }
-}
-window.submitFiatTargetForm = submitFiatTargetForm;
-
-export async function deleteFiatTarget(id) {
-    if (!confirm('⚠️ 警告：您确定要永久删除该法币收款银行账号吗？删除后所有引用该账号的资产绑定都会失效！')) return;
-    
-    showToast('正在删除收款账号...', false);
-    try {
-        const res = await apiFetch('POST', `/finance/platform-fiat-receiving-targets/${id}/delete`, {}, true);
-        if (res.code === 200) {
-            showToast('✓ 法币账号已成功删除！', false);
-            loadFiatTargetsList();
-        } else {
-            showToast(res.errorMessage || '删除法币账号失败！', true);
-        }
-    } catch (e) {
-        console.error('Failed to delete fiat target:', e);
-        showToast('删除操作网络异常！', true);
-    }
-}
-window.deleteFiatTarget = deleteFiatTarget;
-
-// --- SUB-TAB 4: PAYMENT METHOD ASSET BINDINGS CONTROLLERS ---
-export let cachedBindings = [];
-export let bindingTargetOptionsMap = { CRYPTO: [], FIAT: [] };
-
-export async function loadBindingsList() {
-    const tableBody = document.getElementById('bindings-table-body');
-    if (!tableBody) return;
-    
-    tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 50px 0;">🔄 正在拉取通道资产绑定配置...</td></tr>`;
-    
-    const pageConf = window.adminPages.bindings || { current: 1, size: 10 };
-    window.adminPages.bindings = pageConf;
-    
-    try {
-        const res = await apiFetch('GET', `/finance/payment-method-assets?page=${pageConf.current}&pageSize=${pageConf.size}`, null, true);
-        if (res.code === 200) {
-            const list = res.result || res.data || [];
-            cachedBindings = list;
-            if (list.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 50px 0;">🫙 平台暂无已建立的支付资产绑定关系</td></tr>`;
-                const indicator = document.getElementById(`bindings-page-indicator`);
-                if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
-                return;
-            }
-            
-            let methodsList = [];
-            let cryptoList = [];
-            let fiatList = [];
-            try {
-                const methodsRes = await apiFetch('GET', '/finance/payment-methods?page=1&pageSize=1000', null, true);
-                methodsList = methodsRes.result || methodsRes.data || [];
-            } catch (err) {}
-            try {
-                const cryptoRes = await apiFetch('GET', '/finance/platform-crypto-receiving-targets?page=1&pageSize=1000', null, true);
-                cryptoList = cryptoRes.result || cryptoRes.data || [];
-            } catch (err) {}
-            try {
-                const fiatRes = await apiFetch('GET', '/finance/platform-fiat-receiving-targets?page=1&pageSize=1000', null, true);
-                fiatList = fiatRes.result || fiatRes.data || [];
-            } catch (err) {}
-            
-            const pagingObj = res.paging || {
-                page: pageConf.current,
-                pageSize: pageConf.size,
-                records: list.length,
-                pages: 1
-            };
-            updateAdminPageIndicator('bindings', pagingObj);
-            
-            tableBody.innerHTML = list.map(b => {
-                const method = methodsList.find(m => String(m.id) === String(b.methodId));
-                const methodName = method ? method.name : `Method ID: ${b.methodId}`;
-                
-                let assetName = 'USDT';
-                if (String(b.assetId) === '1183348576672026625') assetName = 'BTC';
-                else if (String(b.assetId) === '1126151490264633349') assetName = 'USD';
-                else if (String(b.assetId) === '1126151490264633456') assetName = 'INR';
-                else assetName = `Asset ID: ${b.assetId}`;
-                
-                let targetDetail = '';
-                if (b.receivingTargetType === 'CRYPTO') {
-                    const crypto = cryptoList.find(c => String(c.id) === String(b.receivingTargetId));
-                    if (crypto) {
-                        const addr = crypto.address || '';
-                        const truncAddr = addr.length > 16 ? `${addr.substring(0, 8)}...${addr.substring(addr.length - 8)}` : addr;
-                        targetDetail = `🔗 [${crypto.network || ''}] ${truncAddr}`;
-                    } else {
-                        targetDetail = `Crypto ID: ${b.receivingTargetId}`;
-                    }
-                } else {
-                    const fiat = fiatList.find(f => String(f.id) === String(b.receivingTargetId));
-                    targetDetail = fiat ? `🏦 [${fiat.bankName || ''}] ${fiat.accountName || '--'} (${fiat.accountNumber || '--'})` : `Fiat ID: ${b.receivingTargetId}`;
-                }
-                
-                const deleteBtn = `<button class="action-btn btn-reject" onclick="deleteBinding('${b.id}')" style="padding: 4px 8px; font-size: 0.72rem; background: rgba(239, 68, 68, 0.08); color: var(--red); cursor: pointer;">✕ 解除绑定</button>`;
-                
-                return `
-                    <tr>
-                        <td style="font-family: monospace; font-size: 0.8rem;">${b.id}</td>
-                        <td style="font-weight: 600; color: var(--text-primary);">${methodName}</td>
-                        <td><span style="font-weight: 700; color: var(--primary);">${assetName}</span></td>
-                        <td>
-                            <span style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: rgba(0,0,0,0.04); font-family: monospace; font-weight: 600;">
-                                ${b.receivingTargetType}
-                            </span>
-                        </td>
-                        <td style="font-size: 0.82rem; color: var(--text-secondary); font-family: monospace;">${targetDetail}</td>
-                        <td>${deleteBtn}</td>
-                    </tr>
-                `;
-            }).join('');
-        } else {
-            tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--red); padding: 50px 0;">⚠️ 获取绑定关系列表失败：${res.errorMessage || '错误'}</td></tr>`;
-        }
-    } catch (e) {
-        console.error('Failed to load bindings:', e);
-        tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--red); padding: 50px 0;">⚠️ 网络异常，无法拉取绑定配置列表！</td></tr>`;
-    }
-}
-window.loadBindingsList = loadBindingsList;
-
-export async function openBindingAddModal() {
-    const methodSelect = document.getElementById('binding-add-methodId');
-    if (!methodSelect) return;
-    
-    methodSelect.innerHTML = `<option value="">🔄 正在获取支付方式...</option>`;
-    document.getElementById('binding-add-targetId').innerHTML = '';
-    
-    document.getElementById('binding-add-modal').classList.add('active');
-    
-    try {
-        const methodsRes = await apiFetch('GET', '/finance/payment-methods?page=1&pageSize=1000', null, true);
-        const methods = methodsRes.result || methodsRes.data || [];
-        if (methods.length === 0) {
-            methodSelect.innerHTML = `<option value="">⚠️ 平台当前无可用支付方式</option>`;
-        } else {
-            methodSelect.innerHTML = methods.map(m => `<option value="${m.id}">${m.name} (${m.assetClass})</option>`).join('');
-        }
-        
-        const cryptoRes = await apiFetch('GET', '/finance/platform-crypto-receiving-targets?page=1&pageSize=1000', null, true);
-        bindingTargetOptionsMap.CRYPTO = cryptoRes.result || cryptoRes.data || [];
-        
-        const fiatRes = await apiFetch('GET', '/finance/platform-fiat-receiving-targets?page=1&pageSize=1000', null, true);
-        bindingTargetOptionsMap.FIAT = fiatRes.result || fiatRes.data || [];
-        
-        filterBindingTargetsDropdown();
-        
-    } catch (e) {
-        console.error('Failed to prepare binding modal:', e);
-        showToast('加载绑定配置选项网络异常！', true);
-    }
-}
-window.openBindingAddModal = openBindingAddModal;
-
-export function filterBindingTargetsDropdown() {
-    const targetType = document.getElementById('binding-add-targetType').value;
-    const targetSelect = document.getElementById('binding-add-targetId');
-    if (!targetSelect) return;
-    
-    const list = bindingTargetOptionsMap[targetType] || [];
-    if (list.length === 0) {
-        targetSelect.innerHTML = `<option value="">⚠️ 无可用收款账号（请先新增账号）</option>`;
-        return;
-    }
-    
-    if (targetType === 'CRYPTO') {
-        targetSelect.innerHTML = list.map(c => {
-            const addr = c.address || '';
-            const truncAddr = addr.length > 10 ? addr.substring(0, 10) + '...' : addr;
-            return `<option value="${c.id}">[${c.network || ''}] ${truncAddr} (Priority: ${c.priority || 0})</option>`;
-        }).join('');
-    } else {
-        targetSelect.innerHTML = list.map(f => {
-            const accNo = f.accountNumber || '';
-            const last4 = accNo.length > 4 ? accNo.substring(accNo.length - 4) : accNo;
-            return `<option value="${f.id}">[${f.bankName || ''}] ${f.accountName || '--'} (*${last4})</option>`;
-        }).join('');
-    }
-}
-window.filterBindingTargetsDropdown = filterBindingTargetsDropdown;
-
-export function closeBindingAddModal() {
-    document.getElementById('binding-add-modal').classList.remove('active');
-}
-window.closeBindingAddModal = closeBindingAddModal;
-
-export async function submitNewBinding(event) {
-    event.preventDefault();
-    
-    const methodId = document.getElementById('binding-add-methodId').value;
-    const assetId = document.getElementById('binding-add-assetId').value;
-    const targetType = document.getElementById('binding-add-targetType').value;
-    const targetId = document.getElementById('binding-add-targetId').value;
-    
-    if (!methodId || !targetId) {
-        showToast('必须选择有效的支付方式和收款账号！', true);
-        return;
-    }
-    
-    showToast('正在创建绑定关系...', false);
-    
-    const payloadStr = `{"methodId":${methodId},"assetId":${assetId},"receivingTargetId":${targetId},"receivingTargetType":${JSON.stringify(targetType)},"enabled":true}`;
-    
-    try {
-        const res = await apiFetchWithRawBody('POST', '/finance/payment-method-assets', payloadStr, true);
-        if (res.code === 200) {
-            showToast('✓ 支付方式与资产收款账户成功绑定！', false);
-            closeBindingAddModal();
-            loadBindingsList();
-        } else {
-            showToast(res.errorMessage || '创建绑定失败！', true);
-        }
-    } catch (e) {
-        console.error('Failed to submit binding:', e);
-        showToast('创建绑定网络异常！', true);
-    }
-}
-window.submitNewBinding = submitNewBinding;
-
-export async function deleteBinding(id) {
-    if (!confirm('⚠️ 警告：解除绑定后，该充值入口组合将不会在用户端显示！您确定吗？')) return;
-    
-    showToast('正在解除绑定...', false);
-    try {
-        const res = await apiFetch('POST', `/finance/payment-method-assets/${id}/delete`, {}, true);
-        if (res.code === 200) {
-            showToast('✓ 绑定已解除！', false);
-            loadBindingsList();
-        } else {
-            showToast(res.errorMessage || '解除绑定失败！', true);
-        }
-    } catch (e) {
-        console.error('Failed to delete binding:', e);
-        showToast('解绑操作网络异常！', true);
-    }
-}
-window.deleteBinding = deleteBinding;
+// Deprecated sub-tabs and bindings logic removed.
 
 
-export // --- PLATFORM ASSET EXCHANGE RATES MANAGEMENT (汇率管理) ---
+export // --- PLATFORM ASSET EXCHANGE RATES MANAGEMENT (æ±‡çŽ‡ç®¡ç†) ---
 async function loadExchangeRatesList() {
     const tableBody = document.getElementById('rates-table-body');
     if (!tableBody) return;
     
-    tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 20px; color: var(--text-secondary);">🔄 正在调取全站结算汇率配置...</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 20px; color: var(--text-secondary);">ðŸ”„ æ­£åœ¨è°ƒå–å…¨ç«™ç»“ç®—æ±‡çŽ‡é…ç½®...</td></tr>`;
     
     const pageConf = window.adminPages.rates;
     
@@ -1675,9 +1256,9 @@ async function loadExchangeRatesList() {
             exchangeRatesList = rates; // Cache globally
             
             if (rates.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 25px; color: var(--text-muted); font-size: 0.85rem;">📭 暂无任何结算汇率配置记录</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 25px; color: var(--text-muted); font-size: 0.85rem;">ðŸ“­ æš‚æ— ä»»ä½•ç»“ç®—æ±‡çŽ‡é…ç½®è®°å½•</td></tr>`;
                 const indicator = document.getElementById(`rates-page-indicator`);
-                if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
+                if (indicator) indicator.innerText = `ç¬¬ 1 / 1 é¡µ (å…± 0 æ¡)`;
                 return;
             }
             
@@ -1704,7 +1285,7 @@ async function loadExchangeRatesList() {
                 const baseName = symbolMap[String(r.baseAssetId || '')] || `Asset (${r.baseAssetId})`;
                 const quoteName = symbolMap[String(r.quoteAssetId || '')] || `Asset (${r.quoteAssetId})`;
                 
-                const statusText = r.enabled ? '启用中' : '已禁用';
+                const statusText = r.enabled ? 'å¯ç”¨ä¸­' : 'å·²ç¦ç”¨';
                 const statusClass = r.enabled ? 'kyc-status-VERIFIED' : 'kyc-status-NONE';
                 
                 return `
@@ -1716,18 +1297,18 @@ async function loadExchangeRatesList() {
                         <td><span class="kyc-badge-status ${statusClass}" style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px;">${statusText}</span></td>
                         <td style="max-width: 150px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; color: var(--text-secondary); font-size: 0.75rem;">${r.remark || '--'}</td>
                         <td>
-                            <button class="action-btn btn-view" onclick="openRateEditModal('${r.id}')" style="padding: 4px 8px; font-size: 0.72rem; cursor: pointer; background: rgba(91,81,249,0.08); color: var(--primary);">✏️ 编辑</button>
-                            <button class="action-btn btn-reject" onclick="deleteExchangeRate('${r.id}')" style="padding: 4px 8px; font-size: 0.72rem; cursor: pointer; margin-left: 5px; background: rgba(239,68,68,0.08); color: var(--red);">✕ 删除</button>
+                            <button class="action-btn btn-view" onclick="openRateEditModal('${r.id}')" style="padding: 4px 8px; font-size: 0.72rem; cursor: pointer; background: rgba(91,81,249,0.08); color: var(--primary);">âœï¸ ç¼–è¾‘</button>
+                            <button class="action-btn btn-reject" onclick="deleteExchangeRate('${r.id}')" style="padding: 4px 8px; font-size: 0.72rem; cursor: pointer; margin-left: 5px; background: rgba(239,68,68,0.08); color: var(--red);">âœ• åˆ é™¤</button>
                         </td>
                     </tr>
                 `;
             }).join('');
         } else {
-            tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 20px; color: var(--red); font-size: 0.85rem;">⚠️ 调取结算汇率失败：${res.errorMessage || '未知错误'}</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 20px; color: var(--red); font-size: 0.85rem;">âš ï¸ è°ƒå–ç»“ç®—æ±‡çŽ‡å¤±è´¥ï¼š${res.errorMessage || 'æœªçŸ¥é”™è¯¯'}</td></tr>`;
         }
     } catch(e) {
         console.error('Failed to load exchange rates:', e);
-        tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 20px; color: var(--red); font-size: 0.85rem;">⚠️ 加载结算汇率发生网络异常！</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 20px; color: var(--red); font-size: 0.85rem;">âš ï¸ åŠ è½½ç»“ç®—æ±‡çŽ‡å‘ç”Ÿç½‘ç»œå¼‚å¸¸ï¼</td></tr>`;
     }
 }
 
@@ -1751,8 +1332,8 @@ function openRateEditModal(rateId) {
     
     if (rateId) {
         // Edit Mode
-        document.getElementById('rate-modal-title').innerText = '🪙 编辑官方结算汇率';
-        document.getElementById('rate-modal-submit-btn').innerText = '确认并修改结算汇率';
+        document.getElementById('rate-modal-title').innerText = 'ðŸª™ ç¼–è¾‘å®˜æ–¹ç»“ç®—æ±‡çŽ‡';
+        document.getElementById('rate-modal-submit-btn').innerText = 'ç¡®è®¤å¹¶ä¿®æ”¹ç»“ç®—æ±‡çŽ‡';
         
         const rateObj = exchangeRatesList.find(r => String(r.id || '') === String(rateId || ''));
         if (rateObj) {
@@ -1800,8 +1381,8 @@ function openRateEditModal(rateId) {
         }
     } else {
         // Create Mode
-        document.getElementById('rate-modal-title').innerText = '🪙 新增官方结算汇率';
-        document.getElementById('rate-modal-submit-btn').innerText = '发布并启用新结算汇率';
+        document.getElementById('rate-modal-title').innerText = 'ðŸª™ æ–°å¢žå®˜æ–¹ç»“ç®—æ±‡çŽ‡';
+        document.getElementById('rate-modal-submit-btn').innerText = 'å‘å¸ƒå¹¶å¯ç”¨æ–°ç»“ç®—æ±‡çŽ‡';
     }
     
     modal.classList.add('active');
@@ -1845,21 +1426,21 @@ async function submitRateChanges(event) {
     const remark = document.getElementById('rate-edit-remark').value.trim();
     
     if (!baseAssetId || !/^\d+$/.test(baseAssetId)) {
-        showToast('⚠️ 基准资产 ID 必须为有效的数字 Snowflake ID！', true);
+        showToast('âš ï¸ åŸºå‡†èµ„äº§ ID å¿…é¡»ä¸ºæœ‰æ•ˆçš„æ•°å­— Snowflake IDï¼', true);
         return;
     }
     if (!quoteAssetId || !/^\d+$/.test(quoteAssetId)) {
-        showToast('⚠️ 目标资产 ID 必须为有效的数字 Snowflake ID！', true);
+        showToast('âš ï¸ ç›®æ ‡èµ„äº§ ID å¿…é¡»ä¸ºæœ‰æ•ˆçš„æ•°å­— Snowflake IDï¼', true);
         return;
     }
     if (isNaN(rate) || rate <= 0) {
-        showToast('⚠️ 兑换汇率必须为大于零的数字！', true);
+        showToast('âš ï¸ å…‘æ¢æ±‡çŽ‡å¿…é¡»ä¸ºå¤§äºŽé›¶çš„æ•°å­—ï¼', true);
         return;
     }
     
     const submitBtn = document.getElementById('rate-modal-submit-btn');
     submitBtn.disabled = true;
-    submitBtn.innerText = '提交中...';
+    submitBtn.innerText = 'æäº¤ä¸­...';
     
     try {
         // Stringify Snowflake BigInt properly without precision loss matching REST spec
@@ -1875,40 +1456,40 @@ async function submitRateChanges(event) {
         }
         
         submitBtn.disabled = false;
-        submitBtn.innerText = '确认并提交配置';
+        submitBtn.innerText = 'ç¡®è®¤å¹¶æäº¤é…ç½®';
         
         if (res && res.code === 200) {
-            showToast('✓ 平台资产清算结算汇率配置成功保存并已实时生效！', false);
+            showToast('âœ“ å¹³å°èµ„äº§æ¸…ç®—ç»“ç®—æ±‡çŽ‡é…ç½®æˆåŠŸä¿å­˜å¹¶å·²å®žæ—¶ç”Ÿæ•ˆï¼', false);
             closeRateEditModal();
             loadExchangeRatesList();
         } else {
-            showToast(res.errorMessage || '结算汇率配置失败！', true);
+            showToast(res.errorMessage || 'ç»“ç®—æ±‡çŽ‡é…ç½®å¤±è´¥ï¼', true);
         }
     } catch(e) {
         submitBtn.disabled = false;
-        submitBtn.innerText = '确认并提交配置';
+        submitBtn.innerText = 'ç¡®è®¤å¹¶æäº¤é…ç½®';
         console.error('Failed to submit rate change:', e);
-        showToast('网络清算请求超时！', true);
+        showToast('ç½‘ç»œæ¸…ç®—è¯·æ±‚è¶…æ—¶ï¼', true);
     }
 }
 
 async function deleteExchangeRate(rateId) {
-    if (!confirm('⚠️ 警告：您确定要永久删除该资产结算汇率配置吗？这可能会影响全站该资产后续的自动充值汇兑代扣！')) return;
+    if (!confirm('âš ï¸ è­¦å‘Šï¼šæ‚¨ç¡®å®šè¦æ°¸ä¹…åˆ é™¤è¯¥èµ„äº§ç»“ç®—æ±‡çŽ‡é…ç½®å—ï¼Ÿè¿™å¯èƒ½ä¼šå½±å“å…¨ç«™è¯¥èµ„äº§åŽç»­çš„è‡ªåŠ¨å……å€¼æ±‡å…‘ä»£æ‰£ï¼')) return;
     
-    showToast('正在永久物理擦除汇率配置...', false);
+    showToast('æ­£åœ¨æ°¸ä¹…ç‰©ç†æ“¦é™¤æ±‡çŽ‡é…ç½®...', false);
     
     try {
         // DELETE /asset-exchange-rates/{id} or POST /asset-exchange-rates/{id}/delete
         const res = await apiFetch('POST', `/asset-exchange-rates/${rateId}/delete`, {}, true);
         if (res && res.code === 200) {
-            showToast('✓ 该资产结算汇率已成功从平台数据库中删除！', false);
+            showToast('âœ“ è¯¥èµ„äº§ç»“ç®—æ±‡çŽ‡å·²æˆåŠŸä»Žå¹³å°æ•°æ®åº“ä¸­åˆ é™¤ï¼', false);
             loadExchangeRatesList();
         } else {
-            showToast(res.errorMessage || '删除汇率配置失败！', true);
+            showToast(res.errorMessage || 'åˆ é™¤æ±‡çŽ‡é…ç½®å¤±è´¥ï¼', true);
         }
     } catch(e) {
         console.error('Failed to delete exchange rate:', e);
-        showToast('网络删除请求异常！', true);
+        showToast('ç½‘ç»œåˆ é™¤è¯·æ±‚å¼‚å¸¸ï¼', true);
     }
 }
 
@@ -1931,7 +1512,7 @@ export function resetDepositFilters() {
     window.adminPages.deposit.size = 10;
     window.adminPages.deposit.current = 1;
     loadDepositList();
-    showToast('✓ 充值检索条件已重置', false);
+    showToast('âœ“ å……å€¼æ£€ç´¢æ¡ä»¶å·²é‡ç½®', false);
 }
 window.resetDepositFilters = resetDepositFilters;
 
@@ -1953,7 +1534,7 @@ export function resetWithdrawFilters() {
     window.adminPages.withdraw.size = 10;
     window.adminPages.withdraw.current = 1;
     loadWithdrawList();
-    showToast('✓ 提现检索条件已重置', false);
+    showToast('âœ“ æçŽ°æ£€ç´¢æ¡ä»¶å·²é‡ç½®', false);
 }
 window.resetWithdrawFilters = resetWithdrawFilters;
 
@@ -2043,9 +1624,9 @@ async function loadManualFundingList() {
                 }
                 
                 if (filteredList.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 30px 0;">暂无符合条件的记录</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 30px 0;">æš‚æ— ç¬¦åˆæ¡ä»¶çš„è®°å½•</td></tr>`;
                     const indicator = document.getElementById(`manualFunding-page-indicator`);
-                    if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
+                    if (indicator) indicator.innerText = `ç¬¬ 1 / 1 é¡µ (å…± 0 æ¡)`;
                     return;
                 }
                 
@@ -2060,7 +1641,7 @@ async function loadManualFundingList() {
                 if (list.length === 0) {
                     tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 30px 0;">\u65e0\u6570\u636e</td></tr>`;
                     const indicator = document.getElementById(`manualFunding-page-indicator`);
-                    if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
+                    if (indicator) indicator.innerText = `ç¬¬ 1 / 1 é¡µ (å…± 0 æ¡)`;
                     return;
                 }
                 
@@ -2083,8 +1664,8 @@ async function loadManualFundingList() {
                 const usdtAmt = parseFloat(o.amount || 0);
                 const inrAmt = usdtAmt * rate;
                 
-                let amountDetails = `<span style="font-weight: 700; color: ${typeColor}; font-size: 0.88rem;">₹${inrAmt.toFixed(2)} INR</span>`;
-                amountDetails += `<br><span style="font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap;">额度: <b>${usdtAmt.toFixed(4)} USDT</b> (汇率: ${rate.toFixed(2)})</span>`;
+                let amountDetails = `<span style="font-weight: 700; color: ${typeColor}; font-size: 0.88rem;">â‚¹${inrAmt.toFixed(2)} INR</span>`;
+                amountDetails += `<br><span style="font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap;">é¢åº¦: <b>${usdtAmt.toFixed(4)} USDT</b> (æ±‡çŽ‡: ${rate.toFixed(2)})</span>`;
 
                 let actionHtml = '';
                 if (o.status === 'PENDING') {
@@ -2098,8 +1679,8 @@ async function loadManualFundingList() {
                     actionHtml = `<span style="font-size: 0.75rem; color: var(--text-secondary);">${o.auditorEmail || o.auditorId || '-'} (${o.auditRemark || '-'})</span>`;
                 }
                 
-                const userRiskObj = userRiskMap[String(o.userId)] || { name: '未分组', level: 0 };
-                const riskLevelName = userRiskObj.name || '未分组';
+                const userRiskObj = userRiskMap[String(o.userId)] || { name: 'æœªåˆ†ç»„', level: 0 };
+                const riskLevelName = userRiskObj.name || 'æœªåˆ†ç»„';
                 const riskLevelBadge = `<br><span style="font-size: 0.68rem; color: #38BDF8; font-weight: 600;">${riskLevelName}</span>`;
 
                 return `
@@ -2142,7 +1723,7 @@ function updateManualFundInrPreview() {
     const val = parseFloat(amountEl.value) || 0;
     const rate = window.userUsdtToInrRate || 1.0;
     if (val > 0) {
-        previewEl.innerText = `≈ ₹${(val * rate).toFixed(2)} INR`;
+        previewEl.innerText = `â‰ˆ â‚¹${(val * rate).toFixed(2)} INR`;
     } else {
         previewEl.innerText = '';
     }
@@ -2229,11 +1810,11 @@ async function submitManualFundingOrder(event) {
     const remark = document.getElementById('manual-fund-add-remark').value;
     
     if (!userVal || !subjectId || !amount || !remark) {
-        showToast('请完整填写所有必填字段！', true);
+        showToast('è¯·å®Œæ•´å¡«å†™æ‰€æœ‰å¿…å¡«å­—æ®µï¼', true);
         return;
     }
     
-    showToast('正在校验用户信息...', false);
+    showToast('æ­£åœ¨æ ¡éªŒç”¨æˆ·ä¿¡æ¯...', false);
     let userId = null;
     try {
         const matchPhone = (phone1, phone2) => {
@@ -2263,26 +1844,26 @@ async function submitManualFundingOrder(event) {
     }
     
     if (!userId) {
-        showToast('❌ 未找到匹配的交易员，请检查输入的手机号码或UID是否正确！', true);
+        showToast('âŒ æœªæ‰¾åˆ°åŒ¹é…çš„äº¤æ˜“å‘˜ï¼Œè¯·æ£€æŸ¥è¾“å…¥çš„æ‰‹æœºå·ç æˆ–UIDæ˜¯å¦æ­£ç¡®ï¼', true);
         return;
     }
     
-    showToast('正在提交手工资金调整申请...', false);
+    showToast('æ­£åœ¨æäº¤æ‰‹å·¥èµ„é‡‘è°ƒæ•´ç”³è¯·...', false);
     try {
         const rawBodyStr = `{"amount":"${amount}","userId":${userId},"subjectId":${subjectId},"remark":${JSON.stringify(remark)}}`;
         const path = type === 'DEPOSIT' ? '/finance/manual-fund-orders/deposits' : '/finance/manual-fund-orders/withdrawals';
         
         const res = await apiFetchWithRawBody('POST', path, rawBodyStr, true);
         if (res.code === 200) {
-            showToast('✓ 手工资金调整申请已成功提交并进入审计流！', false);
+            showToast('âœ“ æ‰‹å·¥èµ„é‡‘è°ƒæ•´ç”³è¯·å·²æˆåŠŸæäº¤å¹¶è¿›å…¥å®¡è®¡æµï¼', false);
             closeManualFundingModal();
             loadManualFundingList();
         } else {
-            showToast(res.errorMessage || '手工资金调整提交失败！', true);
+            showToast(res.errorMessage || 'æ‰‹å·¥èµ„é‡‘è°ƒæ•´æäº¤å¤±è´¥ï¼', true);
         }
     } catch (e) {
         console.error(e);
-        showToast('网络连接失败或接口异常！', true);
+        showToast('ç½‘ç»œè¿žæŽ¥å¤±è´¥æˆ–æŽ¥å£å¼‚å¸¸ï¼', true);
     }
 }
 window.submitManualFundingOrder = submitManualFundingOrder;
@@ -2327,7 +1908,7 @@ async function loadManualSubjectsList() {
                 const filterSelect = document.getElementById('filter-manual-subject');
                 if (filterSelect) {
                     const currentVal = filterSelect.value;
-                    filterSelect.innerHTML = '<option value="ALL">全部科目</option>' +
+                    filterSelect.innerHTML = '<option value="ALL">å…¨éƒ¨ç§‘ç›®</option>' +
                         allList.filter(s => s.enabled).map(s => `<option value="${s.id}">${s.name}</option>`).join('');
                     filterSelect.value = currentVal;
                 }
@@ -2348,7 +1929,7 @@ async function loadManualSubjectsList() {
             if (list.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px 0;">\u65e0\u6570\u636e</td></tr>`;
                 const indicator = document.getElementById(`manualSubjects-page-indicator`);
-                if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
+                if (indicator) indicator.innerText = `ç¬¬ 1 / 1 é¡µ (å…± 0 æ¡)`;
                 return;
             }
             

@@ -257,16 +257,23 @@ async function apiFetch(method, path, body = null, requireAuth = true) {
         
         // Check for 401 unauthorized session expiration
         if (response.status === 401) {
-            if (localStorage.getItem('matp_access_token')) {
-                localStorage.removeItem('matp_access_token');
-                localStorage.removeItem('matp_session_key');
-                localStorage.removeItem('matp_user_uid');
-                localStorage.removeItem('matp_user_nickname');
-                localStorage.removeItem('matp_user_email');
-                localStorage.removeItem('matp_user_kyc');
+            const isAdmin = window.isAdminPanel === true || window.location.pathname.includes('admin');
+            if (isAdmin) {
+                ['matp_admin_logged_in', 'matp_admin_access_token', 'matp_admin_session_key', 'matp_admin_user_uid', 'matp_admin_user_email'].forEach(k => localStorage.removeItem(k));
                 setTimeout(() => {
-                    if (window.checkAuthSession) window.checkAuthSession();
+                    if (window.checkAdminSession) {
+                        window.checkAdminSession();
+                    } else {
+                        window.location.href = 'admin_login.html';
+                    }
                 }, 100);
+            } else {
+                if (localStorage.getItem('matp_access_token')) {
+                    ['matp_access_token','matp_session_key','matp_user_uid','matp_user_nickname','matp_user_email','matp_user_kyc'].forEach(k => localStorage.removeItem(k));
+                    setTimeout(() => {
+                        if (window.checkAuthSession) window.checkAuthSession();
+                    }, 100);
+                }
             }
         }
         
@@ -278,16 +285,23 @@ async function apiFetch(method, path, body = null, requireAuth = true) {
             );
             const parsed = JSON.parse(safeText);
             if (parsed.code === 401) {
-                if (localStorage.getItem('matp_access_token')) {
-                    localStorage.removeItem('matp_access_token');
-                    localStorage.removeItem('matp_session_key');
-                    localStorage.removeItem('matp_user_uid');
-                    localStorage.removeItem('matp_user_nickname');
-                    localStorage.removeItem('matp_user_email');
-                    localStorage.removeItem('matp_user_kyc');
+                const isAdmin = window.isAdminPanel === true || window.location.pathname.includes('admin');
+                if (isAdmin) {
+                    ['matp_admin_logged_in', 'matp_admin_access_token', 'matp_admin_session_key', 'matp_admin_user_uid', 'matp_admin_user_email'].forEach(k => localStorage.removeItem(k));
                     setTimeout(() => {
-                        if (window.checkAuthSession) window.checkAuthSession();
+                        if (window.checkAdminSession) {
+                            window.checkAdminSession();
+                        } else {
+                            window.location.href = 'admin_login.html';
+                        }
                     }, 100);
+                } else {
+                    if (localStorage.getItem('matp_access_token')) {
+                        ['matp_access_token','matp_session_key','matp_user_uid','matp_user_nickname','matp_user_email','matp_user_kyc'].forEach(k => localStorage.removeItem(k));
+                        setTimeout(() => {
+                            if (window.checkAuthSession) window.checkAuthSession();
+                        }, 100);
+                    }
                 }
             }
             return parsed;
@@ -401,6 +415,26 @@ async function apiFetchRaw(method, path, body = null, requireAuth = true) {
             cache: 'no-store',
             body: method !== 'GET' && method !== 'DELETE' && body !== null ? bodyStr : undefined
         });
+        
+        if (response.status === 401) {
+            const isAdmin = window.isAdminPanel === true || window.location.pathname.includes('admin');
+            if (isAdmin) {
+                ['matp_admin_logged_in', 'matp_admin_access_token', 'matp_admin_session_key', 'matp_admin_user_uid', 'matp_admin_user_email'].forEach(k => localStorage.removeItem(k));
+                setTimeout(() => {
+                    if (window.checkAdminSession) {
+                        window.checkAdminSession();
+                    } else {
+                        window.location.href = 'admin_login.html';
+                    }
+                }, 100);
+            } else {
+                if (localStorage.getItem('matp_access_token')) {
+                    ['matp_access_token','matp_session_key','matp_user_uid','matp_user_nickname','matp_user_email','matp_user_kyc'].forEach(k => localStorage.removeItem(k));
+                    setTimeout(() => { if (window.checkAuthSession) window.checkAuthSession(); }, 100);
+                }
+            }
+        }
+        
         return await response.text();
     } catch(e) {
         console.error('apiFetchRaw failed:', e);
@@ -501,9 +535,21 @@ async function apiFetchWithRawBody(method, path, rawBodyStr, requireAuth = true)
         const text = await response.text();
         
         if (response.status === 401) {
-            if (localStorage.getItem('matp_access_token')) {
-                ['matp_access_token','matp_session_key','matp_user_uid','matp_user_nickname','matp_user_email','matp_user_kyc'].forEach(k => localStorage.removeItem(k));
-                setTimeout(() => { if (window.checkAuthSession) window.checkAuthSession(); }, 100);
+            const isAdmin = window.isAdminPanel === true || window.location.pathname.includes('admin');
+            if (isAdmin) {
+                ['matp_admin_logged_in', 'matp_admin_access_token', 'matp_admin_session_key', 'matp_admin_user_uid', 'matp_admin_user_email'].forEach(k => localStorage.removeItem(k));
+                setTimeout(() => {
+                    if (window.checkAdminSession) {
+                        window.checkAdminSession();
+                    } else {
+                        window.location.href = 'admin_login.html';
+                    }
+                }, 100);
+            } else {
+                if (localStorage.getItem('matp_access_token')) {
+                    ['matp_access_token','matp_session_key','matp_user_uid','matp_user_nickname','matp_user_email','matp_user_kyc'].forEach(k => localStorage.removeItem(k));
+                    setTimeout(() => { if (window.checkAuthSession) window.checkAuthSession(); }, 100);
+                }
             }
         }
         
@@ -513,7 +559,26 @@ async function apiFetchWithRawBody(method, path, rawBodyStr, requireAuth = true)
                 /("[^"\\]*(?:\\.[^"\\]*)*")|(?<=[:,\s\[]|^)(-?\d{15,})(?=[,\}\]\s]|$)/g,
                 (match, p1, p2) => p1 ? p1 : '"' + p2 + '"'
             );
-            return JSON.parse(safeText);
+            const parsed = JSON.parse(safeText);
+            if (parsed.code === 401) {
+                const isAdmin = window.isAdminPanel === true || window.location.pathname.includes('admin');
+                if (isAdmin) {
+                    ['matp_admin_logged_in', 'matp_admin_access_token', 'matp_admin_session_key', 'matp_admin_user_uid', 'matp_admin_user_email'].forEach(k => localStorage.removeItem(k));
+                    setTimeout(() => {
+                        if (window.checkAdminSession) {
+                            window.checkAdminSession();
+                        } else {
+                            window.location.href = 'admin_login.html';
+                        }
+                    }, 100);
+                } else {
+                    if (localStorage.getItem('matp_access_token')) {
+                        ['matp_access_token','matp_session_key','matp_user_uid','matp_user_nickname','matp_user_email','matp_user_kyc'].forEach(k => localStorage.removeItem(k));
+                        setTimeout(() => { if (window.checkAuthSession) window.checkAuthSession(); }, 100);
+                    }
+                }
+            }
+            return parsed;
         } catch(e) {
             return { code: response.status, errorMessage: text || `HTTP ${response.status}` };
         }

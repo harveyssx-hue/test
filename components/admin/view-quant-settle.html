@@ -54,11 +54,10 @@
                     <div style="border-top: 1.5px solid var(--border-light); padding-top: 15px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
                             <div style="font-size: 0.82rem; font-weight: bold; color: var(--primary); display: flex; align-items: center; gap: 4px;">
-                                👥 活动量化明细与勾选操盘 (已选仓位批量/单笔结算)
+                                👥 量化操盘批次列表 (按层级/商品清算历史)
                             </div>
                             <div style="display: flex; gap: 8px; align-items: center;">
-                                <button class="action-btn" onclick="openBatchBuyModal()" style="padding: 0 12px; font-size: 0.72rem; border-radius: 4px; white-space: nowrap; height: 28px; font-weight: 600; background: var(--primary); color: white; border: none; cursor: pointer;">📈 批量买入模式</button>
-                                <button class="action-btn" onclick="openBatchSellModal()" style="padding: 0 12px; font-size: 0.72rem; border-radius: 4px; white-space: nowrap; height: 28px; font-weight: 600; background: #EF4444; color: white; border: none; cursor: pointer;">📉 批量卖出模式</button>
+                                <button class="action-btn btn-approve" onclick="openCreateCompletedBatchModal()" style="padding: 0 14px; font-size: 0.75rem; border-radius: 6px; white-space: nowrap; height: 28px; font-weight: 600; background: var(--primary); color: white; border: none; cursor: pointer;">+ 新增风控层级投资批次</button>
                             </div>
                         </div>
 
@@ -66,16 +65,18 @@
                             <table>
                                 <thead>
                                     <tr>
-                                        <th style="width: 45px; text-align: center;"><input type="checkbox" id="select-all-settle-orders" onchange="toggleSelectAllSettleOrders(this)"></th>
-                                        <th>量化用户 UID</th>
-                                        <th>量化策略</th>
-                                        <th>策略流水号</th>
-                                        <th>投入资金</th>
-                                        <th>当前品种</th>
-                                        <th>持仓数量</th>
-                                        <th>浮动盈亏</th>
-                                        <th>启动时间</th>
-                                        <th class="sticky-right" style="text-align: center;">精准个人操作</th>
+                                        <th>批次 ID</th>
+                                        <th>风控层级</th>
+                                        <th>交易商品</th>
+                                        <th>买入价格 / 时间</th>
+                                        <th>卖出价格 / 时间</th>
+                                        <th>命中订单数</th>
+                                        <th>总买入金额</th>
+                                        <th>总卖出金额</th>
+                                        <th>总收益 / 总费用</th>
+                                        <th>实际收益</th>
+                                        <th>状态</th>
+                                        <th>错误原因</th>
                                     </tr>
                                 </thead>
                                 <tbody id="quant-settle-table-body">
@@ -87,222 +88,97 @@
                 </div>
             </div>
 
-            <!-- SECTION 10B: COPY TRADING CENTER (社区导师带单与跟随合规中心) -->
-    <!-- VIEW: QUANT CONTROL MODAL (Phase 19 Integration) -->
-    <div id="quant-control-modal" class="overlay" style="display: none; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(15px); background: rgba(0,0,0,0.6);">
-        <div class="glass-panel modal-content-payment" style="max-width: 480px; padding: 30px;">
-            <button class="drawer-close-btn" onclick="closeQuantControlModal()" style="top: 24px; right: 24px; font-size: 1.2rem;">✕</button>
-            <div class="modal-header-admin" style="margin-bottom: 20px; border-bottom: 1px solid #F1F5F9; padding-bottom: 12px;">
-                <h2 style="font-size: 1.35rem; display: flex; align-items: center; gap: 8px; color: var(--text-primary);">📈 AI 量化手动操盘终端</h2>
-                <p style="font-size: 0.78rem; color: #64748B; margin-top: 6px; font-weight: 500;">手动指定该笔量化订单的买入/卖出价格与数量，执行物理盈亏清结算</p>
+    <!-- VIEW: CREATE COMPLETED BATCH MODAL (创建层级完整操盘批次弹窗) -->
+    <div id="create-completed-batch-modal" class="overlay" style="display: none; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(15px); background: rgba(0,0,0,0.6);">
+        <div class="glass-panel modal-content-payment" style="max-width: 550px; padding: 30px; max-height: 90vh; overflow-y: auto;">
+            <button class="drawer-close-btn" onclick="closeCreateCompletedBatchModal()" style="top: 24px; right: 24px; font-size: 1.2rem; background: transparent; border: none; color: var(--text-secondary); cursor: pointer;">✕</button>
+            <div class="modal-header-admin" style="margin-bottom: 20px; border-bottom: 1px solid var(--border-light); padding-bottom: 12px;">
+                <h2 style="font-size: 1.35rem; display: flex; align-items: center; gap: 8px; color: var(--primary); font-weight: bold; margin: 0;">🛡️ 新增风控层级投资批次</h2>
+                <p style="font-size: 0.78rem; color: #64748B; margin-top: 6px; font-weight: 500;">一次性录入某风控层级与品种的物理买入/卖出价格与执行时间，由系统异步计算各订单明细并结算盈亏</p>
             </div>
             
-            <form class="auth-form" onsubmit="submitQuantControl(event)">
-                <input type="hidden" id="qctrl-order-id">
-                
-                <div class="auth-input-group">
-                    <label>操作类型 (Action)</label>
-                    <select id="qctrl-action" required class="payment-add-select" onchange="toggleQctrlActionFields()">
-                        <option value="buy">📈 执行买入 (BUY)</option>
-                        <option value="sell">📉 执行卖出 (SELL)</option>
-                    </select>
-                </div>
-                
-                <div class="auth-input-group">
-                    <label>交易品种 (Instrument ID)</label>
-                    <select id="qctrl-instrument" required class="payment-add-select">
-                        <option value="1126151490264633456">BTC/USDT (1126151490264633456)</option>
-                        <option value="1126151490264633457">ETH/USDT (1126151490264633457)</option>
-                        <option value="1126151490264633458">SOL/USDT (1126151490264633458)</option>
-                    </select>
-                </div>
-
-                <div class="form-grid-2">
+            <form class="auth-form" onsubmit="submitCreateCompletedBatch(event)" style="display: flex; flex-direction: column; gap: 16px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                     <div class="auth-input-group">
-                        <label id="qctrl-price-label">买入价格 (Price)</label>
-                        <input type="number" step="any" min="0.000001" id="qctrl-price" required placeholder="如: 68500.00" oninput="recalculateQctrlQuantity()">
+                        <label>用户风控层级</label>
+                        <select id="cbatch-risk-level" required class="payment-add-select" onchange="onBatchRiskLevelChange()">
+                            <!-- Loaded dynamically -->
+                        </select>
                     </div>
                     <div class="auth-input-group">
-                        <label id="qctrl-qty-label">交易数量 (Quantity)</label>
-                        <input type="number" step="any" min="0.000001" id="qctrl-qty" required placeholder="输入或自动计算数量" style="height: 38px; font-size: 0.85rem; border-radius: 6px; border: 1.5px solid var(--border); padding: 0 12px; background: transparent; color: var(--text-primary);">
+                        <label>交易商品 (Instrument)</label>
+                        <select id="cbatch-instrument" required class="payment-add-select">
+                            <!-- Loaded dynamically -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Risk level statistics display box -->
+                <div id="cbatch-stats-box" style="display: none; background: rgba(91, 81, 249, 0.06); border: 1px solid rgba(91, 81, 249, 0.15); border-radius: 6px; padding: 10px 12px; font-size: 0.75rem; color: var(--primary); line-height: 1.4;">
+                    <!-- Filled dynamically -->
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; border-top: 1px dashed var(--border-light); padding-top: 12px;">
+                    <div class="auth-input-group">
+                        <label>买入成交价格 (Buy Price)</label>
+                        <input type="number" step="any" min="0.000001" id="cbatch-buy-price" required placeholder="如: 68500.00">
+                    </div>
+                    <div class="auth-input-group">
+                        <label>买入执行时间 (Buy Time)</label>
+                        <input type="datetime-local" id="cbatch-buy-time" required>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="auth-input-group">
+                        <label>卖出成交价格 (Sell Price)</label>
+                        <input type="number" step="any" min="0.000001" id="cbatch-sell-price" required placeholder="如: 69000.00">
+                    </div>
+                    <div class="auth-input-group">
+                        <label>卖出执行时间 (Sell Time)</label>
+                        <input type="datetime-local" id="cbatch-sell-time" required>
                     </div>
                 </div>
 
                 <!-- Advanced settings section (rates override) -->
                 <details style="margin-top: 5px; font-size: 0.8rem; color: var(--text-secondary);">
-                    <summary style="cursor: pointer; font-weight: 600; color: var(--primary);">⚙️ 高级费率覆盖 (可选)</summary>
-                    <div class="form-grid-2" style="gap: 12px; padding: 10px 0;">
-                        <div class="auth-input-group">
-                            <label style="font-size: 0.7rem;">算力费率覆盖 (如 0.03)</label>
-                            <input type="number" step="0.0001" min="0" max="1" id="qctrl-rate-computing" placeholder="默认">
+                    <summary style="cursor: pointer; font-weight: 600; color: var(--primary); outline: none;">⚙️ 费率设置 (可选，覆盖默认值)</summary>
+                    <div style="padding: 10px 0 0 0; display: flex; flex-direction: column; gap: 12px;">
+                        <div style="font-size: 0.7rem; font-weight: bold; color: var(--text-primary); border-bottom: 1px solid var(--border-light); padding-bottom: 4px;">📈 买入费率设置</div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                            <div class="auth-input-group">
+                                <label style="font-size: 0.65rem;">算力费用率</label>
+                                <input type="number" step="0.0001" min="0" max="1" id="cbatch-buy-rate-computing" placeholder="默认">
+                            </div>
+                            <div class="auth-input-group">
+                                <label style="font-size: 0.65rem;">经纪费率</label>
+                                <input type="number" step="0.0001" min="0" max="1" id="cbatch-buy-rate-brokerage" placeholder="默认">
+                            </div>
+                            <div class="auth-input-group">
+                                <label style="font-size: 0.65rem;">交易所费率</label>
+                                <input type="number" step="0.0001" min="0" max="1" id="cbatch-buy-rate-exchange" placeholder="默认">
+                            </div>
                         </div>
-                        <div class="auth-input-group">
-                            <label style="font-size: 0.7rem;">经纪费率覆盖 (如 0.05)</label>
-                            <input type="number" step="0.0001" min="0" max="1" id="qctrl-rate-brokerage" placeholder="默认">
+                        
+                        <div style="font-size: 0.7rem; font-weight: bold; color: var(--text-primary); border-bottom: 1px solid var(--border-light); padding-bottom: 4px; margin-top: 5px;">📉 卖出费率设置</div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                            <div class="auth-input-group">
+                                <label style="font-size: 0.65rem;">算力费用率</label>
+                                <input type="number" step="0.0001" min="0" max="1" id="cbatch-sell-rate-computing" placeholder="默认">
+                            </div>
+                            <div class="auth-input-group">
+                                <label style="font-size: 0.65rem;">经纪费率</label>
+                                <input type="number" step="0.0001" min="0" max="1" id="cbatch-sell-rate-brokerage" placeholder="默认">
+                            </div>
+                            <div class="auth-input-group">
+                                <label style="font-size: 0.65rem;">交易所费率</label>
+                                <input type="number" step="0.0001" min="0" max="1" id="cbatch-sell-rate-exchange" placeholder="默认">
+                            </div>
                         </div>
                     </div>
                 </details>
                 
-                <button type="submit" class="admin-auth-btn" style="margin-top: 15px; height: 46px; border-radius: 10px; font-weight: 700; background: var(--primary);" id="qctrl-submit-btn">发送物理操盘撮合指令</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- VIEW: QUANT ORDER DETAIL & MULTI-TRADE MODAL (Level 2 Detail Panel) -->
-    <div id="quant-order-detail-modal" class="overlay" style="display: none; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(15px); background: rgba(0,0,0,0.6);">
-        <div class="glass-panel modal-content-payment" style="max-width: 850px; width: 95%; padding: 25px; display: flex; flex-direction: column; gap: 15px;">
-            <button class="drawer-close-btn" onclick="closeQuantOrderDetailModal()" style="top: 20px; right: 20px; font-size: 1.2rem; background: transparent; border: none; color: var(--text-secondary); cursor: pointer;">✕</button>
-            
-            <div class="modal-header-admin" style="border-bottom: 1.5px solid var(--border-light); padding-bottom: 10px;">
-                <h2 style="font-size: 1.2rem; display: flex; align-items: center; gap: 8px; color: var(--primary); font-weight: bold; margin: 0;">📋 AI 量化订单成交详情与操盘终端</h2>
-                <p style="font-size: 0.75rem; color: #64748B; margin: 4px 0 0 0;">查看并对单笔订单执行多笔物理买入/卖出结算操作</p>
-            </div>
-            
-            <!-- Basic Order Info Overview -->
-            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-light); border-radius: 6px; padding: 10px 15px; display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; font-size: 0.75rem;">
-                <div><span style="color: #64748B;">订单ID:</span> <span id="qdet-order-id" style="font-weight: 600;">--</span></div>
-                <div><span style="color: #64748B;">流水号:</span> <span id="qdet-order-no" style="font-family: monospace; font-weight: 600;">--</span></div>
-                <div><span style="color: #64748B;">用户 UID:</span> <span id="qdet-user-uid" style="font-weight: 600;">--</span></div>
-                <div><span style="color: #64748B;">本金估值:</span> <span id="qdet-invest-amount" style="font-weight: 600; color: var(--primary);">-- USDT</span></div>
-                <div><span style="color: #64748B;">模型:</span> <span id="qdet-algo-model" class="badge" style="display: inline-block;">--</span></div>
-                <div><span style="color: #64748B;">持仓数量:</span> <b id="qdet-holding-qty" style="color: #10B981; font-size: 0.8rem;">0.0000</b></div>
-            </div>
-            
-            <!-- Main Content Area: Split Columns -->
-            <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px; min-height: 320px;">
-                <!-- Left: Historical Trades List -->
-                <div style="display: flex; flex-direction: column; gap: 8px; border-right: 1px solid var(--border-light); padding-right: 15px;">
-                    <div style="font-size: 0.8rem; font-weight: bold; color: var(--text-primary); display: flex; justify-content: space-between; align-items: center;">
-                        <span>📜 历史成交明细 (Trades History)</span>
-                        <button class="action-btn" onclick="refreshOrderDetailTrades()" style="font-size: 0.65rem; padding: 2px 6px; height: 20px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer;">🔄 刷新</button>
-                    </div>
-                    <div class="table-container compact-table" style="max-height: 280px; overflow-y: auto; border: 1px solid var(--border-light); border-radius: 6px;">
-                        <table style="width: 100%; border-collapse: collapse;">
-                            <thead>
-                                <tr style="background: rgba(255,255,255,0.02); font-size: 0.7rem; border-bottom: 1px solid var(--border-light);">
-                                    <th style="padding: 6px; text-align: left;">时间</th>
-                                    <th style="padding: 6px; text-align: center;">方向</th>
-                                    <th style="padding: 6px; text-align: right;">价格</th>
-                                    <th style="padding: 6px; text-align: right;">数量</th>
-                                    <th style="padding: 6px; text-align: right;">盈亏</th>
-                                </tr>
-                            </thead>
-                            <tbody id="qdetail-trades-table-body" style="font-size: 0.72rem;">
-                                <!-- Populated dynamically -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                
-                <!-- Right: Operations Panel -->
-                <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <div style="font-size: 0.8rem; font-weight: bold; color: var(--text-primary);">⚡ 精准订单操盘控制台</div>
-                    
-                    <form id="qdetail-trade-form" onsubmit="submitDetailTradeControl(event)" style="display: flex; flex-direction: column; gap: 8px;">
-                        <div class="auth-input-group" style="margin-bottom: 0;">
-                            <label style="font-size: 0.7rem; font-weight: 600; color: #64748B;">操作动作 (Action)</label>
-                            <select id="qdetail-action" required class="payment-add-select" style="height: 32px; font-size: 0.75rem; width: 100%; border-radius: 6px; border: 1.5px solid var(--border); padding: 0 8px; background: transparent; color: var(--text-primary);" onchange="toggleQdetailActionFields()">
-                                <option value="buy">📈 执行买入建仓 (BUY)</option>
-                                <option value="sell">📉 执行卖出结算 (SELL)</option>
-                            </select>
-                        </div>
-                        
-                        <div class="auth-input-group" style="margin-bottom: 0;">
-                            <label style="font-size: 0.7rem; font-weight: 600; color: #64748B;">交易品种 (Instrument ID)</label>
-                            <select id="qdetail-instrument" required class="payment-add-select" style="height: 32px; font-size: 0.75rem; width: 100%; border-radius: 6px; border: 1.5px solid var(--border); padding: 0 8px; background: transparent; color: var(--text-primary);">
-                                <!-- Loaded dynamically -->
-                            </select>
-                        </div>
-                        
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                            <div class="auth-input-group" style="margin-bottom: 0;">
-                                <label id="qdetail-price-label" style="font-size: 0.7rem; font-weight: 600; color: #64748B;">买入价格 (Price)</label>
-                                <input type="number" step="any" min="0.000001" id="qdetail-price" required placeholder="价格" style="height: 32px; font-size: 0.75rem; border-radius: 6px; border: 1.5px solid var(--border); padding: 0 10px; width: 100%; background: transparent; color: var(--text-primary);" oninput="recalculateQdetailQuantity()">
-                            </div>
-                            <div class="auth-input-group" style="margin-bottom: 0;">
-                                <label id="qdetail-qty-label" style="font-size: 0.7rem; font-weight: 600; color: #64748B;">买入数量 (Qty)</label>
-                                <input type="number" step="any" min="0.000001" id="qdetail-qty" required placeholder="数量" style="height: 32px; font-size: 0.75rem; border-radius: 6px; border: 1.5px solid var(--border); padding: 0 10px; width: 100%; background: transparent; color: var(--text-primary);">
-                            </div>
-                        </div>
-                        
-                        <!-- Advanced settings toggle -->
-                        <details style="font-size: 0.75rem; color: #64748B; margin-top: 4px;">
-                            <summary style="cursor: pointer; font-weight: 600; color: var(--primary); outline: none;">⚙️ 高级费率覆盖 (可选)</summary>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 6px 0 0 0;">
-                                <div class="auth-input-group" style="margin-bottom: 0;">
-                                    <label style="font-size: 0.65rem; color: #64748B;">算力费率覆盖</label>
-                                    <input type="number" step="0.0001" min="0" max="1" id="qdetail-rate-computing" placeholder="默认" style="height: 28px; font-size: 0.7rem; border-radius: 6px; border: 1.5px solid var(--border); padding: 0 8px; width: 100%; background: transparent; color: var(--text-primary);">
-                                </div>
-                                <div class="auth-input-group" style="margin-bottom: 0;">
-                                    <label style="font-size: 0.65rem; color: #64748B;">经纪费率覆盖</label>
-                                    <input type="number" step="0.0001" min="0" max="1" id="qdetail-rate-brokerage" placeholder="默认" style="height: 28px; font-size: 0.7rem; border-radius: 6px; border: 1.5px solid var(--border); padding: 0 8px; width: 100%; background: transparent; color: var(--text-primary);">
-                                </div>
-                            </div>
-                        </details>
-                        
-                        <button type="submit" class="admin-auth-btn" id="qdetail-submit-btn" style="margin-top: 10px; height: 38px; border-radius: 8px; font-size: 0.8rem; font-weight: bold; background: var(--primary); color: white; border: none; cursor: pointer; width: 100%;">发送操盘撮合指令</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- VIEW: SELECTED BATCH BUY MODAL (批量买入弹窗) -->
-    <div id="selected-batch-buy-modal" class="overlay" style="display: none; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(15px); background: rgba(0,0,0,0.6);">
-        <div class="glass-panel modal-content-payment" style="max-width: 450px; padding: 25px;">
-            <button class="drawer-close-btn" onclick="closeBatchBuyModal()" style="top: 20px; right: 20px; font-size: 1.2rem; background: transparent; border: none; color: var(--text-secondary); cursor: pointer;">✕</button>
-            <div class="modal-header-admin" style="margin-bottom: 20px; border-bottom: 1px solid var(--border-light); padding-bottom: 10px;">
-                <h2 style="font-size: 1.2rem; display: flex; align-items: center; gap: 8px; color: var(--primary); font-weight: bold; margin: 0;">📈 执行批量买入建仓</h2>
-                <p style="font-size: 0.75rem; color: #64748B; margin-top: 4px; font-weight: 500;">对已勾选的活动量化订单执行批量买入指令</p>
-            </div>
-            
-            <form onsubmit="submitBatchBuy(event)" style="display: flex; flex-direction: column; gap: 12px;">
-                <div class="auth-input-group" style="margin-bottom: 0;">
-                    <label style="font-weight: 600; font-size: 0.72rem; color: var(--text-secondary);">交易商品 (Instrument)</label>
-                    <select id="batch-buy-instrument" required class="payment-add-select" style="height: 32px; border-radius: 6px; font-size: 0.75rem; padding: 0 8px; width: 100%; background: transparent; color: var(--text-primary);">
-                        <!-- Loaded dynamically -->
-                    </select>
-                </div>
-                
-                <div class="auth-input-group" style="margin-bottom: 0;">
-                    <label style="font-weight: 600; font-size: 0.72rem; color: var(--text-secondary);">买入均价 (Price)</label>
-                    <input type="number" step="any" min="0.000001" id="batch-buy-price" required placeholder="如: 68500.00" style="height: 32px; border-radius: 6px; border: 1px solid var(--border); padding: 0 10px; width: 100%; font-size: 0.75rem; background: transparent; color: var(--text-primary);">
-                </div>
-                
-                <div class="auth-input-group" style="margin-bottom: 0;">
-                    <label style="font-weight: 600; font-size: 0.72rem; color: var(--text-secondary);">买入数量 (Quantity, 可空)</label>
-                    <input type="number" step="any" min="0.000001" id="batch-buy-qty" placeholder="留空则按订单投入本金自动折算" style="height: 32px; border-radius: 6px; border: 1px solid var(--border); padding: 0 10px; width: 100%; font-size: 0.75rem; background: transparent; color: var(--text-primary);">
-                </div>
-
-                <div style="font-size: 0.68rem; color: var(--text-secondary); line-height: 1.3; margin-top: 5px;">
-                    💡 提示：系统将为已勾选的量化订单提交买入指令，未输入数量时将根据各订单本金自动折算。
-                </div>
-                
-                <button type="submit" class="admin-auth-btn" style="margin-top: 10px; height: 38px; border-radius: 8px; font-size: 0.8rem; font-weight: bold; background: var(--primary); color: white; border: none; cursor: pointer; width: 100%;">⚡ 立即执行批量买入</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- VIEW: SELECTED BATCH SELL MODAL (批量卖出弹窗) -->
-    <div id="selected-batch-sell-modal" class="overlay" style="display: none; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(15px); background: rgba(0,0,0,0.6);">
-        <div class="glass-panel modal-content-payment" style="max-width: 450px; padding: 25px;">
-            <button class="drawer-close-btn" onclick="closeBatchSellModal()" style="top: 20px; right: 20px; font-size: 1.2rem; background: transparent; border: none; color: var(--text-secondary); cursor: pointer;">✕</button>
-            <div class="modal-header-admin" style="margin-bottom: 20px; border-bottom: 1px solid var(--border-light); padding-bottom: 10px;">
-                <h2 style="font-size: 1.2rem; display: flex; align-items: center; gap: 8px; color: #EF4444; font-weight: bold; margin: 0;">📉 执行批量卖出结算</h2>
-                <p style="font-size: 0.75rem; color: #64748B; margin-top: 4px; font-weight: 500;">对已勾选的活动量化订单执行批量卖出强平结算</p>
-            </div>
-            
-            <form onsubmit="submitBatchSell(event)" style="display: flex; flex-direction: column; gap: 12px;">
-                <div class="auth-input-group" style="margin-bottom: 0;">
-                    <label style="font-weight: 600; font-size: 0.72rem; color: var(--text-secondary);">卖出结算均价 (Price)</label>
-                    <input type="number" step="any" min="0.000001" id="batch-sell-price" required placeholder="如: 68500.00" style="height: 32px; border-radius: 6px; border: 1px solid var(--border); padding: 0 10px; width: 100%; font-size: 0.75rem; background: transparent; color: var(--text-primary);">
-                </div>
-
-                <div style="font-size: 0.7rem; color: #EF4444; font-weight: bold; line-height: 1.3; margin-top: 5px; background: rgba(239, 68, 68, 0.08); padding: 10px; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.2);">
-                    ⚠️ 注意：系统将自动拉取各订单的全部可平持仓量并提交批量强制平仓结算指令！
-                </div>
-                
-                <button type="submit" class="admin-auth-btn" style="margin-top: 10px; height: 38px; border-radius: 8px; font-size: 0.8rem; font-weight: bold; background: #EF4444; color: white; border: none; cursor: pointer; width: 100%;">⚡ 立即执行批量结算卖出</button>
+                <button type="submit" class="admin-auth-btn" style="margin-top: 15px; height: 44px; border-radius: 8px; font-weight: 700; background: var(--primary);" id="cbatch-submit-btn">立即创建并异步清算批次</button>
             </form>
         </div>
     </div>
