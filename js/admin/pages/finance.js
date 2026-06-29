@@ -707,9 +707,12 @@ async function loadPaymentChannels() {
                 
                 const bindBtn = `<button class="action-btn btn-view" onclick="openBindPaymentRiskLevelsModal('${m.id}')" style="padding: 4px 8px; font-size: 0.72rem; background: rgba(91, 81, 249, 0.08); color: var(--primary); margin-left: 5px; cursor: pointer;">🔗 绑定层级</button>`;
                 
-                const iconHtml = m.iconUrl 
-                    ? `<img src="${m.iconUrl}" style="max-height: 24px; max-width: 24px; border-radius: 4px; object-fit: contain;" onerror="this.onerror=null; this.src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';">`
-                    : `<span style="font-size:1.1rem;">💳</span>`;
+                let iconHtml = '';
+                if (m.iconUrl && !m.iconUrl.includes('example.com')) {
+                    iconHtml = `<img src="${m.iconUrl}" style="max-height: 24px; max-width: 24px; border-radius: 4px; object-fit: contain; vertical-align: middle;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';"><span style="display:none; font-size:1.15rem; vertical-align: middle;">${m.paymentMethodType === 'CRYPTO_WALLET' ? '🪙' : m.paymentMethodType === 'BANK_TRANSFER' ? '🏦' : '📱'}</span>`;
+                } else {
+                    iconHtml = `<span style="font-size:1.15rem; vertical-align: middle;">${m.paymentMethodType === 'CRYPTO_WALLET' ? '🪙' : m.paymentMethodType === 'BANK_TRANSFER' ? '🏦' : '📱'}</span>`;
+                }
                 
                 // Format account details based on paymentMethodType
                 let detailsHtml = '';

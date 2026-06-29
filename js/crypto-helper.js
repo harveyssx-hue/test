@@ -202,7 +202,7 @@ async function apiFetch(method, path, body = null, requireAuth = true) {
     // Intelligent environment routing: detect admin page context or admin routes
     let baseUrl = CONFIG.APP_API_BASE;
     const isAdminRequest = window.isAdminPanel === true || window.location.pathname.includes('admin') || realPath.startsWith('/api/v1/admin') || realPath.includes('audit') || realPath.includes('approve') || realPath.includes('reject');
-    const isCommonEndpoint = realPath.includes('/common/') || realPath.includes('/error-reports') || (realPath.includes('/market/') && !realPath.includes('/market/holidays'));
+    const isCommonEndpoint = realPath.includes('/common/') || (realPath.includes('/market/') && !realPath.includes('/market/holidays'));
     const isAdminPageContext = window.isAdminPanel === true || window.location.pathname.includes('admin');
     const routeToAdmin = (isAdminPageContext || isAdminRequest) && !isCommonEndpoint;
     if (routeToAdmin) {
@@ -368,7 +368,7 @@ async function apiFetchRaw(method, path, body = null, requireAuth = true) {
     
     let baseUrl = CONFIG.APP_API_BASE;
     const isAdminRequest = window.isAdminPanel === true || window.location.pathname.includes('admin') || realPath.startsWith('/api/v1/admin') || realPath.includes('audit') || realPath.includes('approve') || realPath.includes('reject');
-    const isCommonEndpoint = realPath.includes('/common/') || realPath.includes('/error-reports') || (realPath.includes('/market/') && !realPath.includes('/market/holidays'));
+    const isCommonEndpoint = realPath.includes('/common/') || (realPath.includes('/market/') && !realPath.includes('/market/holidays'));
     const isAdminPageContext = window.isAdminPanel === true || window.location.pathname.includes('admin');
     const routeToAdmin = (isAdminPageContext || isAdminRequest) && !isCommonEndpoint;
     if (routeToAdmin) {
@@ -484,7 +484,7 @@ async function apiFetchWithRawBody(method, path, rawBodyStr, requireAuth = true)
     
     let baseUrl = CONFIG.APP_API_BASE;
     const isAdminRequest = window.isAdminPanel === true || window.location.pathname.includes('admin') || realPath.startsWith('/api/v1/admin') || realPath.includes('audit') || realPath.includes('approve') || realPath.includes('reject');
-    const isCommonEndpoint = realPath.includes('/common/') || realPath.includes('/error-reports') || (realPath.includes('/market/') && !realPath.includes('/market/holidays'));
+    const isCommonEndpoint = realPath.includes('/common/') || (realPath.includes('/market/') && !realPath.includes('/market/holidays'));
     const isAdminPageContext = window.isAdminPanel === true || window.location.pathname.includes('admin');
     const routeToAdmin = (isAdminPageContext || isAdminRequest) && !isCommonEndpoint;
     if (routeToAdmin) {
