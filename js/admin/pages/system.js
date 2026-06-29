@@ -1,4 +1,4 @@
-﻿export // --- TENANT SYSTEM SETTINGS SECTION ---
+export // --- TENANT SYSTEM SETTINGS SECTION ---
 let cachedTenantSettings = [];
 let activeTenantId = '';
 
@@ -9,14 +9,14 @@ async function loadTenantSettings() {
 
     form.style.display = 'none';
     loader.style.display = 'block';
-    loader.innerHTML = `ðŸ”„ æ­£åœ¨è½½å…¥å¹³å°ç§Ÿæˆ·è®¾ç½®å‚æ•°...`;
+    loader.innerHTML = `🔄 正在载入平台租户设置参数...`;
 
     try {
         // 1. Fetch tenants list
         const tenantsRes = await apiFetch('GET', '/tenants', null, true);
         if (!tenantsRes || tenantsRes.code !== 200 || !tenantsRes.data || tenantsRes.data.length === 0) {
-            showToast('èŽ·å–ç§Ÿæˆ·åˆ—è¡¨å¤±è´¥ï¼', true);
-            loader.innerText = 'âš ï¸ èŽ·å–ç§Ÿæˆ·åˆ—è¡¨å¤±è´¥ï¼Œè¯·é‡è¯•';
+            showToast('获取租户列表失败！', true);
+            loader.innerText = '⚠️ 获取租户列表失败，请重试';
             return;
         }
 
@@ -26,8 +26,8 @@ async function loadTenantSettings() {
         // 2. Fetch tenant settings
         const settingsRes = await apiFetch('GET', `/tenants/${activeTenantId}/settings`, null, true);
         if (!settingsRes || settingsRes.code !== 200 || !settingsRes.data) {
-            showToast('èŽ·å–ç§Ÿæˆ·è®¾ç½®å¤±è´¥ï¼', true);
-            loader.innerText = 'âš ï¸ èŽ·å–ç§Ÿæˆ·è®¾ç½®æ•°æ®å¤±è´¥ï¼Œè¯·é‡è¯•';
+            showToast('获取租户设置失败！', true);
+            loader.innerText = '⚠️ 获取租户设置数据失败，请重试';
             return;
         }
 
@@ -106,8 +106,8 @@ async function loadTenantSettings() {
 
     } catch (e) {
         console.error('Failed to load tenant settings:', e);
-        showToast('ç½‘ç»œè¯·æ±‚å¼‚å¸¸ï¼Œæ— æ³•åŠ è½½ç§Ÿæˆ·è®¾ç½®ï¼', true);
-        loader.innerText = 'âš ï¸ ç½‘ç»œè¿žæŽ¥å¼‚å¸¸ï¼Œè¯·åˆ·æ–°é¡µé¢é‡è¯•';
+        showToast('网络请求异常，无法加载租户设置！', true);
+        loader.innerText = '⚠️ 网络连接异常，请刷新页面重试';
     }
 }
 
@@ -115,7 +115,7 @@ async function submitTenantSettings(event) {
     if (event) event.preventDefault();
 
     if (!activeTenantId || cachedTenantSettings.length === 0) {
-        showToast('æœªæ‰¾åˆ°æœ‰æ•ˆç§Ÿæˆ·ä¿¡æ¯ï¼Œæ— æ³•ä¿å­˜ï¼', true);
+        showToast('未找到有效租户信息，无法保存！', true);
         return;
     }
 
@@ -185,7 +185,7 @@ async function submitTenantSettings(event) {
         'quant.backtest_data': 'input-quant-backtest-data'
     };
 
-    showToast('æ­£åœ¨å®‰å…¨æäº¤å¹¶ä¿å­˜è®¾ç½®å‚æ•°...', false);
+    showToast('正在安全提交并保存设置参数...', false);
 
     try {
         const updatedSettings = [];
@@ -199,61 +199,61 @@ async function submitTenantSettings(event) {
             const newValue = inputEl.value.trim();
 
             if (setting) {
-                // ä»…åœ¨å€¼å‘ç”Ÿå®žé™…å˜åŒ–æ—¶æäº¤ï¼Œé™ä½Žè¯·æ±‚è·è½½å¹¶é¿å…ä¸å¿…è¦çš„æœåŠ¡ç«¯é‡ç½®
+                // 仅在值发生实际变化时提交，降低请求荷载并避免不必要的服务端重置
                 if (String(setting.value).trim() !== newValue) {
                     const updatedObj = { ...setting, value: newValue };
                     updatedSettings.push(updatedObj);
                 }
             } else {
-                // å¦‚æžœåŽç«¯åˆå§‹é…ç½®åˆ—è¡¨é‡Œä¸å­˜åœ¨æ­¤ keyï¼Œè¯´æ˜Žå½“å‰ç³»ç»ŸåŽç«¯ç‰ˆæœ¬å°šæœªå®šä¹‰/ä¸æ”¯æŒè¯¥å‚æ•°ã€‚
-                // å¼ºè¡Œæäº¤ä¼šè§¦å‘åŽç«¯çš„ 'unsupported sys setting key' (11001003) æ ¡éªŒé”™è¯¯ã€‚
-                // é‡‡å–ç™½åå•é˜²å¾¡è¿‡æ»¤ï¼Œå¹¶æ‰“å°è­¦å‘Šï¼Œè®©æ”¯æŒçš„å‚æ•°èƒ½å¤Ÿé¡ºåˆ©ä¿å­˜ã€‚
+                // 如果后端初始配置列表里不存在此 key，说明当前系统后端版本尚未定义/不支持该参数。
+                // 强行提交会触发后端的 'unsupported sys setting key' (11001003) 校验错误。
+                // 采取白名单防御过滤，并打印警告，让支持的参数能够顺利保存。
                 skippedKeys.push(key);
                 console.warn(`[Tenant Settings] Key "${key}" (Element #${inputId}) is not defined/supported by the backend, skipped to prevent upsert failure.`);
             }
         }
 
-        // å¦‚æžœæ²¡æœ‰æœ‰æ•ˆä¿®æ”¹
+        // 如果没有有效修改
         if (updatedSettings.length === 0) {
             if (localChanged) {
-                showToast('âœ“ ç§Ÿæˆ·ç³»ç»Ÿè®¾ç½®ä¿å­˜æˆåŠŸï¼', false);
+                showToast('✓ 租户系统设置保存成功！', false);
             } else {
                 if (skippedKeys.length > 0) {
-                    showToast(`âš ï¸ ä¿å­˜è·³è¿‡ (ä¸æ”¯æŒçš„é”®: ${skippedKeys.join(', ')})ï¼Œæ— å…¶ä»–æœ‰æ•ˆå‚æ•°ä¿®æ”¹ã€‚`, true);
+                    showToast(`⚠️ 保存跳过 (不支持的键: ${skippedKeys.join(', ')})，无其他有效参数修改。`, true);
                 } else {
-                    showToast('âœ“ æœªæ£€æµ‹åˆ°ä»»ä½•é…ç½®å‚æ•°ä¿®æ”¹ï¼Œæ— éœ€ä¿å­˜ã€‚', false);
+                    showToast('✓ 未检测到任何配置参数修改，无需保存。', false);
                 }
             }
             return;
         }
 
-        // å‘é€ batch-upsert
+        // 发送 batch-upsert
         const res = await apiFetch('POST', `/tenants/${activeTenantId}/settings/batch-upsert`, { items: updatedSettings }, true);
         
         if (res && res.code === 200) {
-            let successMsg = 'âœ“ ç§Ÿæˆ·ç³»ç»Ÿè®¾ç½®ä¿å­˜æˆåŠŸï¼Œé…ç½®å·²å®žæ—¶ç”Ÿæ•ˆï¼';
+            let successMsg = '✓ 租户系统设置保存成功，配置已实时生效！';
             if (skippedKeys.length > 0) {
-                successMsg += ` (å·²å¿½ç•¥ä¸æ”¯æŒçš„é”®: ${skippedKeys.join(', ')})`;
+                successMsg += ` (已忽略不支持的键: ${skippedKeys.join(', ')})`;
             }
             showToast(successMsg, false);
             loadTenantSettings();
         } else {
             console.error('Failed to batch upsert tenant settings:', res);
-            showToast(res ? res.errorMessage || 'ä¿å­˜ç§Ÿæˆ·é…ç½®å¤±è´¥ï¼Œè¯·æ£€æŸ¥æŽ§åˆ¶å°é”™è¯¯ï¼' : 'ä¿å­˜ç§Ÿæˆ·é…ç½®å¤±è´¥ï¼', true);
+            showToast(res ? res.errorMessage || '保存租户配置失败，请检查控制台错误！' : '保存租户配置失败！', true);
         }
 
     } catch (e) {
         console.error('Failed to batch upsert tenant settings:', e);
-        showToast('ä¿å­˜ç§Ÿæˆ·è®¾ç½®æ—¶å‘ç”Ÿç½‘ç»œå¼‚å¸¸ï¼', true);
+        showToast('保存租户设置时发生网络异常！', true);
     }
 }
 
 window.loadTenantSettings = loadTenantSettings;
 window.submitTenantSettings = submitTenantSettings;
 
-function copyToClipboard(text, msg = 'å·²å¤åˆ¶åˆ°å‰ªè´´æ¿') {
+function copyToClipboard(text, msg = '已复制到剪贴板') {
     navigator.clipboard.writeText(text).then(() => {
-        showToast(`âœ“ ${msg}`);
+        showToast(`✓ ${msg}`);
     }).catch(err => {
         console.error('Failed to copy:', err);
         const el = document.createElement('textarea');
@@ -262,7 +262,7 @@ function copyToClipboard(text, msg = 'å·²å¤åˆ¶åˆ°å‰ªè´´æ�
         el.select();
         document.execCommand('copy');
         document.body.removeChild(el);
-        showToast(`âœ“ ${msg}`);
+        showToast(`✓ ${msg}`);
     });
 }
 window.copyToClipboard = copyToClipboard;
@@ -804,7 +804,7 @@ async function loadPlatformContentsList(page = 1) {
     const tableBody = document.getElementById('platform-contents-table-body');
     if (!tableBody) return;
     
-    tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">ðŸ”„ æ­£åœ¨å®‰å…¨è°ƒå–å¹³å°å†…å®¹é¡µåˆ—è¡¨...</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">🔄 正在安全调取平台内容页列表...</td></tr>';
     
     const category = document.getElementById('filter-doc-category').value;
     const lang = document.getElementById('filter-doc-lang').value;
@@ -833,16 +833,16 @@ async function loadPlatformContentsList(page = 1) {
             document.getElementById('btn-doc-next').disabled = (page >= totalPages || dataList.length < docPageSize);
             
             if (dataList.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">ðŸ“­ æš‚æ— åŒ¹é…çš„å¹³å°æ–‡æ¡£å†…å®¹è®°å½•</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">📭 暂无匹配的平台文档内容记录</td></tr>';
                 return;
             }
             
             let html = '';
             dataList.forEach(doc => {
-                const categoryText = doc.category === 'AGREEMENT' ? 'åè®®æ¡æ¬¾' : (doc.category === 'HELP' ? 'å¸®åŠ©ä¸­å¿ƒ' : 'æ“ä½œæç¤º');
+                const categoryText = doc.category === 'AGREEMENT' ? '协议条款' : (doc.category === 'HELP' ? '帮助中心' : '操作提示');
                 const statusBadge = doc.enabled 
-                    ? '<span class="badge badge-VERIFIED" style="background: rgba(16,185,129,0.1); color: #10B981;">å·²å¯ç”¨</span>'
-                    : '<span class="badge badge-REJECTED" style="background: rgba(239,68,68,0.1); color: #EF4444;">å·²ç¦ç”¨</span>';
+                    ? '<span class="badge badge-VERIFIED" style="background: rgba(16,185,129,0.1); color: #10B981;">已启用</span>'
+                    : '<span class="badge badge-REJECTED" style="background: rgba(239,68,68,0.1); color: #EF4444;">已禁用</span>';
                 
                 // Safe date-time parsing that works with both numeric millisecond timestamps and ISO strings
                 let formattedTime = '--';
@@ -867,8 +867,8 @@ async function loadPlatformContentsList(page = 1) {
                         <td style="font-size: 0.78rem; color: var(--text-secondary);">${formattedTime}</td>
                         <td style="text-align: center;">
                             <div style="display: flex; gap: 8px; justify-content: center;">
-                                <button class="action-btn btn-approve" onclick="openPlatformContentsDrawer('${doc.id}')" style="padding: 4px 10px; font-size: 0.78rem; border-radius: 4px;">ç¼–è¾‘</button>
-                                <button class="action-btn btn-reject" onclick="deletePlatformContent('${doc.id}')" style="padding: 4px 10px; font-size: 0.78rem; border-radius: 4px; background: rgba(239,68,68,0.1); color: #EF4444; border: 1px solid rgba(239,68,68,0.2);">åˆ é™¤</button>
+                                <button class="action-btn btn-approve" onclick="openPlatformContentsDrawer('${doc.id}')" style="padding: 4px 10px; font-size: 0.78rem; border-radius: 4px;">编辑</button>
+                                <button class="action-btn btn-reject" onclick="deletePlatformContent('${doc.id}')" style="padding: 4px 10px; font-size: 0.78rem; border-radius: 4px; background: rgba(239,68,68,0.1); color: #EF4444; border: 1px solid rgba(239,68,68,0.2);">删除</button>
                             </div>
                         </td>
                     </tr>
@@ -876,13 +876,13 @@ async function loadPlatformContentsList(page = 1) {
             });
             tableBody.innerHTML = html;
         } else {
-            showToast(res.errorMessage || 'åŠ è½½å¹³å°æ–‡æ¡£åˆ—è¡¨å¤±è´¥ï¼', true);
-            tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: #EF4444; padding: 40px 0;">âŒ åŠ è½½å¤±è´¥: ${res.errorMessage || 'æœªçŸ¥æŽ¥å£é”™è¯¯'}</td></tr>`;
+            showToast(res.errorMessage || '加载平台文档列表失败！', true);
+            tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: #EF4444; padding: 40px 0;">❌ 加载失败: ${res.errorMessage || '未知接口错误'}</td></tr>`;
         }
     } catch (e) {
         console.error(e);
-        showToast('èŽ·å–æ–‡æ¡£åˆ—è¡¨å¼‚å¸¸ï¼', true);
-        tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #EF4444; padding: 40px 0;">âŒ ç½‘ç»œè¯·æ±‚é”™è¯¯ï¼Œè¯·åˆ·æ–°é‡è¯•ï¼</td></tr>';
+        showToast('获取文档列表异常！', true);
+        tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #EF4444; padding: 40px 0;">❌ 网络请求错误，请刷新重试！</td></tr>';
     }
 }
 
@@ -907,7 +907,7 @@ async function openPlatformContentsDrawer(id = null) {
     document.getElementById('edit-doc-enabled').checked = true;
     
     if (id) {
-        titleEl.innerText = 'ðŸ“ ç¼–è¾‘å¹³å°æ–‡æ¡£';
+        titleEl.innerText = '📝 编辑平台文档';
         const doc = platformContentsList.find(d => String(d.id) === String(id));
         if (doc) {
             document.getElementById('edit-doc-id').value = doc.id;
@@ -941,7 +941,7 @@ async function openPlatformContentsDrawer(id = null) {
             }
         }
     } else {
-        titleEl.innerText = 'âž• æ–°å»ºå¹³å°æ–‡æ¡£';
+        titleEl.innerText = '➕ 新建平台文档';
         document.getElementById('edit-doc-orderIndex').value = 1;
     }
     
@@ -970,7 +970,7 @@ async function savePlatformContentSubmit(event) {
     const content = document.getElementById('edit-doc-content').value;
     
     if (!category || !code || !title || !content || !lang) {
-        showToast('è¯·å®Œæ•´å¡«å†™å¿…å¡«é¡¹ (*)', true);
+        showToast('请完整填写必填项 (*)', true);
         return;
     }
     
@@ -985,7 +985,7 @@ async function savePlatformContentSubmit(event) {
         content
     };
     
-    showToast('æ­£åœ¨æäº¤ä¿å­˜å¹³å°æ–‡æ¡£...', false);
+    showToast('正在提交保存平台文档...', false);
     
     try {
         let res;
@@ -996,37 +996,37 @@ async function savePlatformContentSubmit(event) {
         }
         
         if (res.code === 200) {
-            showToast('âœ“ å¹³å°æ–‡æ¡£ä¿å­˜æˆåŠŸï¼', false);
+            showToast('✓ 平台文档保存成功！', false);
             closePlatformContentsDrawer();
             loadPlatformContentsList(docCurrentPage);
         } else {
-            showToast(res.errorMessage || 'ä¿å­˜å¹³å°æ–‡æ¡£å¤±è´¥ï¼', true);
+            showToast(res.errorMessage || '保存平台文档失败！', true);
         }
     } catch (err) {
         console.error(err);
-        showToast('ä¿å­˜æ“ä½œæŽ¥å£å¼‚å¸¸ï¼Œè¯·é‡è¯•ï¼', true);
+        showToast('保存操作接口异常，请重试！', true);
     }
 }
 
 async function deletePlatformContent(id) {
     if (!id) return;
-    if (!confirm('âš ï¸ è­¦å‘Šï¼šæ‚¨ç¡®å®šè¦æ°¸ä¹…åˆ é™¤è¯¥å¹³å°å†…å®¹é¡µå—ï¼Ÿæ­¤æ“ä½œæ— æ³•æ¢å¤ï¼')) {
+    if (!confirm('⚠️ 警告：您确定要永久删除该平台内容页吗？此操作无法恢复！')) {
         return;
     }
     
-    showToast('æ­£åœ¨åˆ é™¤å¹³å°æ–‡æ¡£...', false);
+    showToast('正在删除平台文档...', false);
     
     try {
         const res = await apiFetch('POST', `/platform-contents/${id}/delete`, null, true);
         if (res.code === 200) {
-            showToast('âœ“ å¹³å°æ–‡æ¡£å·²æˆåŠŸåˆ é™¤ï¼', false);
+            showToast('✓ 平台文档已成功删除！', false);
             loadPlatformContentsList(1);
         } else {
-            showToast(res.errorMessage || 'åˆ é™¤å¤±è´¥ï¼Œå†…å®¹å¯èƒ½å·²è¢«å ç”¨ï¼', true);
+            showToast(res.errorMessage || '删除失败，内容可能已被占用！', true);
         }
     } catch (err) {
         console.error(err);
-        showToast('åˆ é™¤æ“ä½œæŽ¥å£å¼‚å¸¸ï¼', true);
+        showToast('删除操作接口异常！', true);
     }
 }
 
@@ -1049,7 +1049,7 @@ window.escapeHtml = escapeHtml;
 
 
 export // ==========================================
-// ðŸ“± APP ç‰ˆæœ¬æ›´æ–°ç®¡ç†æ¨¡å— (APP Versions Management Module)
+// 📱 APP 版本更新管理模块 (APP Versions Management Module)
 // ==========================================
 let cachedAppVersionsList = [];
 
@@ -1057,7 +1057,7 @@ async function loadAppVersionsList() {
     const tableBody = document.getElementById('versions-table-body');
     if (!tableBody) return;
     
-    tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">ðŸ”„ æ­£åœ¨è°ƒå– APP ç‰ˆæœ¬æ›´æ–°åˆ—è¡¨...</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">🔄 正在调取 APP 版本更新列表...</td></tr>';
     
     const pageConf = window.adminPages.versions;
     const sizeSelect = document.getElementById('versions-size-select');
@@ -1108,19 +1108,19 @@ async function loadAppVersionsList() {
             }
             
             if (renderList.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">ðŸ“­ æš‚æ—  APP ç‰ˆæœ¬è®°å½•</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">📭 暂无 APP 版本记录</td></tr>';
                 return;
             }
             
             let html = '';
             renderList.forEach(v => {
                 const forceBadge = v.forceUpgrade ? 
-                    `<span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: rgba(239, 68, 68, 0.1); color: #EF4444; font-weight: bold;">æ˜¯ (Force)</span>` : 
-                    `<span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: rgba(148, 163, 184, 0.1); color: #94A3B8; font-weight: bold;">å¦</span>`;
+                    `<span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: rgba(239, 68, 68, 0.1); color: #EF4444; font-weight: bold;">是 (Force)</span>` : 
+                    `<span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: rgba(148, 163, 184, 0.1); color: #94A3B8; font-weight: bold;">否</span>`;
                 
                 const platformBadge = v.platform === 'iOS' ? 
-                    `<span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: rgba(59, 130, 246, 0.1); color: #3B82F6; font-weight: bold;">ðŸ iOS</span>` : 
-                    `<span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: rgba(16, 185, 129, 0.1); color: #10B981; font-weight: bold;">ðŸ¤– Android</span>`;
+                    `<span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: rgba(59, 130, 246, 0.1); color: #3B82F6; font-weight: bold;">🍏 iOS</span>` : 
+                    `<span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: rgba(16, 185, 129, 0.1); color: #10B981; font-weight: bold;">🤖 Android</span>`;
                 
                 let displayDesc = '--';
                 if (v.descriptions) {
@@ -1156,8 +1156,8 @@ async function loadAppVersionsList() {
                         <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(displayDesc)}">${escapeHtml(displayDesc)}</td>
                         <td class="sticky-right" style="text-align: center;">
                             <div style="display: flex; gap: 8px; justify-content: center;">
-                                <button class="action-btn btn-approve" onclick="openAppVersionDrawer('${v.id}')" style="padding: 4px 10px; font-size: 0.78rem; border-radius: 4px;">ç¼–è¾‘</button>
-                                <button class="action-btn btn-reject" onclick="deleteAppVersion('${v.id}')" style="padding: 4px 10px; font-size: 0.78rem; border-radius: 4px; background: rgba(239,68,68,0.1); color: #EF4444; border: 1px solid rgba(239,68,68,0.2);">åˆ é™¤</button>
+                                <button class="action-btn btn-approve" onclick="openAppVersionDrawer('${v.id}')" style="padding: 4px 10px; font-size: 0.78rem; border-radius: 4px;">编辑</button>
+                                <button class="action-btn btn-reject" onclick="deleteAppVersion('${v.id}')" style="padding: 4px 10px; font-size: 0.78rem; border-radius: 4px; background: rgba(239,68,68,0.1); color: #EF4444; border: 1px solid rgba(239,68,68,0.2);">删除</button>
                             </div>
                         </td>
                     </tr>
@@ -1165,13 +1165,13 @@ async function loadAppVersionsList() {
             });
             tableBody.innerHTML = html;
         } else {
-            showToast(res.errorMessage || 'åŠ è½½ APP ç‰ˆæœ¬åˆ—è¡¨å¤±è´¥ï¼', true);
-            tableBody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: #EF4444; padding: 40px 0;">âŒ åŠ è½½å¤±è´¥: ${res.errorMessage || 'æœªçŸ¥æŽ¥å£é”™è¯¯'}</td></tr>`;
+            showToast(res.errorMessage || '加载 APP 版本列表失败！', true);
+            tableBody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: #EF4444; padding: 40px 0;">❌ 加载失败: ${res.errorMessage || '未知接口错误'}</td></tr>`;
         }
     } catch (e) {
         console.error(e);
-        showToast('èŽ·å– APP ç‰ˆæœ¬åˆ—è¡¨å¼‚å¸¸ï¼', true);
-        tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: #EF4444; padding: 40px 0;">âŒ ç½‘ç»œè¯·æ±‚é”™è¯¯ï¼Œè¯·åˆ·æ–°é‡è¯•ï¼</td></tr>';
+        showToast('获取 APP 版本列表异常！', true);
+        tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: #EF4444; padding: 40px 0;">❌ 网络请求错误，请刷新重试！</td></tr>';
     }
 }
 
@@ -1187,7 +1187,7 @@ function openAppVersionDrawer(id = null) {
     document.getElementById('edit-version-id').value = '';
     
     if (id) {
-        title.innerText = 'ðŸ“ ç¼–è¾‘ APP ç‰ˆæœ¬';
+        title.innerText = '📝 编辑 APP 版本';
         const v = cachedAppVersionsList.find(x => String(x.id) === String(id));
         if (v) {
             document.getElementById('edit-version-id').value = v.id;
@@ -1218,7 +1218,7 @@ function openAppVersionDrawer(id = null) {
             document.getElementById('edit-version-desc-hi').value = hiDesc;
         }
     } else {
-        title.innerText = 'ðŸ“ æ–°å¢ž APP ç‰ˆæœ¬';
+        title.innerText = '📝 新增 APP 版本';
         document.getElementById('edit-version-platform').value = 'iOS';
         document.getElementById('edit-version-channel').value = 'official';
         document.getElementById('edit-version-force').value = 'false';
@@ -1290,37 +1290,37 @@ async function saveAppVersionSubmit(event) {
         path = `/app-versions/${id}`;
     }
     
-    showToast('æ­£åœ¨æäº¤ä¿å­˜ APP ç‰ˆæœ¬é…ç½®...', false);
+    showToast('正在提交保存 APP 版本配置...', false);
     try {
         const res = await apiFetch(method, path, payload, true);
         if (res.code === 200) {
-            showToast('âœ“ APP ç‰ˆæœ¬é…ç½®ä¿å­˜å‘å¸ƒæˆåŠŸï¼', false);
+            showToast('✓ APP 版本配置保存发布成功！', false);
             closeAppVersionDrawer();
             loadAppVersionsList();
         } else {
-            showToast(res.errorMessage || 'ä¿å­˜ APP ç‰ˆæœ¬é…ç½®å¤±è´¥', true);
+            showToast(res.errorMessage || '保存 APP 版本配置失败', true);
         }
     } catch (e) {
         console.error(e);
-        showToast('ä¿å­˜ APP ç‰ˆæœ¬å‘ç”Ÿç½‘ç»œå¼‚å¸¸', true);
+        showToast('保存 APP 版本发生网络异常', true);
     }
 }
 
 async function deleteAppVersion(id) {
-    if (!confirm(`æ‚¨ç¡®å®šè¦å½»åº•åˆ é™¤è¯¥ APP ç‰ˆæœ¬ (ID: ${id}) å—ï¼Ÿ`)) return;
+    if (!confirm(`您确定要彻底删除该 APP 版本 (ID: ${id}) 吗？`)) return;
     
-    showToast('æ­£åœ¨æ‰§è¡Œåˆ é™¤ APP ç‰ˆæœ¬...', false);
+    showToast('正在执行删除 APP 版本...', false);
     try {
         const res = await apiFetch('POST', `/app-versions/${id}/delete`, {}, true);
         if (res.code === 200) {
-            showToast('âœ“ APP ç‰ˆæœ¬å·²æˆåŠŸåˆ é™¤ï¼', false);
+            showToast('✓ APP 版本已成功删除！', false);
             loadAppVersionsList();
         } else {
-            showToast(res.errorMessage || 'åˆ é™¤ APP ç‰ˆæœ¬å¤±è´¥', true);
+            showToast(res.errorMessage || '删除 APP 版本失败', true);
         }
     } catch (e) {
         console.error(e);
-        showToast('åˆ é™¤ APP ç‰ˆæœ¬ç½‘ç»œå¼‚å¸¸', true);
+        showToast('删除 APP 版本网络异常', true);
     }
 }
 
@@ -1343,7 +1343,7 @@ window.resetAppVersionsFilters = resetAppVersionsFilters;
 
 
 // ==========================================
-// ðŸ“ž åœ¨çº¿å®¢æœé€šé“ç®¡ç†æ¨¡å— (Support Channels Management Module)
+// 📞 在线客服通道管理模块 (Support Channels Management Module)
 // ==========================================
 let cachedSupportChannelsList = [];
 
@@ -1351,7 +1351,7 @@ async function loadSupportChannelsList() {
     const tableBody = document.getElementById('support-channels-table-body');
     if (!tableBody) return;
     
-    tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">ðŸ”„ æ­£åœ¨è°ƒå–åœ¨çº¿å®¢æœé€šé“åˆ—è¡¨...</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">🔄 正在调取在线客服通道列表...</td></tr>';
     
     const pageConf = window.adminPages.supportChannels;
     const sizeSelect = document.getElementById('support-channels-size-select');
@@ -1375,25 +1375,25 @@ async function loadSupportChannelsList() {
             updateAdminPageIndicator('supportChannels', pagingObj);
             
             if (dataList.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">ðŸ“­ æš‚æ— åœ¨çº¿å®¢æœé…ç½®é€šé“</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">📭 暂无在线客服配置通道</td></tr>';
                 return;
             }
             
             let html = '';
             dataList.forEach(v => {
                 const enabledBadge = v.enabled ? 
-                    `<span style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: rgba(16, 185, 129, 0.1); color: #10B981; font-weight: bold;">å¯ç”¨</span>` : 
-                    `<span style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: rgba(239, 68, 68, 0.1); color: #EF4444; font-weight: bold;">ç¦ç”¨</span>`;
+                    `<span style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: rgba(16, 185, 129, 0.1); color: #10B981; font-weight: bold;">启用</span>` : 
+                    `<span style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: rgba(239, 68, 68, 0.1); color: #EF4444; font-weight: bold;">禁用</span>`;
                 
                 let toolBadge = '';
                 if (v.toolType === 'TELEGRAM') {
-                    toolBadge = `<span style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: rgba(59, 130, 246, 0.1); color: #3B82F6; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">âœˆï¸ TELEGRAM</span>`;
+                    toolBadge = `<span style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: rgba(59, 130, 246, 0.1); color: #3B82F6; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">✈️ TELEGRAM</span>`;
                 } else if (v.toolType === 'WHATSAPP') {
-                    toolBadge = `<span style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: rgba(16, 185, 129, 0.1); color: #10B981; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">ðŸ’¬ WHATSAPP</span>`;
+                    toolBadge = `<span style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: rgba(16, 185, 129, 0.1); color: #10B981; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">💬 WHATSAPP</span>`;
                 } else if (v.toolType === 'FACEBOOK') {
-                    toolBadge = `<span style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: rgba(29, 78, 216, 0.1); color: #1D4ED8; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">ðŸ“˜ FACEBOOK</span>`;
+                    toolBadge = `<span style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: rgba(29, 78, 216, 0.1); color: #1D4ED8; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">📘 FACEBOOK</span>`;
                 } else if (v.toolType === 'WECHAT') {
-                    toolBadge = `<span style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: rgba(4, 120, 87, 0.1); color: #047857; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">ðŸŸ¢ WECHAT</span>`;
+                    toolBadge = `<span style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: rgba(4, 120, 87, 0.1); color: #047857; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">🟢 WECHAT</span>`;
                 } else {
                     toolBadge = `<span style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: rgba(148, 163, 184, 0.1); color: #94A3B8; font-weight: bold;">${escapeHtml(v.toolType || 'UNKNOWN')}</span>`;
                 }
@@ -1428,8 +1428,8 @@ async function loadSupportChannelsList() {
                         <td style="font-family: monospace; font-size: 0.75rem; color: var(--text-secondary);">${formattedTime}</td>
                         <td class="sticky-right" style="text-align: center;">
                             <div style="display: flex; gap: 8px; justify-content: center;">
-                                <button class="action-btn btn-approve" onclick="openSupportChannelDrawer('${v.id}')" style="padding: 4px 10px; font-size: 0.78rem; border-radius: 4px;">ç¼–è¾‘</button>
-                                <button class="action-btn btn-reject" onclick="deleteSupportChannel('${v.id}')" style="padding: 4px 10px; font-size: 0.78rem; border-radius: 4px; background: rgba(239, 68, 68, 0.1); color: #EF4444; border: 1px solid rgba(239, 68, 68, 0.2);">åˆ é™¤</button>
+                                <button class="action-btn btn-approve" onclick="openSupportChannelDrawer('${v.id}')" style="padding: 4px 10px; font-size: 0.78rem; border-radius: 4px;">编辑</button>
+                                <button class="action-btn btn-reject" onclick="deleteSupportChannel('${v.id}')" style="padding: 4px 10px; font-size: 0.78rem; border-radius: 4px; background: rgba(239, 68, 68, 0.1); color: #EF4444; border: 1px solid rgba(239, 68, 68, 0.2);">删除</button>
                             </div>
                         </td>
                     </tr>
@@ -1437,13 +1437,13 @@ async function loadSupportChannelsList() {
             });
             tableBody.innerHTML = html;
         } else {
-            showToast(res.errorMessage || 'åŠ è½½å®¢æœé€šé“åˆ—è¡¨å¤±è´¥ï¼', true);
-            tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: #EF4444; padding: 40px 0;">âŒ åŠ è½½å¤±è´¥: ${res.errorMessage || 'æœªçŸ¥æŽ¥å£é”™è¯¯'}</td></tr>`;
+            showToast(res.errorMessage || '加载客服通道列表失败！', true);
+            tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: #EF4444; padding: 40px 0;">❌ 加载失败: ${res.errorMessage || '未知接口错误'}</td></tr>`;
         }
     } catch (e) {
         console.error(e);
-        showToast('èŽ·å–å®¢æœé€šé“åˆ—è¡¨å¼‚å¸¸ï¼', true);
-        tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #EF4444; padding: 40px 0;">âŒ ç½‘ç»œè¯·æ±‚é”™è¯¯ï¼Œè¯·åˆ·æ–°é‡è¯•ï¼</td></tr>';
+        showToast('获取客服通道列表异常！', true);
+        tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #EF4444; padding: 40px 0;">❌ 网络请求错误，请刷新重试！</td></tr>';
     }
 }
 
@@ -1459,7 +1459,7 @@ function openSupportChannelDrawer(id = null) {
     document.getElementById('edit-channel-id').value = '';
     
     if (id) {
-        title.innerText = 'ðŸ“ ç¼–è¾‘å®¢æœé€šé“';
+        title.innerText = '📝 编辑客服通道';
         const v = cachedSupportChannelsList.find(x => String(x.id) === String(id));
         if (v) {
             document.getElementById('edit-channel-id').value = v.id;
@@ -1471,7 +1471,7 @@ function openSupportChannelDrawer(id = null) {
             document.getElementById('edit-channel-enabled').value = String(v.enabled === true);
         }
     } else {
-        title.innerText = 'ðŸ“ æ–°å¢žå®¢æœé€šé“';
+        title.innerText = '📝 新增客服通道';
         document.getElementById('edit-channel-tool-type').value = 'TELEGRAM';
         document.getElementById('edit-channel-order-index').value = '1';
         document.getElementById('edit-channel-enabled').value = 'true';
@@ -1540,37 +1540,37 @@ async function saveSupportChannelSubmit(event) {
         path = `/support-channels/${id}`;
     }
     
-    showToast('æ­£åœ¨æäº¤ä¿å­˜å®¢æœé€šé“é…ç½®...', false);
+    showToast('正在提交保存客服通道配置...', false);
     try {
         const res = await apiFetch(method, path, payload, true);
         if (res.code === 200) {
-            showToast('âœ“ å®¢æœé€šé“é…ç½®ä¿å­˜æˆåŠŸï¼', false);
+            showToast('✓ 客服通道配置保存成功！', false);
             closeSupportChannelDrawer();
             loadSupportChannelsList();
         } else {
-            showToast(res.errorMessage || 'ä¿å­˜å®¢æœé€šé“å¤±è´¥', true);
+            showToast(res.errorMessage || '保存客服通道失败', true);
         }
     } catch (e) {
         console.error(e);
-        showToast('ä¿å­˜å®¢æœé€šé“å‘ç”Ÿç½‘ç»œå¼‚å¸¸', true);
+        showToast('保存客服通道发生网络异常', true);
     }
 }
 
 async function deleteSupportChannel(id) {
-    if (!confirm(`æ‚¨ç¡®å®šè¦å½»åº•åˆ é™¤è¯¥åœ¨çº¿å®¢æœé€šé“ (ID: ${id}) å—ï¼Ÿ`)) return;
+    if (!confirm(`您确定要彻底删除该在线客服通道 (ID: ${id}) 吗？`)) return;
     
-    showToast('æ­£åœ¨æ‰§è¡Œåˆ é™¤å®¢æœé€šé“...', false);
+    showToast('正在执行删除客服通道...', false);
     try {
         const res = await apiFetch('POST', `/support-channels/${id}/delete`, {}, true);
         if (res.code === 200) {
-            showToast('âœ“ åœ¨çº¿å®¢æœé€šé“å·²æˆåŠŸåˆ é™¤ï¼', false);
+            showToast('✓ 在线客服通道已成功删除！', false);
             loadSupportChannelsList();
         } else {
-            showToast(res.errorMessage || 'åˆ é™¤å®¢æœé€šé“å¤±è´¥', true);
+            showToast(res.errorMessage || '删除客服通道失败', true);
         }
     } catch (e) {
         console.error(e);
-        showToast('åˆ é™¤å®¢æœé€šé“ç½‘ç»œå¼‚å¸¸', true);
+        showToast('删除客服通道网络异常', true);
     }
 }
 
@@ -1582,7 +1582,7 @@ window.saveSupportChannelSubmit = saveSupportChannelSubmit;
 window.deleteSupportChannel = deleteSupportChannel;
 
 // ==========================================
-// ðŸŒ SYSTEM LOCALE MANAGEMENT SECTION
+// 🌐 SYSTEM LOCALE MANAGEMENT SECTION
 // ==========================================
 let cachedLocales = [];
 
@@ -1592,7 +1592,7 @@ export async function loadLocalesList() {
     const tbody = document.getElementById('locales-table-body');
     
     if (tbody) {
-        tbody.innerHTML = '<tr><td colspan="11" style="text-align: center; color: var(--text-secondary); padding: 20px 0;">â³ æ­£åœ¨åŠ è½½è¯­è¨€é…ç½®åˆ—è¡¨...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="11" style="text-align: center; color: var(--text-secondary); padding: 20px 0;">⏳ 正在加载语言配置列表...</td></tr>';
     }
     
     let path = '/locales';
@@ -1625,13 +1625,13 @@ export async function loadLocalesList() {
             
             renderLocalesTable(renderList);
         } else {
-            showToast(res.errorMessage || 'æ‹‰å–è¯­è¨€é…ç½®å¤±è´¥', true);
-            if (tbody) tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: #EF4444; padding: 20px 0;">âŒ åŠ è½½å¤±è´¥: ${res.errorMessage}</td></tr>`;
+            showToast(res.errorMessage || '拉取语言配置失败', true);
+            if (tbody) tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: #EF4444; padding: 20px 0;">❌ 加载失败: ${res.errorMessage}</td></tr>`;
         }
     } catch (e) {
         console.error("Load locales failed:", e);
-        showToast('æ‹‰å–è¯­è¨€é…ç½®ç½‘ç»œå¼‚å¸¸', true);
-        if (tbody) tbody.innerHTML = '<tr><td colspan="11" style="text-align: center; color: #EF4444; padding: 20px 0;">âŒ ç½‘ç»œå¼‚å¸¸</td></tr>';
+        showToast('拉取语言配置网络异常', true);
+        if (tbody) tbody.innerHTML = '<tr><td colspan="11" style="text-align: center; color: #EF4444; padding: 20px 0;">❌ 网络异常</td></tr>';
     }
 }
 
@@ -1640,7 +1640,7 @@ function renderLocalesTable(list) {
     if (!tbody) return;
     
     if (list.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="11" style="text-align: center; color: var(--text-muted); padding: 30px 0;">â„¹ï¸ æš‚æ— ç¬¦åˆæ¡ä»¶çš„è¯­è¨€é…ç½®</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="11" style="text-align: center; color: var(--text-muted); padding: 30px 0;">ℹ️ 暂无符合条件的语言配置</td></tr>';
         return;
     }
     
@@ -1658,16 +1658,16 @@ function renderLocalesTable(list) {
         
         // Default badge
         const defaultBadge = item.isDefault ? 
-            `<span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1.5px solid rgba(16, 185, 129, 0.25); font-weight: bold;">é»˜è®¤</span>` : 
+            `<span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1.5px solid rgba(16, 185, 129, 0.25); font-weight: bold;">默认</span>` : 
             `<span style="color: var(--text-muted); font-size: 0.72rem;">-</span>`;
             
         // Enabled badge
         const enabledBadge = item.enabled ? 
-            `<span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1.5px solid rgba(16, 185, 129, 0.25);">å·²å¯ç”¨</span>` : 
-            `<span class="badge" style="background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1.5px solid rgba(239, 68, 68, 0.25);">å·²ç¦ç”¨</span>`;
+            `<span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1.5px solid rgba(16, 185, 129, 0.25);">已启用</span>` : 
+            `<span class="badge" style="background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1.5px solid rgba(239, 68, 68, 0.25);">已禁用</span>`;
             
         // Buttons
-        const toggleBtnText = item.enabled ? 'ç¦ç”¨' : 'å¯ç”¨';
+        const toggleBtnText = item.enabled ? '禁用' : '启用';
         const toggleBtnColor = item.enabled ? '#ef4444' : '#10B981';
         const toggleBtnBg = item.enabled ? 'rgba(239, 68, 68, 0.08)' : 'rgba(16, 185, 129, 0.08)';
         
@@ -1685,10 +1685,10 @@ function renderLocalesTable(list) {
                 <td style="font-size: 0.72rem; color: var(--text-muted);">${createdVal}</td>
                 <td>
                     <div style="display: flex; gap: 6px; justify-content: center; flex-wrap: wrap;">
-                        <button class="action-btn" style="background: rgba(91, 81, 249, 0.08); border: 1.5px solid var(--primary); color: var(--primary); padding: 2px 6px; font-size: 0.68rem; font-weight: 600; border-radius: 4px; cursor: pointer;" onclick="openLocaleModal('${item.id}')">ç¼–è¾‘</button>
+                        <button class="action-btn" style="background: rgba(91, 81, 249, 0.08); border: 1.5px solid var(--primary); color: var(--primary); padding: 2px 6px; font-size: 0.68rem; font-weight: 600; border-radius: 4px; cursor: pointer;" onclick="openLocaleModal('${item.id}')">编辑</button>
                         <button class="action-btn" style="background: ${toggleBtnBg}; border: 1.5px solid ${toggleBtnColor}; color: ${toggleBtnColor}; padding: 2px 6px; font-size: 0.68rem; font-weight: 600; border-radius: 4px; cursor: pointer;" onclick="toggleLocaleStatus('${item.id}', ${item.enabled})">${toggleBtnText}</button>
-                        ${!item.isDefault ? `<button class="action-btn" style="background: rgba(16, 185, 129, 0.08); border: 1.5px solid #10B981; color: #10B981; padding: 2px 6px; font-size: 0.68rem; font-weight: 600; border-radius: 4px; cursor: pointer;" onclick="setDefaultLocale('${item.id}', '${nameVal}')">è®¾ä¸ºé»˜è®¤</button>` : ''}
-                        <button class="action-btn" style="background: rgba(239, 68, 68, 0.08); border: 1.5px solid #EF4444; color: #EF4444; padding: 2px 6px; font-size: 0.68rem; font-weight: 600; border-radius: 4px; cursor: pointer;" onclick="deleteLocale('${item.id}', '${nameVal}')">åˆ é™¤</button>
+                        ${!item.isDefault ? `<button class="action-btn" style="background: rgba(16, 185, 129, 0.08); border: 1.5px solid #10B981; color: #10B981; padding: 2px 6px; font-size: 0.68rem; font-weight: 600; border-radius: 4px; cursor: pointer;" onclick="setDefaultLocale('${item.id}', '${nameVal}')">设为默认</button>` : ''}
+                        <button class="action-btn" style="background: rgba(239, 68, 68, 0.08); border: 1.5px solid #EF4444; color: #EF4444; padding: 2px 6px; font-size: 0.68rem; font-weight: 600; border-radius: 4px; cursor: pointer;" onclick="deleteLocale('${item.id}', '${nameVal}')">删除</button>
                     </div>
                 </td>
             </tr>
@@ -1722,7 +1722,7 @@ export async function openLocaleModal(id = null) {
     enabledField.checked = true;
     
     if (id) {
-        if (titleEl) titleEl.innerText = 'ðŸ“ ç¼–è¾‘è¯­è¨€é…ç½®';
+        if (titleEl) titleEl.innerText = '📝 编辑语言配置';
         try {
             const res = await apiFetch('GET', `/locales/${id}`, null, true);
             if (res.code === 200) {
@@ -1736,14 +1736,14 @@ export async function openLocaleModal(id = null) {
                 defaultField.checked = !!item.isDefault;
                 enabledField.checked = !!item.enabled;
             } else {
-                showToast(res.errorMessage || 'èŽ·å–è¯­è¨€è¯¦æƒ…å¤±è´¥', true);
+                showToast(res.errorMessage || '获取语言详情失败', true);
             }
         } catch (e) {
             console.error(e);
-            showToast('èŽ·å–è¯­è¨€è¯¦æƒ…ç½‘ç»œå¼‚å¸¸', true);
+            showToast('获取语言详情网络异常', true);
         }
     } else {
-        if (titleEl) titleEl.innerText = 'ðŸ“ æ–°å¢žè¯­è¨€é…ç½®';
+        if (titleEl) titleEl.innerText = '📝 新增语言配置';
     }
     
     modal.style.display = 'flex';
@@ -1772,7 +1772,7 @@ export async function saveLocaleSubmit(event) {
     const enabled = document.getElementById('locale-enabled').checked;
     
     if (!name || !languageCode) {
-        showToast('âŒ è¯­è¨€åç§°å’Œè¯­è¨€ä»£ç ä¸ºå¿…å¡«é¡¹ï¼', true);
+        showToast('❌ 语言名称和语言代码为必填项！', true);
         return;
     }
     
@@ -1790,7 +1790,7 @@ export async function saveLocaleSubmit(event) {
     const submitBtn = document.getElementById('locale-submit-btn');
     if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.innerText = 'ä¿å­˜ä¸­...';
+        submitBtn.innerText = '保存中...';
     }
     
     try {
@@ -1802,85 +1802,85 @@ export async function saveLocaleSubmit(event) {
         }
         
         if (res.code === 200) {
-            showToast(id ? 'âœ“ è¯­è¨€æ›´æ–°æˆåŠŸï¼' : 'âœ“ è¯­è¨€åˆ›å»ºæˆåŠŸï¼', false);
+            showToast(id ? '✓ 语言更新成功！' : '✓ 语言创建成功！', false);
             closeLocaleModal();
             loadLocalesList();
         } else {
-            showToast(res.errorMessage || 'ä¿å­˜å¤±è´¥', true);
+            showToast(res.errorMessage || '保存失败', true);
         }
     } catch (e) {
         console.error(e);
-        showToast('ä¿å­˜è¯­è¨€é…ç½®ç½‘ç»œå¼‚å¸¸', true);
+        showToast('保存语言配置网络异常', true);
     } finally {
         if (submitBtn) {
             submitBtn.disabled = false;
-            submitBtn.innerText = 'ä¿å­˜';
+            submitBtn.innerText = '保存';
         }
     }
 }
 
 export async function toggleLocaleStatus(id, currentlyEnabled) {
-    const actionStr = currentlyEnabled ? 'ç¦ç”¨' : 'å¯ç”¨';
+    const actionStr = currentlyEnabled ? '禁用' : '启用';
     const endpoint = `/locales/${id}/${currentlyEnabled ? 'disabled' : 'enabled'}`;
     
-    showToast(`æ­£åœ¨è¿›è¡Œ${actionStr}æ“ä½œ...`, false);
+    showToast(`正在进行${actionStr}操作...`, false);
     try {
         const res = await apiFetch('POST', endpoint, {}, true);
         if (res.code === 200) {
-            showToast(`âœ“ è¯­è¨€å·²æˆåŠŸ${actionStr}ï¼`, false);
+            showToast(`✓ 语言已成功${actionStr}！`, false);
             loadLocalesList();
         } else {
-            showToast(res.errorMessage || `${actionStr}æ“ä½œå¤±è´¥`, true);
+            showToast(res.errorMessage || `${actionStr}操作失败`, true);
         }
     } catch (e) {
         console.error(e);
-        showToast(`è¿›è¡Œ${actionStr}æ“ä½œæ—¶ç½‘ç»œå¼‚å¸¸`, true);
+        showToast(`进行${actionStr}操作时网络异常`, true);
     }
 }
 
 export async function setDefaultLocale(id, name) {
-    if (!confirm(`ç¡®å®šè¦å°† [${name}] è®¾ç½®ä¸ºç³»ç»Ÿçš„é»˜è®¤å±•ç¤ºè¯­è¨€å—ï¼Ÿ\nè¯¥æ“ä½œå°†è‡ªåŠ¨å–æ¶ˆå…¶å®ƒè¯­è¨€çš„é»˜è®¤æ ‡è®°ã€‚`)) {
+    if (!confirm(`确定要将 [${name}] 设置为系统的默认展示语言吗？\n该操作将自动取消其它语言的默认标记。`)) {
         return;
     }
     
-    showToast('æ­£åœ¨è®¾ç½®é»˜è®¤è¯­è¨€...', false);
+    showToast('正在设置默认语言...', false);
     try {
         const res = await apiFetch('POST', `/locales/${id}/set-default`, {}, true);
         if (res.code === 200) {
-            showToast('âœ“ é»˜è®¤è¯­è¨€è®¾ç½®æˆåŠŸï¼', false);
+            showToast('✓ 默认语言设置成功！', false);
             loadLocalesList();
         } else {
-            showToast(res.errorMessage || 'é»˜è®¤è¯­è¨€è®¾ç½®å¤±è´¥', true);
+            showToast(res.errorMessage || '默认语言设置失败', true);
         }
     } catch (e) {
         console.error(e);
-        showToast('è®¾ç½®é»˜è®¤è¯­è¨€æ—¶é‡åˆ°ç½‘ç»œå¼‚å¸¸', true);
+        showToast('设置默认语言时遇到网络异常', true);
     }
 }
 
 export async function deleteLocale(id, name) {
-    if (!confirm(`âš ï¸ æ‚¨ç¡®å®šè¦æ°¸ä¹…åˆ é™¤è¯­è¨€ [${name}] å—ï¼Ÿ\næ­¤æ“ä½œä¸å¯æ’¤é”€ï¼Œå·²ä½¿ç”¨è¯¥è¯­è¨€çš„ç¿»è¯‘å†…å®¹å¯èƒ½æ— æ³•æ˜¾ç¤ºã€‚`)) {
+    if (!confirm(`⚠️ 您确定要永久删除语言 [${name}] 吗？\n此操作不可撤销，已使用该语言的翻译内容可能无法显示。`)) {
         return;
     }
     
-    showToast('æ­£åœ¨åˆ é™¤è¯­è¨€é…ç½®...', false);
+    showToast('正在删除语言配置...', false);
     try {
         const res = await apiFetch('POST', `/locales/${id}/delete`, {}, true);
         if (res.code === 200) {
-            showToast('âœ“ è¯­è¨€é…ç½®å·²æˆåŠŸåˆ é™¤ï¼', false);
+            showToast('✓ 语言配置已成功删除！', false);
             loadLocalesList();
         } else {
-            showToast(res.errorMessage || 'åˆ é™¤è¯­è¨€é…ç½®å¤±è´¥', true);
+            showToast(res.errorMessage || '删除语言配置失败', true);
         }
     } catch (e) {
         console.error(e);
-        showToast('åˆ é™¤è¯­è¨€æ—¶é‡åˆ°ç½‘ç»œå¼‚å¸¸', true);
+        showToast('删除语言时遇到网络异常', true);
     }
 }
 
 
 // ==========================================
-// ðŸž CLIENT ERROR REPORTING MODULE SECTION
+// 🐞 CLIENT ERROR REPORTING MODULE SECTION
 // ==========================================
 let cachedErrorReports = [];
 
@@ -1894,7 +1894,7 @@ export async function loadErrorReportsList() {
     const tbody = document.getElementById('error-reports-table-body');
     
     if (tbody) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 20px 0;">â³ æ­£åœ¨æ£€ç´¢é”™è¯¯ä¸ŠæŠ¥æµæ°´...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 20px 0;">⏳ 正在检索错误上报流水...</td></tr>';
     }
     
     let path = `/error-reports?page=${pageConf.current}&pageSize=${pageConf.size}`;
@@ -1932,18 +1932,18 @@ export async function loadErrorReportsList() {
             
             if (typeof window.updateAdminPageIndicator === 'function') {
                 window.updateAdminPageIndicator('errorReports', paging);
-            } / ${paging.pages} é¡µ (å…± ${paging.records} æ¡)`;
+            } / ${paging.pages} 页 (共 ${paging.records} 条)`;
             }
             
             renderErrorReportsTable(list);
         } else {
-            showToast(res.errorMessage || 'æ‹‰å–é”™è¯¯è®°å½•å¤±è´¥', true);
-            if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #EF4444; padding: 20px 0;">âŒ æŸ¥è¯¢é”™è¯¯: ${res.errorMessage}</td></tr>`;
+            showToast(res.errorMessage || '拉取错误记录失败', true);
+            if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #EF4444; padding: 20px 0;">❌ 查询错误: ${res.errorMessage}</td></tr>`;
         }
     } catch (e) {
         console.error("Load error reports failed:", e);
-        showToast('æ£€ç´¢é”™è¯¯ä¸ŠæŠ¥ç½‘ç»œå¼‚å¸¸', true);
-        if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #EF4444; padding: 20px 0;">âŒ ç½‘ç»œå¼‚å¸¸</td></tr>';
+        showToast('检索错误上报网络异常', true);
+        if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #EF4444; padding: 20px 0;">❌ 网络异常</td></tr>';
     }
 }
 
@@ -1952,13 +1952,13 @@ function renderErrorReportsTable(list) {
     if (!tbody) return;
     
     if (list.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px 0;">â„¹ï¸ æš‚æ— ç¬¦åˆæ¡ä»¶çš„å®¢æˆ·ç«¯é”™è¯¯ä¸ŠæŠ¥è®°å½•</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px 0;">ℹ️ 暂无符合条件的客户端错误上报记录</td></tr>';
         return;
     }
     
     tbody.innerHTML = list.map(item => {
         const idStr = item.id ? String(item.id) : '--';
-        const uidStr = item.userId ? String(item.userId) : 'æœªç™»å½•ç”¨æˆ·';
+        const uidStr = item.userId ? String(item.userId) : '未登录用户';
         const pageVal = item.page || '--';
         const osText = item.os ? `${item.os} (${item.osVersion || '--'})` : '--';
         const modelText = item.deviceModel || item.deviceId || '--';
@@ -1985,7 +1985,7 @@ function renderErrorReportsTable(list) {
                 <td style="font-size: 0.72rem; color: var(--text-muted);">${timeVal}</td>
                 <td>
                     <div style="text-align: center;">
-                        <button class="action-btn" style="background: rgba(91, 81, 249, 0.08); border: 1.5px solid var(--primary); color: var(--primary); padding: 4px 10px; font-size: 0.7rem; font-weight: 600; border-radius: 4px; cursor: pointer;" onclick="openErrorReportDetail('${item.id}')">ðŸ” æŸ¥çœ‹è¯¦æƒ…</button>
+                        <button class="action-btn" style="background: rgba(91, 81, 249, 0.08); border: 1.5px solid var(--primary); color: var(--primary); padding: 4px 10px; font-size: 0.7rem; font-weight: 600; border-radius: 4px; cursor: pointer;" onclick="openErrorReportDetail('${item.id}')">🔍 查看详情</button>
                     </div>
                 </td>
             </tr>
@@ -2013,16 +2013,16 @@ export async function openErrorReportDetail(id) {
     if (!modal) return;
     
     document.getElementById('detail-error-id').innerText = id;
-    document.getElementById('detail-error-uid').innerText = 'â³';
-    document.getElementById('detail-error-page').innerText = 'â³';
-    document.getElementById('detail-error-os').innerText = 'â³';
-    document.getElementById('detail-error-device').innerText = 'â³';
-    document.getElementById('detail-error-time').innerText = 'â³';
-    document.getElementById('detail-error-message').innerText = 'â³';
-    document.getElementById('detail-error-code').innerText = 'â³';
-    document.getElementById('detail-error-stack').innerText = 'æ­£åœ¨ä»ŽæœåŠ¡å™¨æŸ¥è¯¢è¯¦ç»†é”™è¯¯å †æ ˆ...';
+    document.getElementById('detail-error-uid').innerText = '⏳';
+    document.getElementById('detail-error-page').innerText = '⏳';
+    document.getElementById('detail-error-os').innerText = '⏳';
+    document.getElementById('detail-error-device').innerText = '⏳';
+    document.getElementById('detail-error-time').innerText = '⏳';
+    document.getElementById('detail-error-message').innerText = '⏳';
+    document.getElementById('detail-error-code').innerText = '⏳';
+    document.getElementById('detail-error-stack').innerText = '正在从服务器查询详细错误堆栈...';
     document.getElementById('detail-error-extra').innerText = '{}';
-    document.getElementById('detail-error-attachments').innerHTML = 'æ— é™„ä»¶';
+    document.getElementById('detail-error-attachments').innerHTML = '无附件';
     
     modal.style.display = 'flex';
     modal.classList.add('active');
@@ -2031,14 +2031,14 @@ export async function openErrorReportDetail(id) {
         const res = await apiFetch('GET', `/error-reports/${id}`, null, true);
         if (res.code === 200) {
             const item = res.result || res.data || {};
-            document.getElementById('detail-error-uid').innerText = item.userId ? String(item.userId) : 'æ¸¸å®¢ (æœªç™»å½•)';
+            document.getElementById('detail-error-uid').innerText = item.userId ? String(item.userId) : '游客 (未登录)';
             document.getElementById('detail-error-page').innerText = item.page || '--';
             document.getElementById('detail-error-os').innerText = item.os ? `${item.os} (${item.osVersion || '--'})` : '--';
             document.getElementById('detail-error-device').innerText = `${item.deviceModel || '--'} [ID: ${item.deviceId || '--'}]`;
             document.getElementById('detail-error-time').innerText = item.createdAt ? new Date(parseInt(item.createdAt)).toLocaleString() : '--';
-            document.getElementById('detail-error-message').innerText = item.message || 'æ— æ¶ˆæ¯';
+            document.getElementById('detail-error-message').innerText = item.message || '无消息';
             document.getElementById('detail-error-code').innerText = item.errorCode || '--';
-            document.getElementById('detail-error-stack').innerText = item.stack || 'ï¼ˆæ— å †æ ˆè·Ÿè¸ªä¿¡æ¯ï¼‰';
+            document.getElementById('detail-error-stack').innerText = item.stack || '（无堆栈跟踪信息）';
             
             // Format extra environment JSON
             let extraStr = '{}';
@@ -2065,17 +2065,17 @@ export async function openErrorReportDetail(id) {
                 document.getElementById('detail-error-attachments').innerHTML = attachmentsList.map(a => {
                     const relativeUrl = typeof a === 'string' ? a : JSON.stringify(a);
                     const absoluteUrl = relativeUrl.startsWith('http') ? relativeUrl : `${window.location.origin}/${relativeUrl}`;
-                    return `<a href="${absoluteUrl}" target="_blank" style="color: var(--primary); font-weight: 600; text-decoration: underline; font-size: 0.75rem; display: flex; align-items: center; gap: 4px;">ðŸ“‚ é™„ä»¶æŸ¥çœ‹ (${relativeUrl.substring(relativeUrl.lastIndexOf('/') + 1)})</a>`;
+                    return `<a href="${absoluteUrl}" target="_blank" style="color: var(--primary); font-weight: 600; text-decoration: underline; font-size: 0.75rem; display: flex; align-items: center; gap: 4px;">📂 附件查看 (${relativeUrl.substring(relativeUrl.lastIndexOf('/') + 1)})</a>`;
                 }).join('');
             } else {
-                document.getElementById('detail-error-attachments').innerHTML = '<span style="color: var(--text-muted); font-size: 0.75rem;">æ— æˆªå›¾æˆ–æ—¥å¿—é™„ä»¶</span>';
+                document.getElementById('detail-error-attachments').innerHTML = '<span style="color: var(--text-muted); font-size: 0.75rem;">无截图或日志附件</span>';
             }
         } else {
-            document.getElementById('detail-error-stack').innerText = `âš ï¸ é”™è¯¯ä¸ŠæŠ¥æ‹‰å–å¤±è´¥: ${res.errorMessage}`;
+            document.getElementById('detail-error-stack').innerText = `⚠️ 错误上报拉取失败: ${res.errorMessage}`;
         }
     } catch (e) {
         console.error(e);
-        document.getElementById('detail-error-stack').innerText = `âŒ è¯·æ±‚é”™è¯¯ä¸ŠæŠ¥æŽ¥å£é‡åˆ°ç½‘ç»œå¼‚å¸¸`;
+        document.getElementById('detail-error-stack').innerText = `❌ 请求错误上报接口遇到网络异常`;
     }
 }
 

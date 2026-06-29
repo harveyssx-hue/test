@@ -1,4 +1,4 @@
-﻿async function ensureRiskLevelsLoaded() {
+async function ensureRiskLevelsLoaded() {
     if (!window.cachedRiskLevels || window.cachedRiskLevels.length === 0) {
         try {
             const rlRes = await apiFetch('GET', '/users/risk-levels', null, true);
@@ -31,12 +31,12 @@ function populateRiskLevelFilter(selectId) {
     if (!select) return;
     const levels = window.cachedRiskLevels || [];
     const currentVal = select.value;
-    select.innerHTML = '<option value="ALL">å…¨éƒ¨å±‚çº§</option>';
+    select.innerHTML = '<option value="ALL">全部层级</option>';
     levels.forEach(l => {
         if (l.enabled) {
             const opt = document.createElement('option');
             opt.value = l.id;
-            opt.textContent = `${l.name} (ç­‰çº§ ${l.level || 0})`;
+            opt.textContent = `${l.name} (等级 ${l.level || 0})`;
             select.appendChild(opt);
         }
     });
@@ -67,15 +67,15 @@ function packStrategyStats(descText, yieldVal, winRateVal, followersVal) {
 }
 
 function getAlgoDisplayName(model) {
-    if (!model) return 'ç¥žç»ç½‘ç»œé«˜é¢‘é‡åŒ–';
+    if (!model) return '神经网络高频量化';
     if (typeof model === 'object') {
-        return model.displayName || model.name || 'ç¥žç»ç½‘ç»œé«˜é¢‘é‡åŒ–';
+        return model.displayName || model.name || '神经网络高频量化';
     }
     const modelStr = String(model).toUpperCase();
-    if (modelStr === 'MLP') return 'å¤šå±‚æ„ŸçŸ¥æœºæ¨¡åž‹ (MLP)';
-    if (modelStr === 'LSTM') return 'é•¿çŸ­æœŸè®°å¿†ç½‘ç»œ (LSTM)';
-    if (modelStr === 'TRANSFORMER') return 'è‡ªæ³¨æ„åŠ›æœºåˆ¶æ¨¡åž‹ (Transformer)';
-    if (modelStr === 'XGBOOST') return 'æžé€Ÿæ¢¯åº¦æå‡æ ‘ (XGBoost)';
+    if (modelStr === 'MLP') return '多层感知机模型 (MLP)';
+    if (modelStr === 'LSTM') return '长短期记忆网络 (LSTM)';
+    if (modelStr === 'TRANSFORMER') return '自注意力机制模型 (Transformer)';
+    if (modelStr === 'XGBOOST') return '极速梯度提升树 (XGBoost)';
     return model;
 }
 
@@ -89,32 +89,32 @@ function getAlgoModelName(model) {
 export async function submitBatchOrderReview() {
     const checkboxes = document.querySelectorAll('.order-select-checkbox:checked');
     if (checkboxes.length === 0) {
-        showToast('âŒ è¯·å…ˆå‹¾é€‰éœ€è¦æ‰¹é‡æ“ä½œçš„å¾…å®¡æ ¸è®¢å•ï¼', true);
+        showToast('❌ 请先勾选需要批量操作的待审核订单！', true);
         return;
     }
     
-    if (!confirm(`âš ï¸ æ‚¨ç¡®å®šè¦æ‰¹é‡ [æ‰¹å‡†å¯åŠ¨] è¿™ ${checkboxes.length} ç¬”é‡åŒ–è®¢å•å—ï¼Ÿ`)) {
+    if (!confirm(`⚠️ 您确定要批量 [批准启动] 这 ${checkboxes.length} 笔量化订单吗？`)) {
         return;
     }
     
     const orderIds = Array.from(checkboxes).map(cb => cb.value);
-    showToast(`æ­£åœ¨æ‰¹é‡æäº¤ ${checkboxes.length} ç¬”è®¢å•çš„å®¡æ ¸å†³è®®...`, false);
+    showToast(`正在批量提交 ${checkboxes.length} 笔订单的审核决议...`, false);
     
     try {
         const res = await apiFetch('POST', '/trading/quant/orders/batch-approve', { orderIds: orderIds }, true);
         
         if (res.code === 200) {
-            showToast(`âœ“ æ‰¹é‡å®¡æ ¸æˆåŠŸï¼å·²æˆåŠŸæ‰¹é‡æ‰¹å‡†å¯åŠ¨ ${orderIds.length} ç¬”è®¢å•ã€‚`, false);
+            showToast(`✓ 批量审核成功！已成功批量批准启动 ${orderIds.length} 笔订单。`, false);
             const masterCheckbox = document.getElementById('select-all-pending-orders-checkbox');
             if (masterCheckbox) masterCheckbox.checked = false;
             loadQuantMonitor();
             loadDashboardStats();
         } else {
-            showToast(res.errorMessage || `æ‰¹é‡å®¡æ ¸æäº¤å¤±è´¥ï¼`, true);
+            showToast(res.errorMessage || `批量审核提交失败！`, true);
         }
     } catch(e) {
         console.error(e);
-        showToast('æ‰¹é‡å®¡æ ¸æŽ¥å£ç½‘ç»œå¼‚å¸¸ï¼', true);
+        showToast('批量审核接口网络异常！', true);
     }
 }
 window.submitBatchOrderReview = submitBatchOrderReview;
@@ -122,31 +122,31 @@ window.submitBatchOrderReview = submitBatchOrderReview;
 export async function submitBatchOrderReject() {
     const checkboxes = document.querySelectorAll('.order-select-checkbox:checked');
     if (checkboxes.length === 0) {
-        showToast('âŒ è¯·å…ˆå‹¾é€‰éœ€è¦æ‰¹é‡æ“ä½œçš„å¾…å®¡æ ¸è®¢å•ï¼', true);
+        showToast('❌ 请先勾选需要批量操作的待审核订单！', true);
         return;
     }
     
-    const reason = prompt(`âš ï¸ æ‚¨ç¡®å®šè¦æ‰¹é‡ [æ‹’ç»é©³å›ž] è¿™ ${checkboxes.length} ç¬”é‡åŒ–è®¢å•å—ï¼Ÿè¯·è¾“å…¥é©³å›žåŽŸå› :`, 'ä¸ç¬¦åˆé‡åŒ–æ¡ä»¶ï¼Œé£ŽæŽ§é©³å›ž');
+    const reason = prompt(`⚠️ 您确定要批量 [拒绝驳回] 这 ${checkboxes.length} 笔量化订单吗？请输入驳回原因:`, '不符合量化条件，风控驳回');
     if (reason === null) return;
     
     const orderIds = Array.from(checkboxes).map(cb => cb.value);
-    showToast(`æ­£åœ¨æ‰¹é‡æäº¤ ${checkboxes.length} ç¬”è®¢å•çš„æ‹’ç»å†³è®®...`, false);
+    showToast(`正在批量提交 ${checkboxes.length} 笔订单的拒绝决议...`, false);
     
     try {
-        const res = await apiFetch('POST', '/trading/quant/orders/batch-reject', { orderIds: orderIds, reason: reason || 'ç®¡ç†å‘˜æ‹’ç»é©³å›ž' }, true);
+        const res = await apiFetch('POST', '/trading/quant/orders/batch-reject', { orderIds: orderIds, reason: reason || '管理员拒绝驳回' }, true);
         
         if (res.code === 200) {
-            showToast(`âœ“ æ‰¹é‡æ‹’ç»æˆåŠŸï¼å·²æˆåŠŸæ‰¹é‡é©³å›žæ‹’ç» ${orderIds.length} ç¬”è®¢å•ã€‚`, false);
+            showToast(`✓ 批量拒绝成功！已成功批量驳回拒绝 ${orderIds.length} 笔订单。`, false);
             const masterCheckbox = document.getElementById('select-all-pending-orders-checkbox');
             if (masterCheckbox) masterCheckbox.checked = false;
             loadQuantMonitor();
             loadDashboardStats();
         } else {
-            showToast(res.errorMessage || `æ‰¹é‡æ‹’ç»æäº¤å¤±è´¥ï¼`, true);
+            showToast(res.errorMessage || `批量拒绝提交失败！`, true);
         }
     } catch(e) {
         console.error(e);
-        showToast('æ‰¹é‡æ‹’ç»æŽ¥å£ç½‘ç»œå¼‚å¸¸ï¼', true);
+        showToast('批量拒绝接口网络异常！', true);
     }
 }
 window.submitBatchOrderReject = submitBatchOrderReject;
@@ -177,7 +177,7 @@ export async function loadQuantMonitor() {
     
     const tbody = document.getElementById('quant-monitor-table-body');
     if (tbody) {
-        tbody.innerHTML = '<tr><td colspan="13" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">ðŸ”„ æ­£åœ¨å®‰å…¨åŒæ­¥å…¨ç«™é‡åŒ–è®¢å•åˆ—è¡¨...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="13" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">🔄 正在安全同步全站量化订单列表...</td></tr>';
     }
     
     try {
@@ -214,9 +214,9 @@ export async function loadQuantMonitor() {
 
         const res = await apiFetch('GET', fetchUrl, null, true);
         if (res.code !== 200) {
-            showToast(res.errorMessage || 'èŽ·å–é‡åŒ–åˆ—è¡¨å¤±è´¥ï¼', true);
+            showToast(res.errorMessage || '获取量化列表失败！', true);
             if (tbody) {
-                tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: #EF4444; padding: 30px 0;">âŒ åŠ è½½å¤±è´¥: ${res.errorMessage || 'æœªçŸ¥æŽ¥å£é”™è¯¯'}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: #EF4444; padding: 30px 0;">❌ 加载失败: ${res.errorMessage || '未知接口错误'}</td></tr>`;
             }
             return;
         }
@@ -296,7 +296,7 @@ export async function loadQuantMonitor() {
         if (!tbody) return;
         
         if (filteredOrders.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--text-muted); padding: 30px 0;">å…¨ç«™æš‚æ— ç¬¦åˆç­›é€‰æ¡ä»¶çš„é‡åŒ–å§”æ‰˜è®¢å•</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--text-muted); padding: 30px 0;">全站暂无符合筛选条件的量化委托订单</td></tr>`;
             document.getElementById('quant-total-principal-amount').innerText = '0.00 USDT';
             return;
         }
@@ -320,7 +320,7 @@ export async function loadQuantMonitor() {
             if (pageConf.current < 1) pageConf.current = 1;
             const indicator = document.getElementById('quant-page-indicator');
             if (indicator) {
-                indicator.innerText = `ç¬¬ ${pageConf.current} / ${totalPages} é¡µ (å…± ${totalCount} æ¡)`;
+                indicator.innerText = `第 ${pageConf.current} / ${totalPages} 页 (共 ${totalCount} 条)`;
             }
             renderList = paginateList(filteredOrders, 'quant');
         }
@@ -347,13 +347,13 @@ export async function loadQuantMonitor() {
                 // Create solid status blocks to match the screenshot
                 let statusCellHtml = '';
                 if (o.status === 'PENDING') {
-                    statusCellHtml = `<div style="background: rgba(245, 158, 11, 0.12); color: #D97706; font-weight: 700; font-size: 0.72rem; padding: 6px 12px; border-radius: 4px; text-align: center; border: 1.5px solid rgba(245, 158, 11, 0.25);">æœªå®¡æ ¸</div>`;
+                    statusCellHtml = `<div style="background: rgba(245, 158, 11, 0.12); color: #D97706; font-weight: 700; font-size: 0.72rem; padding: 6px 12px; border-radius: 4px; text-align: center; border: 1.5px solid rgba(245, 158, 11, 0.25);">未审核</div>`;
                 } else if (o.status === 'ACTIVE') {
-                    statusCellHtml = `<div style="background: rgba(16, 185, 129, 0.12); color: #059669; font-weight: 700; font-size: 0.72rem; padding: 6px 12px; border-radius: 4px; text-align: center; border: 1.5px solid rgba(16, 185, 129, 0.25);">è¿è¡Œä¸­</div>`;
+                    statusCellHtml = `<div style="background: rgba(16, 185, 129, 0.12); color: #059669; font-weight: 700; font-size: 0.72rem; padding: 6px 12px; border-radius: 4px; text-align: center; border: 1.5px solid rgba(16, 185, 129, 0.25);">运行中</div>`;
                 } else if (o.status === 'COMPLETED') {
-                    statusCellHtml = `<div style="background: rgba(59, 130, 246, 0.12); color: #2563EB; font-weight: 700; font-size: 0.72rem; padding: 6px 12px; border-radius: 4px; text-align: center; border: 1.5px solid rgba(59, 130, 246, 0.25);">å·²ç»“ç®—</div>`;
+                    statusCellHtml = `<div style="background: rgba(59, 130, 246, 0.12); color: #2563EB; font-weight: 700; font-size: 0.72rem; padding: 6px 12px; border-radius: 4px; text-align: center; border: 1.5px solid rgba(59, 130, 246, 0.25);">已结算</div>`;
                 } else {
-                    statusCellHtml = `<div style="background: rgba(107, 114, 128, 0.12); color: #6B7280; font-weight: 700; font-size: 0.72rem; padding: 6px 12px; border-radius: 4px; text-align: center; border: 1.5px solid rgba(107, 114, 128, 0.25);">å·²å–æ¶ˆ</div>`;
+                    statusCellHtml = `<div style="background: rgba(107, 114, 128, 0.12); color: #6B7280; font-weight: 700; font-size: 0.72rem; padding: 6px 12px; border-radius: 4px; text-align: center; border: 1.5px solid rgba(107, 114, 128, 0.25);">已取消</div>`;
                 }
                 
                 let checkboxHtml = '';
@@ -367,18 +367,18 @@ export async function loadQuantMonitor() {
                 if (o.status === 'PENDING') {
                     actionHtml = `
                         <div style="display: flex; gap: 4px; justify-content: center; align-items: center; flex-wrap: wrap;">
-                            <button class="action-btn" style="background: #28A745; color: #FFF; border: none; padding: 4px 8px; font-size: 0.7rem; border-radius: 4px; font-weight: 600; cursor: pointer; height: 26px; line-height: 1;" onclick="handleQuantReviewSubmit('${o.id}', 'approve')">é€šè¿‡</button>
-                            <button class="action-btn btn-reject" style="padding: 4px 8px; font-size: 0.7rem; font-weight: 600; border-radius: 4px; cursor: pointer; height: 26px; line-height: 1;" onclick="handleQuantReviewSubmit('${o.id}', 'reject')">æ‹’ç»</button>
+                            <button class="action-btn" style="background: #28A745; color: #FFF; border: none; padding: 4px 8px; font-size: 0.7rem; border-radius: 4px; font-weight: 600; cursor: pointer; height: 26px; line-height: 1;" onclick="handleQuantReviewSubmit('${o.id}', 'approve')">通过</button>
+                            <button class="action-btn btn-reject" style="padding: 4px 8px; font-size: 0.7rem; font-weight: 600; border-radius: 4px; cursor: pointer; height: 26px; line-height: 1;" onclick="handleQuantReviewSubmit('${o.id}', 'reject')">拒绝</button>
                         </div>
                     `;
                 } else if (o.status === 'ACTIVE') {
                     actionHtml = `
                         <div style="display: flex; gap: 4px; justify-content: center; align-items: center; flex-wrap: wrap;">
-                            <button class="action-btn btn-approve" style="background: rgba(91, 81, 249, 0.08); border: 1.5px solid var(--primary); color: var(--primary); padding: 4px 8px; font-size: 0.7rem; white-space: nowrap; cursor: pointer; height: 26px; line-height: 1;" onclick="switchAdminTab('quant-settle', document.getElementById('quant-settle-menu-btn'))">âš¡ ç»“ç®—ä¸­å¿ƒ</button>
+                            <button class="action-btn btn-approve" style="background: rgba(91, 81, 249, 0.08); border: 1.5px solid var(--primary); color: var(--primary); padding: 4px 8px; font-size: 0.7rem; white-space: nowrap; cursor: pointer; height: 26px; line-height: 1;" onclick="switchAdminTab('quant-settle', document.getElementById('quant-settle-menu-btn'))">⚡ 结算中心</button>
                         </div>
                     `;
                 } else {
-                    actionHtml = `<span style="color: var(--text-muted); font-size: 0.72rem;">æ¸…ç®—ç»“æŸ</span>`;
+                    actionHtml = `<span style="color: var(--text-muted); font-size: 0.72rem;">清算结束</span>`;
                 }
                 
                 return `
@@ -392,13 +392,13 @@ export async function loadQuantMonitor() {
                             <div style="font-weight: 600;">${userAccount}</div>
                             <div style="color: var(--primary); font-size: 0.72rem; font-weight: 600; font-family: monospace;">${userUidStr}${(() => {
                                 const r = userRiskMap[String(o.userId)] || null;
-                                const riskLevelName = r ? r.name : 'æœªåˆ†ç»„';
+                                const riskLevelName = r ? r.name : '未分组';
                                 return `<br><span style="font-size: 0.68rem; color: #38BDF8; font-weight: 600;">${riskLevelName}</span>`;
                             })()}</div>
-                            <div style="color: var(--text-muted); font-size: 0.68rem;">æ­£å¼</div>
+                            <div style="color: var(--text-muted); font-size: 0.68rem;">正式</div>
                         </td>
                         <td>
-                            <div style="font-weight: 600; color: var(--text-primary);">æ¯æ—¥é‡åŒ–</div>
+                            <div style="font-weight: 600; color: var(--text-primary);">每日量化</div>
                             <div style="color: var(--text-muted); font-size: 0.7rem;">${algoName}</div>
                         </td>
                         <td style="font-weight: 600; font-family: monospace; color: var(--green);">${parseFloat(o.investAmount).toFixed(2)}</td>
@@ -407,7 +407,7 @@ export async function loadQuantMonitor() {
                         <td>
                             <div style="font-family: monospace; font-size: 0.72rem; font-weight: 600;">${o.orderNo}</div>
                             <div style="color: var(--text-muted); font-size: 0.68rem; margin-top: 2px;">${formattedFullTime}</div>
-                            ${(o.status === 'ACTIVE' || o.status === 'COMPLETED') && o.price && o.quantity ? `<div style="color: var(--primary); font-size: 0.68rem; margin-top: 3px; font-weight: 600;">ðŸ“ˆ ä¹°å…¥: ${parseFloat(o.price).toFixed(2)} / ${parseFloat(o.quantity).toFixed(4)}</div>` : ''}
+                            ${(o.status === 'ACTIVE' || o.status === 'COMPLETED') && o.price && o.quantity ? `<div style="color: var(--primary); font-size: 0.68rem; margin-top: 3px; font-weight: 600;">📈 买入: ${parseFloat(o.price).toFixed(2)} / ${parseFloat(o.quantity).toFixed(4)}</div>` : ''}
                         </td>
                         <td style="font-size: 0.72rem; line-height: 1.3; font-weight: 600;">${commissionRate}</td>
                         <td style="text-align: center;">${statusCellHtml}</td>
@@ -417,7 +417,7 @@ export async function loadQuantMonitor() {
             }).join('');
     } catch(e) {
         console.error(e);
-        showToast('èŽ·å–é‡åŒ–é‡åŒ–è®¢å•åˆ—è¡¨ç½‘ç»œå¼‚å¸¸ï¼', true);
+        showToast('获取量化量化订单列表网络异常！', true);
     }
 }
 
@@ -435,12 +435,12 @@ function resetQuantFilters() {
     
     window.adminPages.quant.current = 1;
     loadQuantMonitor();
-    showToast('âœ“ æ£€ç´¢è¿‡æ»¤å™¨å·²é‡ç½®ä¸ºé»˜è®¤å€¼', false);
+    showToast('✓ 检索过滤器已重置为默认值', false);
 }
 
 // Automatic review approval logic for all pending orders
 async function submitAllOrderReview() {
-    showToast('æ­£åœ¨æ£€ç´¢å…¨ç«™å¾…å®¡æ ¸é‡åŒ–è®¢å•...', false);
+    showToast('正在检索全站待审核量化订单...', false);
     try {
         let pendingOrders = [];
         let currentPage = 1;
@@ -448,7 +448,7 @@ async function submitAllOrderReview() {
             const fetchUrl = `/trading/quant/orders?status=PENDING&page=${currentPage}&pageSize=60`;
             const res = await apiFetch('GET', fetchUrl, null, true);
             if (res.code !== 200) {
-                showToast(res.errorMessage || 'èŽ·å–å¾…å®¡æ ¸è®¢å•åˆ—è¡¨å¤±è´¥ï¼', true);
+                showToast(res.errorMessage || '获取待审核订单列表失败！', true);
                 return;
             }
             const list = res.result || res.data || [];
@@ -464,67 +464,67 @@ async function submitAllOrderReview() {
         }
         
         if (pendingOrders.length === 0) {
-            showToast('âŒ å½“å‰å…¨ç«™æ— å¯å®¡æ ¸çš„å¾…å¤„ç†é‡åŒ–è®¢å•ï¼', true);
+            showToast('❌ 当前全站无可审核的待处理量化订单！', true);
             return;
         }
-        if (!confirm(`âš ï¸ æ‚¨ç¡®å®šè¦ä¸€é”®æ‰¹å‡†é€šè¿‡å…¨ç«™æ‰€æœ‰å…± ${pendingOrders.length} ç¬”å¾…å®¡æ ¸é‡åŒ–è®¢å•å—ï¼Ÿ`)) {
+        if (!confirm(`⚠️ 您确定要一键批准通过全站所有共 ${pendingOrders.length} 笔待审核量化订单吗？`)) {
             return;
         }
         const orderIds = pendingOrders.map(o => o.id);
-        showToast(`æ­£åœ¨ä¸€é”®æ‰¹é‡å®¡æ ¸ ${orderIds.length} ç¬”è®¢å•...`, false);
+        showToast(`正在一键批量审核 ${orderIds.length} 笔订单...`, false);
         
         const reviewRes = await apiFetch('POST', '/trading/quant/orders/batch-approve', { orderIds: orderIds }, true);
         if (reviewRes.code === 200) {
-            showToast(`âœ“ å·²æˆåŠŸä¸€é”®æ‰¹å‡†å…¨ç«™ ${orderIds.length} ç¬”é‡åŒ–å§”æ‰˜å¯åŠ¨ï¼`, false);
+            showToast(`✓ 已成功一键批准全站 ${orderIds.length} 笔量化委托启动！`, false);
             loadQuantMonitor();
             loadDashboardStats();
         } else {
-            showToast(reviewRes.errorMessage || 'ä¸€é”®æ‰¹é‡å®¡æ ¸å¤±è´¥ï¼', true);
+            showToast(reviewRes.errorMessage || '一键批量审核失败！', true);
         }
     } catch(e) {
         console.error(e);
-        showToast('ä¸€é”®æ‰¹é‡å®¡æ ¸å‘é€ç½‘ç»œå¼‚å¸¸ï¼', true);
+        showToast('一键批量审核发送网络异常！', true);
     }
 }
 
 
 async function handleQuantReviewSubmit(orderId, action) {
     if (action === 'approve') {
-        if (!confirm(`âš ï¸ æ‚¨ç¡®å®šè¦å¯¹è¯¥æœªå®¡æ ¸è®¢å•æ‰§è¡Œ [æ‰¹å‡†é€šè¿‡å¯åŠ¨] æ“ä½œå—ï¼Ÿ`)) {
+        if (!confirm(`⚠️ 您确定要对该未审核订单执行 [批准通过启动] 操作吗？`)) {
             return;
         }
         
-        showToast(`æ­£åœ¨æäº¤ç­–ç•¥å®¡æ ¸å†³è®® [æ‰¹å‡†]...`, false);
+        showToast(`正在提交策略审核决议 [批准]...`, false);
         
         try {
             const res = await apiFetch('POST', `/trading/quant/orders/${orderId}/approve`, {}, true);
             if (res.code === 200) {
-                showToast(`ðŸ’¼ ç­–ç•¥å®¡æ ¸å¤„ç†æˆåŠŸï¼šç­–ç•¥å·²æ‰¹å‡†å¯åŠ¨ âœ“`, false);
+                showToast(`💼 策略审核处理成功：策略已批准启动 ✓`, false);
                 loadQuantMonitor();
                 loadDashboardStats();
             } else {
-                showToast(res.errorMessage || 'ç­–ç•¥å®¡æ ¸æ“ä½œå¤±è´¥ï¼', true);
+                showToast(res.errorMessage || '策略审核操作失败！', true);
             }
         } catch(e) {
-            showToast('ç­–ç•¥å®¡æ ¸æäº¤ç½‘ç»œå¼‚å¸¸ï¼', true);
+            showToast('策略审核提交网络异常！', true);
         }
     } else if (action === 'reject') {
-        const reason = prompt(`âš ï¸ æ‚¨ç¡®å®šè¦å¯¹è¯¥æœªå®¡æ ¸è®¢å•æ‰§è¡Œ [æ‹’ç»é©³å›ž] æ“ä½œå—ï¼Ÿè¯·è¾“å…¥é©³å›žåŽŸå› :`, 'ä¸ç¬¦åˆé‡åŒ–æ¡ä»¶ï¼Œé£ŽæŽ§é©³å›ž');
+        const reason = prompt(`⚠️ 您确定要对该未审核订单执行 [拒绝驳回] 操作吗？请输入驳回原因:`, '不符合量化条件，风控驳回');
         if (reason === null) return;
         
-        showToast(`æ­£åœ¨æäº¤ç­–ç•¥å®¡æ ¸å†³è®® [æ‹’ç»]...`, false);
+        showToast(`正在提交策略审核决议 [拒绝]...`, false);
         
         try {
-            const res = await apiFetch('POST', `/trading/quant/orders/${orderId}/reject`, { reason: reason || 'ç®¡ç†å‘˜æ‹’ç»é©³å›ž' }, true);
+            const res = await apiFetch('POST', `/trading/quant/orders/${orderId}/reject`, { reason: reason || '管理员拒绝驳回' }, true);
             if (res.code === 200) {
-                showToast(`ðŸ’¼ ç­–ç•¥å®¡æ ¸å¤„ç†æˆåŠŸï¼šç­–ç•¥å·²è¢«æ‹’ç»é©³å›ž âœ“`, false);
+                showToast(`💼 策略审核处理成功：策略已被拒绝驳回 ✓`, false);
                 loadQuantMonitor();
                 loadDashboardStats();
             } else {
-                showToast(res.errorMessage || 'ç­–ç•¥å®¡æ ¸æ‹’ç»æ“ä½œå¤±è´¥ï¼', true);
+                showToast(res.errorMessage || '策略审核拒绝操作失败！', true);
             }
         } catch(e) {
-            showToast('ç­–ç•¥å®¡æ ¸æ‹’ç»æäº¤ç½‘ç»œå¼‚å¸¸ï¼', true);
+            showToast('策略审核拒绝提交网络异常！', true);
         }
     }
 }
@@ -562,7 +562,7 @@ async function fetchUserUsdtBalance(userId) {
             const totalInr = inrVal + usdtVal * rate;
             
             if (totalInr > 0) {
-                balanceStrings.push(`â‚¹${totalInr.toFixed(2)}`);
+                balanceStrings.push(`₹${totalInr.toFixed(2)}`);
                 hasNonZero = true;
             }
             
@@ -578,23 +578,23 @@ async function fetchUserUsdtBalance(userId) {
             if (hasNonZero) {
                 return balanceStrings.join('<br>');
             }
-            return 'â‚¹0.00';
+            return '₹0.00';
         }
     } catch (e) {
         console.error(`Failed to fetch balances for user ${userId}:`, e);
     }
-    return 'â‚¹0.00';
+    return '₹0.00';
 }
 
 
-export // --- QUANT STRATEGIES MANAGEMENT Logic (å¹³å°é‡åŒ–ç­–ç•¥æ¨¡æ¿æŽ§åˆ¶ä¸­å¿ƒ CRUD) ---
+export // --- QUANT STRATEGIES MANAGEMENT Logic (平台量化策略模板控制中心 CRUD) ---
 let cachedStrategiesList = [];
 
 async function loadPlatformStrategies() {
     const container = document.getElementById('strategies-table-body');
     if (!container) return;
     
-    container.innerHTML = `<tr><td colspan="13" style="text-align: center; color: #64748B; padding: 24px;">ðŸ”„ æ­£åœ¨å®‰å…¨è°ƒå–å¹³å°é‡åŒ–ç­–ç•¥æ¨¡åž‹åˆ—è¡¨...</td></tr>`;
+    container.innerHTML = `<tr><td colspan="13" style="text-align: center; color: #64748B; padding: 24px;">🔄 正在安全调取平台量化策略模型列表...</td></tr>`;
     
     try {
         const res = await apiFetch('GET', '/trading/quant/algorithm-models', null, true);
@@ -628,17 +628,17 @@ async function loadPlatformStrategies() {
                 const debugBtn = document.createElement('span');
                 debugBtn.id = 'debug-api-raw-info';
                 debugBtn.style = 'font-size: 0.65rem; background: rgba(16,185,129,0.1); color: #10B981; padding: 2px 6px; border-radius: 4px; cursor: pointer; margin-left: 8px; font-weight: 700;';
-                debugBtn.innerText = 'ðŸ” æŸ¥çœ‹æŽ¥å£åŽŸå§‹å­—æ®µ';
+                debugBtn.innerText = '🔍 查看接口原始字段';
                 debugBtn.onclick = () => {
-                    alert('æŽ¥å£è¿”å›žçš„åŽŸå§‹æ•°æ®å±žæ€§åŒ…å«ï¼š\n' + Object.keys(list[0]).join(', ') + '\n\nå®Œæ•´JSONæ•°æ®è¯·åœ¨æµè§ˆå™¨æŽ§åˆ¶å°(Console)æŸ¥çœ‹ã€‚');
+                    alert('接口返回的原始数据属性包含：\n' + Object.keys(list[0]).join(', ') + '\n\n完整JSON数据请在浏览器控制台(Console)查看。');
                 };
                 titleEl.appendChild(debugBtn);
             }
             
             if (list.length === 0) {
-                container.innerHTML = `<tr><td colspan="13" style="text-align: center; color: #94A3B8; padding: 24px;">ðŸ“­ å¹³å°ç›®å‰å°šæœªå½•å…¥ä»»ä½• AI é‡åŒ–ç­–ç•¥æ¨¡æ¿</td></tr>`;
+                container.innerHTML = `<tr><td colspan="13" style="text-align: center; color: #94A3B8; padding: 24px;">📭 平台目前尚未录入任何 AI 量化策略模板</td></tr>`;
                 const indicator = document.getElementById(`strategies-page-indicator`);
-                if (indicator) indicator.innerText = `ç¬¬ 1 / 1 é¡µ (å…± 0 æ¡)`;
+                if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
                 return;
             }
             
@@ -648,8 +648,8 @@ async function loadPlatformStrategies() {
             const paginatedList = paginateList(list, 'strategies');
             container.innerHTML = paginatedList.map(m => {
                 const badgeClass = m.enabled ? 'kyc-badge-status kyc-status-VERIFIED' : 'kyc-badge-status kyc-status-PENDING';
-                const badgeText = m.enabled ? 'å¯ç”¨ä¸­' : 'å·²ç¦ç”¨';
-                const statusActionText = m.enabled ? 'ç¦ç”¨' : 'å¯ç”¨';
+                const badgeText = m.enabled ? '启用中' : '已禁用';
+                const statusActionText = m.enabled ? '禁用' : '启用';
                 const statusActionBtnClass = m.enabled ? 'btn-reject' : 'btn-approve';
                 
                 // Extract translations
@@ -682,14 +682,14 @@ async function loadPlatformStrategies() {
                 if (isIconRealUrl) {
                     iconHtml = `<img src="${m.icon}" style="width: 28px; height: 28px; border-radius: 6px; object-fit: cover; display: block; margin: 0 auto; border: 1px solid rgba(0,0,0,0.08);">`;
                     const minAmountVal = parseFloat(m.minInvestAmount || m.minAmount);
-                    minAmountText = minAmountVal ? '$' + minAmountVal.toFixed(2) : '<span style="color: #94A3B8; font-weight: 500;">å…¨å±€é»˜è®¤</span>';
+                    minAmountText = minAmountVal ? '$' + minAmountVal.toFixed(2) : '<span style="color: #94A3B8; font-weight: 500;">全局默认</span>';
                 } else {
-                    const iconsList = ['ðŸ¤–', 'ðŸ‚', 'ðŸš€', 'ðŸ¦…'];
+                    const iconsList = ['🤖', '🐂', '🚀', '🦅'];
                     const mappedIdx = list.indexOf(m) % 4;
                     const iconChar = iconsList[mappedIdx];
                     const rawIconUrl = m.iconUrl || '';
                     iconHtml = rawIconUrl ? `<img src="${rawIconUrl}" style="width: 28px; height: 28px; border-radius: 6px; object-fit: cover; display: block; margin: 0 auto;">` : `<span style="font-size: 1.2rem; display: block; text-align: center;">${iconChar}</span>`;
-                    minAmountText = parseFloat(m.icon) ? '$' + parseFloat(m.icon).toFixed(2) : '<span style="color: #94A3B8; font-weight: 500;">å…¨å±€é»˜è®¤</span>';
+                    minAmountText = parseFloat(m.icon) ? '$' + parseFloat(m.icon).toFixed(2) : '<span style="color: #94A3B8; font-weight: 500;">全局默认</span>';
                 }
                 
                 return `
@@ -700,25 +700,25 @@ async function loadPlatformStrategies() {
                         <td>
                             <div style="display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem;">
                                 <div style="display: flex; align-items: center; gap: 6px;">
-                                    <span>ðŸ‡ºðŸ‡¸</span>
+                                    <span>🇺🇸</span>
                                     <span style="font-weight: 600; color: #0F172A;">${enName}</span>
                                 </div>
                                 <div style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem;">
-                                    <span>ðŸ‡®ðŸ‡³</span>
+                                    <span>🇮🇳</span>
                                     <span style="font-weight: 600; color: #64748B;">${hiName}</span>
                                 </div>
                             </div>
                         </td>
                         <td>
                             <div style="display: flex; flex-direction: column; gap: 4px; font-size: 0.78rem;">
-                                <div>ðŸ‡®ðŸ‡³ <span class="vip-tag" style="background: rgba(91,81,249,0.06); color: var(--primary); padding: 2px 6px;">${hiType}</span></div>
-                                <div>ðŸ‡ºðŸ‡¸ <span class="vip-tag" style="background: rgba(100,116,139,0.06); color: #64748B; padding: 2px 6px;">${enType}</span></div>
+                                <div>🇮🇳 <span class="vip-tag" style="background: rgba(91,81,249,0.06); color: var(--primary); padding: 2px 6px;">${hiType}</span></div>
+                                <div>🇺🇸 <span class="vip-tag" style="background: rgba(100,116,139,0.06); color: #64748B; padding: 2px 6px;">${enType}</span></div>
                             </div>
                         </td>
                         <td style="max-width: 250px;">
                             <div style="display: flex; flex-direction: column; gap: 4px; font-size: 0.75rem; color: #64748B; line-height: 1.4;">
-                                <div style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap; margin-bottom: 2px;" title="${hiDesc}">ðŸ‡®ðŸ‡³ ${hiDesc}</div>
-                                <div style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="${enDesc}">ðŸ‡ºðŸ‡¸ ${enDesc}</div>
+                                <div style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap; margin-bottom: 2px;" title="${hiDesc}">🇮🇳 ${hiDesc}</div>
+                                <div style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="${enDesc}">🇺🇸 ${enDesc}</div>
                             </div>
                         </td>
                         <td style="text-align: center; font-weight: 700; color: #10B981;">${m.yield !== undefined ? parseFloat(m.yield).toFixed(2) + '%' : '--'}</td>
@@ -732,8 +732,8 @@ async function loadPlatformStrategies() {
                         <td>
                             <div class="row-actions-flex" style="display: flex; gap: 6px;">
                                 <button class="action-btn ${statusActionBtnClass}" onclick="toggleStrategyStatus('${m.id}', ${m.enabled})">${statusActionText}</button>
-                                <button class="action-btn" style="background: #F1F5F9; color: #0F172A;" onclick="openStrategyEditModal('${m.id}')">ç¼–è¾‘</button>
-                                <button class="action-btn btn-reject" onclick="deleteStrategy('${m.id}')">åˆ é™¤</button>
+                                <button class="action-btn" style="background: #F1F5F9; color: #0F172A;" onclick="openStrategyEditModal('${m.id}')">编辑</button>
+                                <button class="action-btn btn-reject" onclick="deleteStrategy('${m.id}')">删除</button>
                             </div>
                         </td>
                     </tr>
@@ -741,46 +741,46 @@ async function loadPlatformStrategies() {
             }).join('');
             
         } else {
-            container.innerHTML = `<tr><td colspan="13" style="text-align: center; color: #EF4444; padding: 24px;">âš ï¸ è°ƒå–æ•°æ®å¤±è´¥: ${res.errorMessage || 'æœªçŸ¥é”™è¯¯'}</td></tr>`;
+            container.innerHTML = `<tr><td colspan="13" style="text-align: center; color: #EF4444; padding: 24px;">⚠️ 调取数据失败: ${res.errorMessage || '未知错误'}</td></tr>`;
         }
     } catch(e) {
         console.error('Failed to load strategies:', e);
-        container.innerHTML = `<tr><td colspan="13" style="text-align: center; color: #EF4444; padding: 24px;">âš ï¸ ç½‘ç»œè¯·æ±‚å¼‚å¸¸ï¼</td></tr>`;
+        container.innerHTML = `<tr><td colspan="13" style="text-align: center; color: #EF4444; padding: 24px;">⚠️ 网络请求异常！</td></tr>`;
     }
 }
 
 async function toggleStrategyStatus(strategyId, currentEnabled) {
     const actionPath = currentEnabled ? 'disabled' : 'enabled';
-    const actionLabel = currentEnabled ? 'ç¦ç”¨' : 'å¯ç”¨';
+    const actionLabel = currentEnabled ? '禁用' : '启用';
     
     try {
         const res = await apiFetch('POST', `/trading/quant/algorithm-models/${strategyId}/${actionPath}`, {}, true);
         if (res && res.code === 200) {
-            showToast(`âœ“ ç­–ç•¥æ¨¡åž‹å·²æˆåŠŸ${actionLabel}ï¼`, false);
+            showToast(`✓ 策略模型已成功${actionLabel}！`, false);
             loadPlatformStrategies();
         } else {
-            showToast(res.errorMessage || `é…ç½®${actionLabel}å¤±è´¥ï¼`, true);
+            showToast(res.errorMessage || `配置${actionLabel}失败！`, true);
         }
     } catch(e) {
         console.error(`Failed to toggle strategy status:`, e);
-        showToast('ç½‘ç»œè¯·æ±‚å¼‚å¸¸ï¼', true);
+        showToast('网络请求异常！', true);
     }
 }
 
 async function deleteStrategy(strategyId) {
-    if (!confirm('ðŸš¨ è­¦å‘Šï¼šåˆ é™¤è¯¥ç­–ç•¥æ¨¡æ¿å°†å¯¼è‡´å‰ç«¯ç”¨æˆ·æ— æ³•è·Ÿéšå¹¶éƒ¨ç½²è¯¥é‡åŒ–ç­–ç•¥ï¼æ‚¨ç¡®å®šè¦æ°¸ä¹…ç‰©ç†æ“¦é™¤è¯¥æ¨¡åž‹å—ï¼Ÿ')) return;
+    if (!confirm('🚨 警告：删除该策略模板将导致前端用户无法跟随并部署该量化策略！您确定要永久物理擦除该模型吗？')) return;
     
     try {
         const res = await apiFetch('POST', `/trading/quant/algorithm-models/${strategyId}/delete`, {}, true);
         if (res && res.code === 200) {
-            showToast('âœ“ ç­–ç•¥æ¨¡æ¿å·²æˆåŠŸä»Žç³»ç»Ÿæ•°æ®åº“ä¸­å®‰å…¨æ“¦é™¤ï¼', false);
+            showToast('✓ 策略模板已成功从系统数据库中安全擦除！', false);
             loadPlatformStrategies();
         } else {
-            showToast(res.errorMessage || 'åˆ é™¤ç­–ç•¥å¤±è´¥ï¼', true);
+            showToast(res.errorMessage || '删除策略失败！', true);
         }
     } catch(e) {
         console.error('Failed to delete strategy:', e);
-        showToast('ç½‘ç»œåˆ é™¤è¯·æ±‚å¼‚å¸¸ï¼', true);
+        showToast('网络删除请求异常！', true);
     }
 }
 
@@ -794,7 +794,7 @@ function handleStrategyFileSelect(event) {
     if (!file) return;
     
     if (!file.type.startsWith('image/')) {
-        showToast('âš ï¸ è¯·é€‰æ‹©æœ‰æ•ˆçš„å›¾ç‰‡æ–‡ä»¶ï¼', true);
+        showToast('⚠️ 请选择有效的图片文件！', true);
         return;
     }
     
@@ -824,11 +824,11 @@ function handleStrategyFileSelect(event) {
             
             canvas.toBlob(async function(blob) {
                 if (!blob) {
-                    showToast('âš ï¸ å›¾ç‰‡åŽ‹ç¼©å¤„ç†å¤±è´¥ï¼', true);
+                    showToast('⚠️ 图片压缩处理失败！', true);
                     return;
                 }
                 
-                showToast('â³ æ­£åœ¨ä¸Šä¼ ç­–ç•¥å›¾æ ‡...', false);
+                showToast('⏳ 正在上传策略图标...', false);
                 try {
                     const presignedRes = await apiFetch('POST', '/upload/presigned', {
                         contentType: 'image/png',
@@ -837,16 +837,16 @@ function handleStrategyFileSelect(event) {
                     }, true);
                     
                     if (presignedRes.code === 401 || presignedRes.errorMessage === 'Invalid Token') {
-                        throw new Error('æœªæ£€æµ‹åˆ°æœ‰æ•ˆçš„ç™»å½•ä¼šè¯ï¼Œè¯·é‡æ–°ç™»å½•ç®¡ç†åŽå°ï¼');
+                        throw new Error('未检测到有效的登录会话，请重新登录管理后台！');
                     }
                     
                     if (presignedRes.code !== 200) {
-                        throw new Error(presignedRes.errorMessage || 'èŽ·å–ä¸Šä¼ æŽˆæƒå¤±è´¥');
+                        throw new Error(presignedRes.errorMessage || '获取上传授权失败');
                     }
                     
                     const { uploadUrl, downloadUrl, path: storagePath } = presignedRes.result || presignedRes.data || {};
                     if (!uploadUrl || !downloadUrl) {
-                        throw new Error('æŽˆæƒæ•°æ®è§£æžå¼‚å¸¸');
+                        throw new Error('授权数据解析异常');
                     }
                     
                     let finalPutUrl = uploadUrl;
@@ -868,7 +868,7 @@ function handleStrategyFileSelect(event) {
                     });
                     
                     if (!putRes.ok) {
-                        throw new Error('ä¸Šä¼ äºŒè¿›åˆ¶æ–‡ä»¶å¤±è´¥');
+                        throw new Error('上传二进制文件失败');
                     }
                     
                     const confirmRes = await apiFetch('POST', '/upload/confirm', {
@@ -876,7 +876,7 @@ function handleStrategyFileSelect(event) {
                     }, true);
                     
                     if (confirmRes.code !== 200) {
-                        throw new Error(confirmRes.errorMessage || 'ç¡®è®¤ä¸Šä¼ å¤±è´¥');
+                        throw new Error(confirmRes.errorMessage || '确认上传失败');
                     }
                     
                     document.getElementById('strategy-edit-icon-url').value = downloadUrl;
@@ -885,10 +885,10 @@ function handleStrategyFileSelect(event) {
                     if (previewImg) previewImg.src = downloadUrl;
                     if (previewContainer) previewContainer.style.display = 'flex';
                     
-                    showToast('âœ“ ç­–ç•¥å›¾æ ‡ä¸Šä¼ å¹¶é¢„è§ˆæˆåŠŸï¼', false);
+                    showToast('✓ 策略图标上传并预览成功！', false);
                 } catch (err) {
                     console.error('Strategy upload error:', err);
-                    showToast('âš ï¸ ç­–ç•¥å›¾ç‰‡ä¸Šä¼ å¤±è´¥: ' + (err.message || err), true);
+                    showToast('⚠️ 策略图片上传失败: ' + (err.message || err), true);
                 }
             }, 'image/png');
         };
@@ -934,7 +934,7 @@ function openStrategyEditModal(strategyId) {
     
     if (strategyId) {
         // Edit Mode
-        document.getElementById('strategy-modal-title').innerText = 'âœï¸ ç¼–è¾‘ AI é‡åŒ–ç­–ç•¥';
+        document.getElementById('strategy-modal-title').innerText = '✏️ 编辑 AI 量化策略';
         
         const m = cachedStrategiesList.find(item => String(item.id || '') === String(strategyId || ''));
         if (m) {
@@ -988,7 +988,7 @@ function openStrategyEditModal(strategyId) {
         }
     } else {
         // Create Mode
-        document.getElementById('strategy-modal-title').innerText = 'ðŸ“ˆ æ–°å»º AI é‡åŒ–ç­–ç•¥æ¨¡æ¿';
+        document.getElementById('strategy-modal-title').innerText = '📈 新建 AI 量化策略模板';
     }
     
     modal.classList.add('active');
@@ -1061,7 +1061,7 @@ async function submitStrategyChanges(event) {
         name: name,
         orderIndex: orderIndex,
         enabled: enabled,
-        icon: iconUrl || minAmount || '', // ä¼˜å…ˆå­˜æ”¾çœŸå®žçš„å›¾ç‰‡URLï¼Œé™çº§åŽå¤‡å­˜èµ·æŠ•é‡‘é¢
+        icon: iconUrl || minAmount || '', // 优先存放真实的图片URL，降级后备存起投金额
         translations: translations
     };
     
@@ -1076,15 +1076,15 @@ async function submitStrategyChanges(event) {
         }
         
         if (res && res.code === 200) {
-            showToast('âœ“ å¹³å° AI é‡åŒ–ç­–ç•¥é…ç½®æˆåŠŸå¹¶åŒæ­¥ç”Ÿæ•ˆï¼', false);
+            showToast('✓ 平台 AI 量化策略配置成功并同步生效！', false);
             closeStrategyEditModal();
             loadPlatformStrategies();
         } else {
-            showToast(res.errorMessage || 'ä¿å­˜ç­–ç•¥é…ç½®å¤±è´¥ï¼', true);
+            showToast(res.errorMessage || '保存策略配置失败！', true);
         }
     } catch(e) {
         console.error('Failed to save strategy changes:', e);
-        showToast('ç½‘ç»œæäº¤è¯·æ±‚å¼‚å¸¸ï¼', true);
+        showToast('网络提交请求异常！', true);
     }
 }
 
@@ -1115,7 +1115,7 @@ function openQuantControlModal(orderId, defaultAction) {
     
     document.getElementById('qctrl-price').value = '';
     
-    // èŽ·å–è®¢å•ä¿¡æ¯å¹¶è®¾ç½®åˆå§‹æ•°é‡
+    // 获取订单信息并设置初始数量
     const order = (window.cachedQuantOrders || []).find(o => String(o.id) === String(orderId)) 
                  || (activeSettleOrders || []).find(o => String(o.id) === String(orderId));
     
@@ -1180,14 +1180,14 @@ function recalculateQctrlQuantity() {
         const price = parseFloat(priceInput.value);
         const investAmount = parseFloat(order.investAmount || 0);
         if (!isNaN(price) && price > 0 && investAmount > 0) {
-            // æœ¬é‡‘ç›´æŽ¥å…¨éƒ¨ä¹°å…¥ï¼Œä¹°å…¥æ•°é‡ = æœ¬é‡‘ / ä»·æ ¼
+            // 本金直接全部买入，买入数量 = 本金 / 价格
             const calculatedQty = investAmount / price;
             qtyInput.value = calculatedQty.toFixed(4);
         } else {
             qtyInput.value = '';
         }
     } else {
-        // å–å‡ºæ—¶ï¼Œä¿®æ”¹ä»·æ ¼ä¸é‡æ–°è®¡ç®—æˆ–è¦†ç›–æ•°é‡ï¼Œä¿ç•™ç”¨æˆ·è¾“å…¥çš„æ•°é‡æˆ–é»˜è®¤æ•°é‡
+        // 卖出时，修改价格不重新计算或覆盖数量，保留用户输入的数量或默认数量
     }
 }
 window.recalculateQctrlQuantity = recalculateQctrlQuantity;
@@ -1200,13 +1200,13 @@ function toggleQctrlActionFields() {
     const qtyInput = document.getElementById('qctrl-qty');
     
     if (action === 'buy') {
-        priceLabel.innerText = 'ä¹°å…¥ä»·æ ¼ (Buy Price)';
-        qtyLabel.innerText = 'ä¹°å…¥æ•°é‡ (Buy Quantity) [è‡ªåŠ¨è®¡ç®—]';
-        submitBtn.innerText = 'å‘é€ç‰©ç†ã€ä¹°å…¥ã€‘æ’®åˆæŒ‡ä»¤';
+        priceLabel.innerText = '买入价格 (Buy Price)';
+        qtyLabel.innerText = '买入数量 (Buy Quantity) [自动计算]';
+        submitBtn.innerText = '发送物理【买入】撮合指令';
     } else {
-        priceLabel.innerText = 'å–å‡ºä»·æ ¼ (Sell Price)';
-        qtyLabel.innerText = 'å–å‡ºæ•°é‡ (Sell Quantity)';
-        submitBtn.innerText = 'å‘é€ç‰©ç†ã€å–å‡ºã€‘æ’®åˆæŒ‡ä»¤';
+        priceLabel.innerText = '卖出价格 (Sell Price)';
+        qtyLabel.innerText = '卖出数量 (Sell Quantity)';
+        submitBtn.innerText = '发送物理【卖出】撮合指令';
         
         const orderId = document.getElementById('qctrl-order-id').value;
         const order = (window.cachedQuantOrders || []).find(o => String(o.id) === String(orderId)) 
@@ -1216,7 +1216,7 @@ function toggleQctrlActionFields() {
         }
     }
     
-    // åŠ¨æ€é‡ç®—æ•°é‡
+    // 动态重算数量
     recalculateQctrlQuantity();
 }
 window.toggleQctrlActionFields = toggleQctrlActionFields;
@@ -1234,13 +1234,13 @@ async function submitQuantControl(event) {
     const rateBrokerageStr = document.getElementById('qctrl-rate-brokerage').value;
     
     if (isNaN(price) || price <= 0 || isNaN(quantity) || quantity <= 0) {
-        showToast('âš ï¸ è¯·è¾“å…¥æœ‰æ•ˆçš„ä»·æ ¼ä¸Žæ•°é‡ï¼', true);
+        showToast('⚠️ 请输入有效的价格与数量！', true);
         return;
     }
     
     const submitBtn = document.getElementById('qctrl-submit-btn');
     submitBtn.disabled = true;
-    submitBtn.innerText = 'æ­£åœ¨å‘é€æ’®åˆæŒ‡ä»¤...';
+    submitBtn.innerText = '正在发送撮合指令...';
     
     const payload = {
         orderId: orderId,
@@ -1260,7 +1260,7 @@ async function submitQuantControl(event) {
         const url = action === 'buy' ? '/trading/quant/trades/buy' : '/trading/quant/trades/sell';
         const res = await apiFetch('POST', url, payload, true);
         if (res.code === 200) {
-            showToast(`âœ“ AIé‡åŒ–ç‰©ç†ã€${action === 'buy' ? 'ä¹°å…¥' : 'å–å‡º'}ã€‘æ’®åˆæ“ç›˜æˆåŠŸï¼ä»·æ ¼: ${price.toFixed(2)}, æ•°é‡: ${quantity.toFixed(4)}ã€‚å·²å®žæ—¶ç»“ç®—ç›ˆäºã€‚`, false);
+            showToast(`✓ AI量化物理【${action === 'buy' ? '买入' : '卖出'}】撮合操盘成功！价格: ${price.toFixed(2)}, 数量: ${quantity.toFixed(4)}。已实时结算盈亏。`, false);
             
             // Reload lists dynamically from the backend to faithfully represent data
             closeQuantControlModal();
@@ -1271,11 +1271,11 @@ async function submitQuantControl(event) {
                 loadQuantSettleList();
             }
         } else {
-            showToast(res.errorMessage || 'æ“ç›˜æŒ‡ä»¤è¢«åŽç«¯æ‹’ç»', true);
+            showToast(res.errorMessage || '操盘指令被后端拒绝', true);
         }
     } catch (e) {
         console.error(e);
-        showToast('æ“ç›˜æŒ‡ä»¤å‘é€ç½‘ç»œå¼‚å¸¸ï¼', true);
+        showToast('操盘指令发送网络异常！', true);
     } finally {
         submitBtn.disabled = false;
         const actionSelect = document.getElementById('qctrl-action');
@@ -1289,7 +1289,7 @@ window.closeQuantControlModal = closeQuantControlModal;
 window.toggleQctrlActionFields = toggleQctrlActionFields;
 window.submitQuantControl = submitQuantControl;
 
-export // --- QUANT SETTLEMENT (é‡åŒ–ç»“ç®— - Phase 22 Integration) ---
+export // --- QUANT SETTLEMENT (量化结算 - Phase 22 Integration) ---
 let activeSettleOrders = []; // unused but preserved to avoid breaking outer references
 
 async function loadQuantSettleList() {
@@ -1305,7 +1305,7 @@ async function loadQuantSettleList() {
     const pageConf = window.adminPages.quantSettle;
     const tbody = document.getElementById('quant-settle-table-body');
     if (tbody) {
-        tbody.innerHTML = '<tr><td colspan="12" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">ðŸ”„ æ­£åœ¨å®‰å…¨åŒæ­¥é‡åŒ–æ“ç›˜æ‰¹æ¬¡åˆ—è¡¨...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="12" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">🔄 正在安全同步量化操盘批次列表...</td></tr>';
     }
     
     try {
@@ -1319,9 +1319,9 @@ async function loadQuantSettleList() {
         
         const res = await apiFetch('GET', fetchUrl, null, true);
         if (res.code !== 200) {
-            showToast(res.errorMessage || 'èŽ·å–é‡åŒ–æ‰¹æ¬¡åˆ—è¡¨å¤±è´¥ï¼', true);
+            showToast(res.errorMessage || '获取量化批次列表失败！', true);
             if (tbody) {
-                tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; color: #EF4444; padding: 30px 0;">âŒ åŠ è½½å¤±è´¥: ${res.errorMessage || 'æœªçŸ¥æŽ¥å£é”™è¯¯'}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; color: #EF4444; padding: 30px 0;">❌ 加载失败: ${res.errorMessage || '未知接口错误'}</td></tr>`;
             }
             return;
         }
@@ -1337,15 +1337,15 @@ async function loadQuantSettleList() {
         window.quantSettleTotalPages = pagingObj.pages || 1;
         const indicator = document.getElementById('quantSettle-page-indicator');
         if (indicator) {
-            indicator.innerText = `ç¬¬ ${pagingObj.page} / ${pagingObj.pages} é¡µ (å…± ${pagingObj.records} æ¡)`;
+            indicator.innerText = `第 ${pagingObj.page} / ${pagingObj.pages} 页 (共 ${pagingObj.records} 条)`;
         }
         
         renderActiveSettleListHtml(batches);
     } catch (err) {
         console.error('Error fetching batches:', err);
-        showToast('èŽ·å–æ‰¹æ¬¡åˆ—è¡¨ç½‘ç»œå¼‚å¸¸ï¼', true);
+        showToast('获取批次列表网络异常！', true);
         if (tbody) {
-            tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; color: #EF4444; padding: 30px 0;">âŒ ç½‘ç»œè¯·æ±‚é”™è¯¯ï¼Œè¯·åˆ·æ–°é‡è¯•ï¼</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; color: #EF4444; padding: 30px 0;">❌ 网络请求错误，请刷新重试！</td></tr>`;
         }
     }
 }
@@ -1355,13 +1355,13 @@ function renderActiveSettleListHtml(batches = []) {
     if (!tbody) return;
     
     if (batches.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; color: var(--text-muted); padding: 30px 0;">å½“å‰æ²¡æœ‰ç¬¦åˆæ¡ä»¶çš„é‡åŒ–æ“ç›˜æ‰¹æ¬¡è®°å½•</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; color: var(--text-muted); padding: 30px 0;">当前没有符合条件的量化操盘批次记录</td></tr>`;
         return;
     }
     
     tbody.innerHTML = batches.map(b => {
         const idStr = b.id ? String(b.id) : '--';
-        const riskLevelName = b.userRiskLevel || 'æœªçŸ¥å±‚çº§';
+        const riskLevelName = b.userRiskLevel || '未知层级';
         const instrumentName = b.instrumentId ? translateInstrument(b.instrumentId) : '--';
         
         const buyPriceVal = b.buyPrice ? parseFloat(b.buyPrice).toFixed(4) : '--';
@@ -1380,26 +1380,26 @@ function renderActiveSettleListHtml(batches = []) {
         const actualProfitColor = actualProfitVal > 0 ? 'var(--green)' : (actualProfitVal < 0 ? 'var(--red)' : 'var(--text-secondary)');
         
         const profitText = `<span style="color: ${profitColor}; font-weight: 600;">${profitVal > 0 ? '+' : ''}${profitVal.toFixed(2)}</span>`;
-        const feeText = `<span style="color: var(--text-secondary); font-size: 0.68rem;">(è´¹: ${feeVal.toFixed(2)})</span>`;
+        const feeText = `<span style="color: var(--text-secondary); font-size: 0.68rem;">(费: ${feeVal.toFixed(2)})</span>`;
         const actualProfitText = `<span style="color: ${actualProfitColor}; font-weight: 700;">${actualProfitVal > 0 ? '+' : ''}${actualProfitVal.toFixed(2)} USDT</span>`;
         
         // Status Badge
         let statusBadge = '';
         switch(b.status) {
             case 'BUY_PENDING':
-                statusBadge = `<span class="badge" style="background: rgba(245, 158, 11, 0.12); color: #f59e0b; border: 1.5px solid rgba(245, 158, 11, 0.25);">ä¹°å…¥ä¸­</span>`;
+                statusBadge = `<span class="badge" style="background: rgba(245, 158, 11, 0.12); color: #f59e0b; border: 1.5px solid rgba(245, 158, 11, 0.25);">买入中</span>`;
                 break;
             case 'BUY_COMPLETED':
-                statusBadge = `<span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1.5px solid rgba(16, 185, 129, 0.25);">ä¹°å…¥å®Œæˆ</span>`;
+                statusBadge = `<span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1.5px solid rgba(16, 185, 129, 0.25);">买入完成</span>`;
                 break;
             case 'SELL_PENDING':
-                statusBadge = `<span class="badge" style="background: rgba(59, 130, 246, 0.12); color: #3b82f6; border: 1.5px solid rgba(59, 130, 246, 0.25);">å–å‡ºä¸­</span>`;
+                statusBadge = `<span class="badge" style="background: rgba(59, 130, 246, 0.12); color: #3b82f6; border: 1.5px solid rgba(59, 130, 246, 0.25);">卖出中</span>`;
                 break;
                                     case 'COMPLETED':
-                statusBadge = `<span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1.5px solid rgba(16, 185, 129, 0.25); font-weight: 700;">å·²å®Œæˆ</span>`;
+                statusBadge = `<span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1.5px solid rgba(16, 185, 129, 0.25); font-weight: 700;">已完成</span>`;
                 break;
             case 'FAILED':
-                statusBadge = `<span class="badge" style="background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1.5px solid rgba(239, 68, 68, 0.25);">å¤±è´¥</span>`;
+                statusBadge = `<span class="badge" style="background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1.5px solid rgba(239, 68, 68, 0.25);">失败</span>`;
                 break;
             default:
                 statusBadge = `<span class="badge">${b.status || '--'}</span>`;
@@ -1445,7 +1445,7 @@ export function resetSettleFilters() {
     
     window.adminPages.quantSettle.current = 1;
     loadQuantSettleList();
-    showToast('âœ“ ç»“ç®—ç­›é€‰æ¡ä»¶å·²é‡ç½®ä¸ºé»˜è®¤å€¼', false);
+    showToast('✓ 结算筛选条件已重置为默认值', false);
 }
 
 export async function openCreateCompletedBatchModal() {
@@ -1472,14 +1472,14 @@ export async function openCreateCompletedBatchModal() {
     await ensureRiskLevelsLoaded();
     const levelSelect = document.getElementById('cbatch-risk-level');
     if (levelSelect) {
-        levelSelect.innerHTML = '<option value="">-- è¯·é€‰æ‹©é£ŽæŽ§å±‚çº§ --</option>' +
+        levelSelect.innerHTML = '<option value="">-- 请选择风控层级 --</option>' +
             (window.cachedRiskLevels || []).map(rl => `<option value="${rl.id}">${rl.name} (Level ${rl.level || 0})</option>`).join('');
     }
     
     await ensureInstrumentsLoaded();
     const instSelect = document.getElementById('cbatch-instrument');
     if (instSelect) {
-        instSelect.innerHTML = '<option value="">-- è¯·é€‰æ‹©äº¤æ˜“å•†å“ --</option>' +
+        instSelect.innerHTML = '<option value="">-- 请选择交易商品 --</option>' +
             (window.cachedInstruments || []).map(inst => `<option value="${inst.id}">${inst.name} / ${inst.symbol}</option>`).join('');
     }
     
@@ -1510,7 +1510,7 @@ export async function onBatchRiskLevelChange() {
     }
     
     statsBox.style.display = 'block';
-    statsBox.innerHTML = 'â³ æ­£åœ¨ç»Ÿè®¡è¯¥å±‚çº§æ´»è·ƒè®¢å•æ•°æ®...';
+    statsBox.innerHTML = '⏳ 正在统计该层级活跃订单数据...';
     
     try {
         const statsRes = await apiFetch('GET', `/trading/quant/orders/statistics/risk-levels?status=ACTIVE&riskLevelIds=${levelId}`, null, true);
@@ -1521,16 +1521,16 @@ export async function onBatchRiskLevelChange() {
                 const totalOrders = lvlStat.totalOrders || 0;
                 const totalAmount = lvlStat.totalInvestAmount ? parseFloat(lvlStat.totalInvestAmount).toFixed(2) : '0.00';
                 const totalUsers = lvlStat.totalUsers || 0;
-                statsBox.innerHTML = `ðŸ‘¥ <b>${lvlStat.riskLevel || 'è¯¥å±‚çº§'}</b> å½“å‰æ´»è·ƒè®¢å•ç»Ÿè®¡ï¼š<br>â€¢ æ´»åŠ¨è®¢å•æ€»æ•°: <b>${totalOrders}</b> ç¬”<br>â€¢ åŽ»é‡ä¸‹å•ç”¨æˆ·: <b>${totalUsers}</b> äºº<br>â€¢ æ´»åŠ¨æŠ•èµ„æ€»é‡‘é¢: <b style="color: var(--primary); font-size: 0.8rem;">${totalAmount} USDT</b>`;
+                statsBox.innerHTML = `👥 <b>${lvlStat.riskLevel || '该层级'}</b> 当前活跃订单统计：<br>• 活动订单总数: <b>${totalOrders}</b> 笔<br>• 去重下单用户: <b>${totalUsers}</b> 人<br>• 活动投资总金额: <b style="color: var(--primary); font-size: 0.8rem;">${totalAmount} USDT</b>`;
             } else {
-                statsBox.innerHTML = 'â„¹ï¸ è¯¥é£ŽæŽ§å±‚çº§å½“å‰æ— æ´»è·ƒ (ACTIVE) é‡åŒ–è®¢å•ã€‚';
+                statsBox.innerHTML = 'ℹ️ 该风控层级当前无活跃 (ACTIVE) 量化订单。';
             }
         } else {
-            statsBox.innerHTML = `âš ï¸ ç»Ÿè®¡æ•°æ®æ‹‰å–å¤±è´¥: ${statsRes.errorMessage || 'æŽ¥å£é”™è¯¯'}`;
+            statsBox.innerHTML = `⚠️ 统计数据拉取失败: ${statsRes.errorMessage || '接口错误'}`;
         }
     } catch (e) {
         console.error("Failed to load risk level order stats:", e);
-        statsBox.innerHTML = 'âŒ ç»Ÿè®¡æ•°æ®åŠ è½½ç½‘ç»œå¼‚å¸¸';
+        statsBox.innerHTML = '❌ 统计数据加载网络异常';
     }
 }
 
@@ -1545,17 +1545,17 @@ export async function submitCreateCompletedBatch(event) {
     const sellTimeStr = document.getElementById('cbatch-sell-time').value;
     
     if (!riskLevelId || !instrumentId) {
-        showToast('âŒ è¯·é€‰æ‹©é£ŽæŽ§å±‚çº§å’Œäº¤æ˜“å•†å“ï¼', true);
+        showToast('❌ 请选择风控层级和交易商品！', true);
         return;
     }
     
     if (isNaN(buyPrice) || buyPrice <= 0 || isNaN(sellPrice) || sellPrice <= 0) {
-        showToast('âŒ ä»·æ ¼å¿…é¡»å¤§äºŽ 0ï¼', true);
+        showToast('❌ 价格必须大于 0！', true);
         return;
     }
     
     if (!buyTimeStr || !sellTimeStr) {
-        showToast('âŒ è¯·æŒ‡å®šä¹°å…¥å’Œå–å‡ºçš„æ‰§è¡Œæ—¶é—´ï¼', true);
+        showToast('❌ 请指定买入和卖出的执行时间！', true);
         return;
     }
     
@@ -1564,7 +1564,7 @@ export async function submitCreateCompletedBatch(event) {
     const sellExecutedAt = Math.floor(new Date(sellTimeStr).getTime() / 1000);
     
     if (sellExecutedAt < buyExecutedAt) {
-        showToast('âŒ å–å‡ºæ‰§è¡Œæ—¶é—´ä¸èƒ½æ—©äºŽä¹°å…¥æ‰§è¡Œæ—¶é—´ï¼', true);
+        showToast('❌ 卖出执行时间不能早于买入执行时间！', true);
         return;
     }
     
@@ -1595,25 +1595,25 @@ export async function submitCreateCompletedBatch(event) {
     const submitBtn = document.getElementById('cbatch-submit-btn');
     if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.innerText = 'æ­£åœ¨æäº¤æ˜“æ‰‹æ¸…ç»“ç®—æ•°æ®...';
+        submitBtn.innerText = '正在提交易手清结算数据...';
     }
     
     try {
         const res = await apiFetch('POST', '/trading/quant/trades/risk-level/batches/completed', reqBody, true);
         if (res.code === 200) {
-            showToast('âœ“ å®Œæ•´æŠ•èµ„æ‰¹æ¬¡å·²æˆåŠŸåˆ›å»ºï¼Œç³»ç»Ÿæ­£åœ¨å¼‚æ­¥å±•å¼€æ¸…ç»“ç®—ï¼', false);
+            showToast('✓ 完整投资批次已成功创建，系统正在异步展开清结算！', false);
             closeCreateCompletedBatchModal();
             loadQuantSettleList();
         } else {
-            showToast(res.errorMessage || 'åˆ›å»ºæŠ•èµ„æ‰¹æ¬¡å¤±è´¥ï¼', true);
+            showToast(res.errorMessage || '创建投资批次失败！', true);
         }
     } catch (e) {
         console.error("Create completed batch failed:", e);
-        showToast('åˆ›å»ºæŠ•èµ„æ‰¹æ¬¡é‡åˆ°ç½‘ç»œå¼‚å¸¸ï¼', true);
+        showToast('创建投资批次遇到网络异常！', true);
     } finally {
         if (submitBtn) {
             submitBtn.disabled = false;
-            submitBtn.innerText = 'ç«‹å³åˆ›å»ºå¹¶å¼‚æ­¥æ¸…ç®—æ‰¹æ¬¡';
+            submitBtn.innerText = '立即创建并异步清算批次';
         }
     }
 }
@@ -1637,7 +1637,7 @@ window.handleQuantReviewSubmit = handleQuantReviewSubmit;
 let cachedDailyReportData = [];
 
 
-export // ðŸ‘‘ ç¤¾åŒºåˆçº¦å¸¦å•ä¸Žè·Ÿéšåˆè§„ä¸­å¿ƒ (Copy Trading Admin Module)
+export // 👑 社区合约带单与跟随合规中心 (Copy Trading Admin Module)
 // ==========================================
 
 let copyTradingActiveSubTab = 'leaders';
@@ -1746,9 +1746,9 @@ async function loadCopyTradingLeaders() {
             }
             
             if (filteredList.length === 0) {
-                bodyEl.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px 0;">æš‚æ— ç¬¦åˆæ¡ä»¶çš„å¸¦å•å¯¼å¸ˆè®°å½•</td></tr>`;
+                bodyEl.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px 0;">暂无符合条件的带单导师记录</td></tr>`;
                 const indicator = document.getElementById(`leaders-page-indicator`);
-                if (indicator) indicator.innerText = `ç¬¬ 1 / 1 é¡µ (å…± 0 æ¡)`;
+                if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
                 return;
             }
             
@@ -1772,7 +1772,7 @@ async function loadCopyTradingLeaders() {
                 
                 const indicator = document.getElementById(`leaders-page-indicator`);
                 if (indicator) {
-                    indicator.innerText = `ç¬¬ ${pageConf.current} / ${totalPages} é¡µ (å…± ${pgInfo.records} æ¡)`;
+                    indicator.innerText = `第 ${pageConf.current} / ${totalPages} 页 (共 ${pgInfo.records} 条)`;
                 }
             }
             
@@ -1782,13 +1782,13 @@ async function loadCopyTradingLeaders() {
                 
                 let riskBadge = '';
                 if (l.riskLevel === 'LOW') {
-                    riskBadge = `<span style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; background: rgba(16, 185, 129, 0.1); color: #10B981; font-weight: bold;">ä½Žé£Žé™©</span>`;
+                    riskBadge = `<span style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; background: rgba(16, 185, 129, 0.1); color: #10B981; font-weight: bold;">低风险</span>`;
                 } else if (l.riskLevel === 'MEDIUM') {
-                    riskBadge = `<span style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; background: rgba(245, 158, 11, 0.1); color: #F59E0B; font-weight: bold;">ä¸­é£Žé™©</span>`;
+                    riskBadge = `<span style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; background: rgba(245, 158, 11, 0.1); color: #F59E0B; font-weight: bold;">中风险</span>`;
                 } else if (l.riskLevel === 'HIGH') {
-                    riskBadge = `<span style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; background: rgba(239, 68, 68, 0.1); color: #EF4444; font-weight: bold;">é«˜é£Žé™©</span>`;
+                    riskBadge = `<span style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; background: rgba(239, 68, 68, 0.1); color: #EF4444; font-weight: bold;">高风险</span>`;
                 } else {
-                    riskBadge = `<span style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; background: rgba(148, 163, 184, 0.1); color: #94A3B8; font-weight: bold;">${l.riskLevel || 'æœªçŸ¥'}</span>`;
+                    riskBadge = `<span style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; background: rgba(148, 163, 184, 0.1); color: #94A3B8; font-weight: bold;">${l.riskLevel || '未知'}</span>`;
                 }
 
                 const profitShareStr = l.profitShareRatio ? (parseFloat(l.profitShareRatio) * 100).toFixed(0) + '%' : '0%';
@@ -1807,15 +1807,15 @@ async function loadCopyTradingLeaders() {
 
                 let actionHtml = `
                     <div style="display: flex; gap: 6px; justify-content: center; align-items: center; flex-wrap: wrap;">
-                        <button class="action-btn" style="background: rgba(91, 81, 249, 0.1); border: 1px solid var(--primary); color: var(--primary); padding: 4px 8px; font-size: 0.7rem; font-weight: 600; border-radius: 4px; cursor: pointer; height: 26px;" onclick="syncLeaderStats('${l.userId}')">åŒæ­¥æ•°æ®</button>
-                        <button class="action-btn" style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10B981; color: #10B981; padding: 4px 8px; font-size: 0.7rem; font-weight: 600; border-radius: 4px; cursor: pointer; height: 26px;" onclick="viewLeaderPositions('${l.userId}')">ðŸ“Š å®žæ—¶æŒä»“</button>
-                        <button class="action-btn" style="background: rgba(245, 158, 11, 0.1); border: 1px solid #F59E0B; color: #F59E0B; padding: 4px 8px; font-size: 0.7rem; font-weight: 600; border-radius: 4px; cursor: pointer; height: 26px;" onclick="toggleLeaderStatus('${l.userId}')">${l.status === 'ENABLED' ? 'ç¦ç”¨' : 'å¯ç”¨'}</button>
+                        <button class="action-btn" style="background: rgba(91, 81, 249, 0.1); border: 1px solid var(--primary); color: var(--primary); padding: 4px 8px; font-size: 0.7rem; font-weight: 600; border-radius: 4px; cursor: pointer; height: 26px;" onclick="syncLeaderStats('${l.userId}')">同步数据</button>
+                        <button class="action-btn" style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10B981; color: #10B981; padding: 4px 8px; font-size: 0.7rem; font-weight: 600; border-radius: 4px; cursor: pointer; height: 26px;" onclick="viewLeaderPositions('${l.userId}')">📊 实时持仓</button>
+                        <button class="action-btn" style="background: rgba(245, 158, 11, 0.1); border: 1px solid #F59E0B; color: #F59E0B; padding: 4px 8px; font-size: 0.7rem; font-weight: 600; border-radius: 4px; cursor: pointer; height: 26px;" onclick="toggleLeaderStatus('${l.userId}')">${l.status === 'ENABLED' ? '禁用' : '启用'}</button>
                 `;
 
                 if (l.status === 'SUSPENDED' || l.status === 'DISABLED' || l.status === 'PENDING') {
                     actionHtml += `
-                        <button class="action-btn btn-approve" style="padding: 4px 8px; font-size: 0.7rem; height: 26px; line-height: 1;" onclick="handleLeaderAudit('${l.userId}', true)">å‡†å…¥</button>
-                        <button class="action-btn btn-reject" style="padding: 4px 8px; font-size: 0.7rem; height: 26px; line-height: 1;" onclick="handleLeaderAudit('${l.userId}', false)">é©³å›ž</button>
+                        <button class="action-btn btn-approve" style="padding: 4px 8px; font-size: 0.7rem; height: 26px; line-height: 1;" onclick="handleLeaderAudit('${l.userId}', true)">准入</button>
+                        <button class="action-btn btn-reject" style="padding: 4px 8px; font-size: 0.7rem; height: 26px; line-height: 1;" onclick="handleLeaderAudit('${l.userId}', false)">驳回</button>
                     `;
                 }
                 
@@ -1827,7 +1827,7 @@ async function loadCopyTradingLeaders() {
                         <td>
                             <div style="display: flex; flex-direction: column; gap: 2px;">
                                 <span style="font-weight: 600; color: var(--text-primary);">${l.name || '--'}</span>
-                                <span style="font-size: 0.65rem; color: var(--text-muted);">${l.bio || 'æš‚æ— ä¸ªäººç®€ä»‹'}</span>
+                                <span style="font-size: 0.65rem; color: var(--text-muted);">${l.bio || '暂无个人简介'}</span>
                             </div>
                         </td>
                         <td>
@@ -1837,8 +1837,8 @@ async function loadCopyTradingLeaders() {
                         </td>
                         <td>
                             <div style="display: flex; flex-direction: column; gap: 2px;">
-                                <span style="font-weight: 700; color: var(--primary); font-size: 0.82rem;">${l.followersCount || 0} äºº</span>
-                                <span style="font-size: 0.65rem; color: var(--text-secondary);">æ”¶ç›ŠçŽ‡: ${yieldText}</span>
+                                <span style="font-weight: 700; color: var(--primary); font-size: 0.82rem;">${l.followersCount || 0} 人</span>
+                                <span style="font-size: 0.65rem; color: var(--text-secondary);">收益率: ${yieldText}</span>
                             </div>
                         </td>
                         <td><span style="font-weight: 600; color: var(--text-primary);">${profitShareStr}</span></td>
@@ -1853,11 +1853,11 @@ async function loadCopyTradingLeaders() {
                 `;
             }).join('');
         } else {
-            showToast(res.errorMessage || 'èŽ·å–å¯¼å¸ˆåˆ—è¡¨å¤±è´¥ï¼', true);
+            showToast(res.errorMessage || '获取导师列表失败！', true);
         }
     } catch (e) {
         console.error(e);
-        showToast('âŒ ç½‘ç»œæ¡æ‰‹æˆ–æŽ¥å£è¿”å›žå¼‚å¸¸ï¼', true);
+        showToast('❌ 网络握手或接口返回异常！', true);
     }
 }
 window.loadCopyTradingLeaders = loadCopyTradingLeaders;
@@ -1871,7 +1871,7 @@ function resetLeadersFilters() {
     if (status) status.value = 'ALL';
     window.adminPages.leaders.current = 1;
     loadCopyTradingLeaders();
-    showToast('âœ“ å¯¼å¸ˆæ£€ç´¢æ¡ä»¶å·²é‡ç½®', false);
+    showToast('✓ 导师检索条件已重置', false);
 }
 window.resetLeadersFilters = resetLeadersFilters;
 
@@ -1895,7 +1895,7 @@ async function loadCopyTradingRelations() {
     
     const bodyEl = document.getElementById('copytrading-relations-table-body');
     if (bodyEl) {
-        bodyEl.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px 0;">â³ æ­£åœ¨è¯»å–è·Ÿéšç»‘å®šè®°å½•...</td></tr>`;
+        bodyEl.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px 0;">⏳ 正在读取跟随绑定记录...</td></tr>`;
     }
     
     try {
@@ -1915,9 +1915,9 @@ async function loadCopyTradingRelations() {
             }
             
             if (filteredList.length === 0) {
-                bodyEl.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px 0;">æš‚æ— ç¬¦åˆæ¡ä»¶çš„è·Ÿéšç»‘å®šè®°å½•</td></tr>`;
+                bodyEl.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px 0;">暂无符合条件的跟随绑定记录</td></tr>`;
                 const indicator = document.getElementById(`relations-page-indicator`);
-                if (indicator) indicator.innerText = `ç¬¬ 1 / 1 é¡µ (å…± 0 æ¡)`;
+                if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
                 return;
             }
             
@@ -1943,7 +1943,7 @@ async function loadCopyTradingRelations() {
                 
                 const indicator = document.getElementById(`relations-page-indicator`);
                 if (indicator) {
-                    indicator.innerText = `ç¬¬ ${pageConf.current} / ${totalPages} é¡µ (å…± ${pgInfo.records} æ¡)`;
+                    indicator.innerText = `第 ${pageConf.current} / ${totalPages} 页 (共 ${pgInfo.records} 条)`;
                 }
             }
             
@@ -1967,11 +1967,11 @@ async function loadCopyTradingRelations() {
 
                 let followDetailsStr = '';
                 if (r.followType === 'FIXED') {
-                    followDetailsStr = `<span style="font-weight: 600; color: var(--text-primary);">å›ºå®šå•ç¬”: <b>${parseFloat(r.fixedAmount || 0).toFixed(2)}</b> USDT</span>`;
+                    followDetailsStr = `<span style="font-weight: 600; color: var(--text-primary);">固定单笔: <b>${parseFloat(r.fixedAmount || 0).toFixed(2)}</b> USDT</span>`;
                 } else {
-                    followDetailsStr = `<span style="font-weight: 600; color: var(--text-primary);">æŒ‰æ¯”ä¾‹: <b>${(parseFloat(r.ratio || 0) * 100).toFixed(0)}%</b></span>`;
+                    followDetailsStr = `<span style="font-weight: 600; color: var(--text-primary);">按比例: <b>${(parseFloat(r.ratio || 0) * 100).toFixed(0)}%</b></span>`;
                 }
-                followDetailsStr += `<br><span style="font-size: 0.65rem; color: var(--text-secondary);">è·Ÿå•æ€»é¢: <b>${parseFloat(r.followAmount || 0).toFixed(2)}</b> USDT</span>`;
+                followDetailsStr += `<br><span style="font-size: 0.65rem; color: var(--text-secondary);">跟单总额: <b>${parseFloat(r.followAmount || 0).toFixed(2)}</b> USDT</span>`;
 
                 const pnlVal = parseFloat(r.totalPnl || 0);
                 const pnlColor = pnlVal > 0 ? 'var(--green)' : (pnlVal < 0 ? 'var(--red)' : 'var(--text-secondary)');
@@ -1981,13 +1981,13 @@ async function loadCopyTradingRelations() {
                 if (r.status !== 'TERMINATED') {
                     actionHtml = `
                         <div style="display: flex; gap: 6px; justify-content: center;">
-                            <button class="action-btn" style="background: rgba(91, 81, 249, 0.1); border: 1px solid var(--primary); color: var(--primary); padding: 4px 8px; font-size: 0.7rem; font-weight: 600; border-radius: 4px; cursor: pointer; height: 26px;" onclick="handleFollowRelation('${r.id}', 'pause')">æš‚åœè·Ÿéš</button>
-                            <button class="action-btn" style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10B981; color: #10B981; padding: 4px 8px; font-size: 0.7rem; font-weight: 600; border-radius: 4px; cursor: pointer; height: 26px;" onclick="handleFollowRelation('${r.id}', 'resume')">æ¢å¤è·Ÿéš</button>
-                            <button class="action-btn btn-reject" style="padding: 4px 8px; font-size: 0.7rem; font-weight: 600; border-radius: 4px; cursor: pointer; height: 26px;" onclick="handleFollowRelation('${r.id}', 'terminate')">ç»ˆç»“ç»‘å®š</button>
+                            <button class="action-btn" style="background: rgba(91, 81, 249, 0.1); border: 1px solid var(--primary); color: var(--primary); padding: 4px 8px; font-size: 0.7rem; font-weight: 600; border-radius: 4px; cursor: pointer; height: 26px;" onclick="handleFollowRelation('${r.id}', 'pause')">暂停跟随</button>
+                            <button class="action-btn" style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10B981; color: #10B981; padding: 4px 8px; font-size: 0.7rem; font-weight: 600; border-radius: 4px; cursor: pointer; height: 26px;" onclick="handleFollowRelation('${r.id}', 'resume')">恢复跟随</button>
+                            <button class="action-btn btn-reject" style="padding: 4px 8px; font-size: 0.7rem; font-weight: 600; border-radius: 4px; cursor: pointer; height: 26px;" onclick="handleFollowRelation('${r.id}', 'terminate')">终结绑定</button>
                         </div>
                     `;
                 } else {
-                    actionHtml = `<span style="color: var(--text-muted); font-size: 0.75rem;">è·Ÿéšå…³ç³»å·²å®Œå…¨å†»ç»“è§£é™¤</span>`;
+                    actionHtml = `<span style="color: var(--text-muted); font-size: 0.75rem;">跟随关系已完全冻结解除</span>`;
                 }
 
                 return `
@@ -2004,7 +2004,7 @@ async function loadCopyTradingRelations() {
                         <td>
                             <div style="display: flex; flex-direction: column; gap: 4px;">
                                 <div>${statusBadge}</div>
-                                <div style="font-size: 0.65rem; color: var(--text-secondary);">ç´¯è®¡ç›ˆäº: ${pnlText}</div>
+                                <div style="font-size: 0.65rem; color: var(--text-secondary);">累计盈亏: ${pnlText}</div>
                             </div>
                         </td>
                         <td>${actionHtml}</td>
@@ -2012,11 +2012,11 @@ async function loadCopyTradingRelations() {
                 `;
             }).join('');
         } else {
-            showToast(res.errorMessage || 'èŽ·å–è·Ÿéšå…³ç³»åˆ—è¡¨å¤±è´¥ï¼', true);
+            showToast(res.errorMessage || '获取跟随关系列表失败！', true);
         }
     } catch (e) {
         console.error(e);
-        showToast('âŒ ç½‘ç»œæˆ–è·Ÿéšæ•°æ®æµåŒæ­¥å¤±è´¥ï¼', true);
+        showToast('❌ 网络或跟随数据流同步失败！', true);
     }
 }
 window.loadCopyTradingRelations = loadCopyTradingRelations;
@@ -2028,95 +2028,95 @@ function resetRelationsFilters() {
     if (leader) leader.value = '';
     window.adminPages.relations.current = 1;
     loadCopyTradingRelations();
-    showToast('âœ“ è·Ÿéšå…³ç³»æ£€ç´¢æ¡ä»¶å·²é‡ç½®', false);
+    showToast('✓ 跟随关系检索条件已重置', false);
 }
 window.resetRelationsFilters = resetRelationsFilters;
 
 async function handleLeaderAudit(leaderId, approved) {
-    const actionText = approved ? 'æ‰¹å‡†é€šè¿‡è¯¥å¯¼å¸ˆçš„ç¤¾åŒºå¸¦å•èµ„è´¨ç”³è¯·å—ï¼Ÿ' : 'é©³å›žå¹¶æ‹’ç»è¯¥å¯¼å¸ˆçš„å¸¦å•èµ„è´¨ç”³è¯·å—ï¼Ÿ';
-    if (!confirm(`ç¡®è®¤è¦${actionText}`)) return;
+    const actionText = approved ? '批准通过该导师的社区带单资质申请吗？' : '驳回并拒绝该导师的带单资质申请吗？';
+    if (!confirm(`确认要${actionText}`)) return;
     
     const path = `/copy-trading/leaders/${leaderId}/${approved ? 'approve' : 'reject'}`;
     try {
         const res = await apiFetch('POST', path, {}, true);
         if (res.code === 200) {
-            showToast(`âœ“ å¯¼å¸ˆå¸¦å•ç”³è¯·å·²æˆåŠŸ${approved ? 'å®¡æ ¸å‡†å…¥' : 'é©³å›žæ‹’ç»'}ï¼`, false);
+            showToast(`✓ 导师带单申请已成功${approved ? '审核准入' : '驳回拒绝'}！`, false);
             loadCopyTradingLeaders();
         } else {
-            showToast(res.errorMessage || 'æ“ä½œå¤±è´¥ï¼', true);
+            showToast(res.errorMessage || '操作失败！', true);
         }
     } catch (e) {
         console.error(e);
-        showToast('âŒ è§¦å‘æ ¸å¿ƒå®¡æ ¸é€šä¿¡å¤±è´¥ï¼', true);
+        showToast('❌ 触发核心审核通信失败！', true);
     }
 }
 window.handleLeaderAudit = handleLeaderAudit;
 
 async function toggleLeaderStatus(leaderId) {
-    if (!confirm('ç¡®è®¤è¦åˆ‡æ¢è¯¥å¯¼å¸ˆçš„å¸¦å•çŠ¶æ€ï¼ˆå¯ç”¨/ç¦ç”¨ï¼‰å—ï¼Ÿ')) return;
+    if (!confirm('确认要切换该导师的带单状态（启用/禁用）吗？')) return;
     
     try {
         const res = await apiFetch('POST', `/copy-trading/leaders/${leaderId}/toggle-status`, {}, true);
         if (res.code === 200) {
-            showToast('âœ“ å¯¼å¸ˆå¸¦å•èµ„è´¨å¯ç”¨/ç¦ç”¨çŠ¶æ€å·²å®žæ—¶æ›´æ–°ï¼', false);
+            showToast('✓ 导师带单资质启用/禁用状态已实时更新！', false);
             loadCopyTradingLeaders();
         } else {
-            showToast(res.errorMessage || 'åˆ‡æ¢çŠ¶æ€å¤±è´¥ï¼', true);
+            showToast(res.errorMessage || '切换状态失败！', true);
         }
     } catch (e) {
         console.error(e);
-        showToast('âŒ åˆ‡æ¢å¯¼å¸ˆå¯ç”¨æ€§æŒ‡ä»¤å‘é€å¤±è´¥ï¼', true);
+        showToast('❌ 切换导师可用性指令发送失败！', true);
     }
 }
 window.toggleLeaderStatus = toggleLeaderStatus;
 
 async function syncLeaderStats(leaderId) {
-    showToast('â³ æ­£åœ¨è§¦å‘å…¨ç½‘æ™ºèƒ½æŒ‡æ ‡åŒæ­¥è®¡ç®—...', false);
+    showToast('⏳ 正在触发全网智能指标同步计算...', false);
     try {
         const res = await apiFetch('POST', `/copy-trading/leaders/${leaderId}/sync-stats`, {}, true);
         if (res.code === 200) {
-            showToast('âœ“ è¯¥å¯¼å¸ˆçš„ç´¯è®¡æ”¶ç›ŠçŽ‡ä¸Žè·Ÿéšè€…æ•°æ®å·²é‡æ–°æ ¡å‡†çƒ­åˆ·æ–°ï¼', false);
+            showToast('✓ 该导师的累计收益率与跟随者数据已重新校准热刷新！', false);
             loadCopyTradingLeaders();
         } else {
-            showToast(res.errorMessage || 'åŒæ­¥å¤±è´¥ï¼', true);
+            showToast(res.errorMessage || '同步失败！', true);
         }
     } catch (e) {
         console.error(e);
-        showToast('âŒ ç»Ÿè®¡æœåŠ¡çƒ­è®¡ç®—è¿žæŽ¥ä¸­æ–­ï¼', true);
+        showToast('❌ 统计服务热计算连接中断！', true);
     }
 }
 window.syncLeaderStats = syncLeaderStats;
 
 async function handleFollowRelation(relationId, action) {
     let actionChinese = '';
-    if (action === 'pause') actionChinese = 'æš‚åœè·Ÿå•å…³ç³»å—ï¼Ÿæš‚åœåŽæŒä»“å°†ä¸å†è”åŠ¨åŒæ­¥ã€‚';
-    else if (action === 'resume') actionChinese = 'æ¢å¤è¯¥ç¬”è¢«æš‚åœçš„è·Ÿå•ç»‘å®šå…³ç³»å—ï¼Ÿ';
-    else if (action === 'terminate') actionChinese = 'å¼ºåˆ¶æ°¸ä¹…åˆ‡æ–­å¹¶è§£ç»‘è¯¥ç¬”è·Ÿéšå…³ç³»å—ï¼Ÿæ­¤æ“ä½œä¸å¯é€†ï¼';
+    if (action === 'pause') actionChinese = '暂停跟单关系吗？暂停后持仓将不再联动同步。';
+    else if (action === 'resume') actionChinese = '恢复该笔被暂停的跟单绑定关系吗？';
+    else if (action === 'terminate') actionChinese = '强制永久切断并解绑该笔跟随关系吗？此操作不可逆！';
     
-    if (!confirm(`ç¡®è®¤è¦${actionChinese}`)) return;
+    if (!confirm(`确认要${actionChinese}`)) return;
 
     let body = {};
     if (action === 'pause') {
-        const reason = prompt('è¯·è¾“å…¥æš‚åœè·Ÿå•åŽŸå› :');
+        const reason = prompt('请输入暂停跟单原因:');
         if (reason === null) return;
-        body = reason || 'ç®¡ç†å‘˜é£ŽæŽ§æš‚åœ';
+        body = reason || '管理员风控暂停';
     } else if (action === 'terminate') {
-        const reason = prompt('è¯·è¾“å…¥è§£ç»‘è·Ÿéšå…³ç³»åŽŸå› :');
+        const reason = prompt('请输入解绑跟随关系原因:');
         if (reason === null) return;
-        body = reason || 'ç®¡ç†å‘˜ä¸€é”®é£ŽæŽ§å¼ºåˆ¶è§£ç»‘';
+        body = reason || '管理员一键风控强制解绑';
     }
 
     try {
         const res = await apiFetch('POST', `/copy-trading/relations/${relationId}/${action}`, body, true);
         if (res.code === 200) {
-            showToast(`âœ“ è·Ÿéšç»‘å®šçŠ¶æ€å·²è¢«ç®¡ç†å‘˜å¼ºåˆ¶${action === 'pause' ? 'æš‚åœ' : (action === 'resume' ? 'æ¢å¤' : 'è§£ç»‘ç»ˆæ­¢')}ï¼`, false);
+            showToast(`✓ 跟随绑定状态已被管理员强制${action === 'pause' ? '暂停' : (action === 'resume' ? '恢复' : '解绑终止')}！`, false);
             loadCopyTradingRelations();
         } else {
-            showToast(res.errorMessage || 'æ“ä½œå¤±è´¥ï¼', true);
+            showToast(res.errorMessage || '操作失败！', true);
         }
     } catch (e) {
         console.error(e);
-        showToast('âŒ æŒ‡ä»¤ä¸‹å‘å¤±è´¥ï¼Œä¸Žå…³ç³»é£ŽæŽ§ä¸­å¿ƒé€šä¿¡ä¸­æ–­ï¼', true);
+        showToast('❌ 指令下发失败，与关系风控中心通信中断！', true);
     }
 }
 window.handleFollowRelation = handleFollowRelation;
@@ -2171,7 +2171,7 @@ async function viewLeaderPositions(userId) {
     document.getElementById('lpos-leader-name-title').innerText = userId;
     const bodyEl = document.getElementById('leader-positions-table-body');
     if (bodyEl) {
-        bodyEl.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 30px 0;">â³ æ­£åœ¨è¯»å–å¯¼å¸ˆæ´»åŠ¨æŒä»“...</td></tr>`;
+        bodyEl.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 30px 0;">⏳ 正在读取导师活动持仓...</td></tr>`;
     }
     
     modal.style.display = 'flex';
@@ -2181,13 +2181,13 @@ async function viewLeaderPositions(userId) {
         if (res.code === 200 && bodyEl) {
             const list = res.result || res.data || [];
             if (list.length === 0) {
-                bodyEl.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 30px 0;">è¯¥å¯¼å¸ˆå½“å‰æ— æ´»åŠ¨æŒä»“</td></tr>`;
+                bodyEl.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 30px 0;">该导师当前无活动持仓</td></tr>`;
                 return;
             }
             bodyEl.innerHTML = list.map(pos => {
                 const sideBadge = pos.side === 'BUY' 
-                    ? `<span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: rgba(16, 185, 129, 0.1); color: #10B981; font-weight: bold;">ðŸ“ˆ å¤šå¤´ Long</span>` 
-                    : `<span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: rgba(239, 68, 68, 0.1); color: #EF4444; font-weight: bold;">ðŸ“‰ ç©ºå¤´ Short</span>`;
+                    ? `<span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: rgba(16, 185, 129, 0.1); color: #10B981; font-weight: bold;">📈 多头 Long</span>` 
+                    : `<span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: rgba(239, 68, 68, 0.1); color: #EF4444; font-weight: bold;">📉 空头 Short</span>`;
                 
                 const pnlVal = parseFloat(pos.unrealizedPnl || 0);
                 const pnlColor = pnlVal > 0 ? 'var(--green)' : (pnlVal < 0 ? 'var(--red)' : 'var(--text-secondary)');
@@ -2203,18 +2203,18 @@ async function viewLeaderPositions(userId) {
                         <td><span style="font-family: 'Outfit'; font-size: 0.75rem;">${parseFloat(pos.currentPrice || pos.openPrice).toFixed(2)}</span></td>
                         <td>${pnlText}</td>
                         <td>
-                            <button class="action-btn btn-reject" style="padding: 4px 8px; font-size: 0.7rem; font-weight: 600;" onclick="forceClosePosition('${pos.id}', '${userId}')">âš¡ å¼ºåˆ¶å¹³ä»“</button>
+                            <button class="action-btn btn-reject" style="padding: 4px 8px; font-size: 0.7rem; font-weight: 600;" onclick="forceClosePosition('${pos.id}', '${userId}')">⚡ 强制平仓</button>
                         </td>
                     </tr>
                 `;
             }).join('');
         } else if (bodyEl) {
-            bodyEl.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--red); padding: 30px 0;">âŒ è¯»å–å¤±è´¥: ${res.errorMessage || 'æŽ¥å£æŠ¥é”™'}</td></tr>`;
+            bodyEl.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--red); padding: 30px 0;">❌ 读取失败: ${res.errorMessage || '接口报错'}</td></tr>`;
         }
     } catch (e) {
         console.error(e);
         if (bodyEl) {
-            bodyEl.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--red); padding: 30px 0;">âŒ ç½‘ç»œæˆ–æ¸…ç®—æœåŠ¡å™¨è¿žæŽ¥é”™è¯¯</td></tr>`;
+            bodyEl.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--red); padding: 30px 0;">❌ 网络或清算服务器连接错误</td></tr>`;
         }
     }
 }
@@ -2227,15 +2227,15 @@ function closeLeaderPositionsModal() {
 window.closeLeaderPositionsModal = closeLeaderPositionsModal;
 
 async function forceClosePosition(positionId, userId) {
-    const priceStr = prompt('è¯·è¾“å…¥å¼ºåˆ¶å¹³ä»“æ‰§è¡Œä»·æ ¼ (USDT):');
+    const priceStr = prompt('请输入强制平仓执行价格 (USDT):');
     if (priceStr === null) return;
     const price = parseFloat(priceStr);
     if (isNaN(price) || price <= 0) {
-        showToast('âŒ è¯·è¾“å…¥åˆæ³•çš„å¹³ä»“ä»·æ ¼ï¼', true);
+        showToast('❌ 请输入合法的平仓价格！', true);
         return;
     }
     
-    if (!confirm(`ç¡®è®¤è¦ä»¥ ${price} USDT ä»·æ ¼å¼ºåˆ¶å¹³ä»“è¯¥ç¬”è®¢å• (${positionId}) å—ï¼Ÿç³»ç»Ÿå°†è‡ªåŠ¨è§¦å‘è·Ÿéšè€…ä»“ä½è”åŠ¨å¹³ä»“å¹¶ä»¥è¯¥ä»·æ ¼ç»“ç®—ï¼`)) {
+    if (!confirm(`确认要以 ${price} USDT 价格强制平仓该笔订单 (${positionId}) 吗？系统将自动触发跟随者仓位联动平仓并以该价格结算！`)) {
         return;
     }
     
@@ -2243,14 +2243,14 @@ async function forceClosePosition(positionId, userId) {
         const body = { closePrice: price };
         const res = await apiFetch('POST', `/copy-trading/positions/${positionId}/close`, body, true);
         if (res.code === 200) {
-            showToast('âœ“ å¼ºåˆ¶å¹³ä»“æ’®åˆæŒ‡ä»¤å·²æˆåŠŸä¸‹è¾¾å¹¶å®Œæˆç»“ç®—ï¼', false);
+            showToast('✓ 强制平仓撮合指令已成功下达并完成结算！', false);
             viewLeaderPositions(userId);
         } else {
-            showToast(res.errorMessage || 'å¼ºåˆ¶å¹³ä»“å¤±è´¥ï¼', true);
+            showToast(res.errorMessage || '强制平仓失败！', true);
         }
     } catch (e) {
         console.error(e);
-        showToast('âŒ ç½‘ç»œæˆ–æ¸…ä»“æ’®åˆé€šä¿¡æ•…éšœï¼', true);
+        showToast('❌ 网络或清仓撮合通信故障！', true);
     }
 }
 window.forceClosePosition = forceClosePosition;
@@ -2313,7 +2313,7 @@ async function loadCopyTradingOrders() {
     
     const bodyEl = document.getElementById('copytrading-orders-table-body');
     if (bodyEl) {
-        bodyEl.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 30px 0;">â³ æ­£åœ¨è¯»å–å¯¼å¸ˆå¸¦å•åŽ†å²è®¢å•...</td></tr>`;
+        bodyEl.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 30px 0;">⏳ 正在读取导师带单历史订单...</td></tr>`;
     }
     
     try {
@@ -2333,9 +2333,9 @@ async function loadCopyTradingOrders() {
             }
             
             if (filteredList.length === 0) {
-                bodyEl.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 30px 0;">æš‚æ— ç¬¦åˆæ¡ä»¶çš„å¯¼å¸ˆå¸¦å•åŽ†å²è®¢å•</td></tr>`;
+                bodyEl.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 30px 0;">暂无符合条件的导师带单历史订单</td></tr>`;
                 const indicator = document.getElementById(`orders-page-indicator`);
-                if (indicator) indicator.innerText = `ç¬¬ 1 / 1 é¡µ (å…± 0 æ¡)`;
+                if (indicator) indicator.innerText = `第 1 / 1 页 (共 0 条)`;
                 return;
             }
             
@@ -2361,7 +2361,7 @@ async function loadCopyTradingOrders() {
                 
                 const indicator = document.getElementById(`orders-page-indicator`);
                 if (indicator) {
-                    indicator.innerText = `ç¬¬ ${pageConf.current} / ${totalPages} é¡µ (å…± ${pgInfo.records} æ¡)`;
+                    indicator.innerText = `第 ${pageConf.current} / ${totalPages} 页 (共 ${pgInfo.records} 条)`;
                 }
             }
             
@@ -2369,8 +2369,8 @@ async function loadCopyTradingOrders() {
                 const date = o.createdAt ? new Date(parseInt(o.createdAt)).toLocaleString() : '--';
                 
                 const sideBadge = o.side === 'BUY' 
-                    ? `<span style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; background: rgba(16, 185, 129, 0.1); color: #10B981; font-weight: bold;">ðŸ“ˆ å¤š BUY</span>` 
-                    : `<span style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; background: rgba(239, 68, 68, 0.1); color: #EF4444; font-weight: bold;">ðŸ“‰ ç©º SELL</span>`;
+                    ? `<span style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; background: rgba(16, 185, 129, 0.1); color: #10B981; font-weight: bold;">📈 多 BUY</span>` 
+                    : `<span style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; background: rgba(239, 68, 68, 0.1); color: #EF4444; font-weight: bold;">📉 空 SELL</span>`;
                 
                 let statusClass = 'PENDING';
                 if (o.status === 'COMPLETED') statusClass = 'APPROVED';
@@ -2387,9 +2387,9 @@ async function loadCopyTradingOrders() {
                 
                 const followersOverview = `
                     <div style="font-size: 0.72rem; line-height: 1.4;">
-                        å…± <b style="color: var(--primary);">${o.totalFollowers || 0}</b> äºº 
-                        (æˆåŠŸ <span style="color: var(--green); font-weight: 600;">${o.successCount || 0}</span> 
-                        / å¤±è´¥ <span style="color: var(--red); font-weight: 600;">${o.failedCount || 0}</span>)
+                        共 <b style="color: var(--primary);">${o.totalFollowers || 0}</b> 人 
+                        (成功 <span style="color: var(--green); font-weight: 600;">${o.successCount || 0}</span> 
+                        / 失败 <span style="color: var(--red); font-weight: 600;">${o.failedCount || 0}</span>)
                     </div>
                 `;
                 
@@ -2417,17 +2417,17 @@ async function loadCopyTradingOrders() {
                             <div>${statusBadge}</div>
                         </td>
                         <td>
-                            <button class="action-btn" style="background: rgba(91, 81, 249, 0.1); border: 1px solid var(--primary); color: var(--primary); padding: 4px 8px; font-size: 0.7rem; font-weight: 600; border-radius: 4px; cursor: pointer; height: 26px;" onclick="viewLeaderOrderFollowers('${String(o.id || '')}')">ðŸ‘¥ è·Ÿéšæ˜Žç»†</button>
+                            <button class="action-btn" style="background: rgba(91, 81, 249, 0.1); border: 1px solid var(--primary); color: var(--primary); padding: 4px 8px; font-size: 0.7rem; font-weight: 600; border-radius: 4px; cursor: pointer; height: 26px;" onclick="viewLeaderOrderFollowers('${String(o.id || '')}')">👥 跟随明细</button>
                         </td>
                     </tr>
                 `;
             }).join('');
         } else {
-            showToast(res.errorMessage || 'èŽ·å–å¯¼å¸ˆå¸¦å•åŽ†å²è®¢å•å¤±è´¥ï¼', true);
+            showToast(res.errorMessage || '获取导师带单历史订单失败！', true);
         }
     } catch (e) {
         console.error(e);
-        showToast('âŒ ç½‘ç»œæˆ–æ•°æ®åŒæ­¥åŽ†å²è®¢å•å¤±è´¥ï¼', true);
+        showToast('❌ 网络或数据同步历史订单失败！', true);
     }
 }
 window.loadCopyTradingOrders = loadCopyTradingOrders;
@@ -2441,7 +2441,7 @@ function resetOrdersFilters() {
     if (status) status.value = 'ALL';
     window.adminPages.orders.current = 1;
     loadCopyTradingOrders();
-    showToast('âœ“ è®¢å•æ£€ç´¢æ¡ä»¶å·²é‡ç½®', false);
+    showToast('✓ 订单检索条件已重置', false);
 }
 window.resetOrdersFilters = resetOrdersFilters;
 
@@ -2452,7 +2452,7 @@ async function viewLeaderOrderFollowers(orderId) {
     document.getElementById('lorder-followers-id-title').innerText = orderId;
     const bodyEl = document.getElementById('leader-order-followers-table-body');
     if (bodyEl) {
-        bodyEl.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px 0;">â³ æ­£åœ¨è¯»å–ä¸»è®¢å•è·Ÿéšæ˜Žç»†...</td></tr>`;
+        bodyEl.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px 0;">⏳ 正在读取主订单跟随明细...</td></tr>`;
     }
     
     modal.style.display = 'flex';
@@ -2462,7 +2462,7 @@ async function viewLeaderOrderFollowers(orderId) {
         if (res.code === 200 && bodyEl) {
             const list = res.result || res.data || [];
             if (list.length === 0) {
-                bodyEl.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px 0;">è¯¥ç¬”å¸¦å•è®¢å•å½“å‰æ— ä»»ä½•ç²‰ä¸è·Ÿéšæ‰£æ¬¾æ˜Žç»†</td></tr>`;
+                bodyEl.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px 0;">该笔带单订单当前无任何粉丝跟随扣款明细</td></tr>`;
                 return;
             }
             bodyEl.innerHTML = list.map(f => {
@@ -2496,8 +2496,8 @@ async function viewLeaderOrderFollowers(orderId) {
                         <td style="font-family: 'Outfit'; font-size: 0.75rem; font-weight: bold; color: var(--primary);">${allocatedAmount} USDT</td>
                         <td style="font-family: monospace; font-size: 0.75rem; font-weight: 600;">${allocatedQty}</td>
                         <td>
-                            <div style="font-size: 0.65rem; color: var(--text-secondary);">ä¸»è®¢å•: ${String(f.leaderOrderId || '')}</div>
-                            <div style="font-size: 0.65rem; color: var(--text-muted);">å­è®¢å•: ${String(f.followerOrderId || '')}</div>
+                            <div style="font-size: 0.65rem; color: var(--text-secondary);">主订单: ${String(f.leaderOrderId || '')}</div>
+                            <div style="font-size: 0.65rem; color: var(--text-muted);">子订单: ${String(f.followerOrderId || '')}</div>
                         </td>
                         <td style="text-align: center;">
                             <div style="display: flex; flex-direction: column; gap: 4px; align-items: center;">
@@ -2509,12 +2509,12 @@ async function viewLeaderOrderFollowers(orderId) {
                 `;
             }).join('');
         } else if (bodyEl) {
-            bodyEl.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--red); padding: 30px 0;">âŒ è¯»å–å¤±è´¥: ${res.errorMessage || 'æŽ¥å£æŠ¥é”™'}</td></tr>`;
+            bodyEl.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--red); padding: 30px 0;">❌ 读取失败: ${res.errorMessage || '接口报错'}</td></tr>`;
         }
     } catch (e) {
         console.error(e);
         if (bodyEl) {
-            bodyEl.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--red); padding: 30px 0;">âŒ ç½‘ç»œæˆ–æ•°æ®é€šä¿¡æ•…éšœ</td></tr>`;
+            bodyEl.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--red); padding: 30px 0;">❌ 网络或数据通信故障</td></tr>`;
         }
     }
 }
@@ -2565,7 +2565,7 @@ export async function openQuantOrderDetailModal(orderId) {
                  || (activeSettleOrders || []).find(o => String(o.id) === String(orderId));
     
     if (!order) {
-        showToast('âŒ æœªæ‰¾åˆ°è¯¥ç¬”é‡åŒ–è®¢å•æ•°æ®ï¼', true);
+        showToast('❌ 未找到该笔量化订单数据！', true);
         return;
     }
     currentDetailOrder = order;
@@ -2580,8 +2580,8 @@ export async function openQuantOrderDetailModal(orderId) {
     const brokerageRate = order.brokerageRate || settings['quant.brokerage.rate'] || '0.05';
     const computingRate = order.aiComputingCostRate || settings['quant.ai_computing_cost.rate'] || '0.03';
     
-    document.getElementById('qdetail-rate-brokerage').placeholder = `é…ç½®å€¼: ${brokerageRate}`;
-    document.getElementById('qdetail-rate-computing').placeholder = `é…ç½®å€¼: ${computingRate}`;
+    document.getElementById('qdetail-rate-brokerage').placeholder = `配置值: ${brokerageRate}`;
+    document.getElementById('qdetail-rate-computing').placeholder = `配置值: ${computingRate}`;
     
     document.getElementById('qdetail-price').value = '';
     document.getElementById('qdetail-qty').value = '';
@@ -2617,7 +2617,7 @@ export async function refreshOrderDetailTrades() {
     
     const tbody = document.getElementById('qdetail-trades-table-body');
     if (tbody) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px 0;">ðŸ”„ æ­£åœ¨è¯»å–äº¤æ˜“è®°å½•...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px 0;">🔄 正在读取交易记录...</td></tr>';
     }
     
     try {
@@ -2641,8 +2641,8 @@ export async function refreshOrderDetailTrades() {
                 }
                 
                 const typeBadge = isBuy 
-                    ? `<span style="color: #10B981; font-weight: bold;">ä¹°å…¥ (BUY)</span>`
-                    : `<span style="color: #EF4444; font-weight: bold;">å–å‡º (SELL)</span>`;
+                    ? `<span style="color: #10B981; font-weight: bold;">买入 (BUY)</span>`
+                    : `<span style="color: #EF4444; font-weight: bold;">卖出 (SELL)</span>`;
                 
                 const price = parseFloat(t.price || 0).toFixed(2);
                 const quantity = qty.toFixed(4);
@@ -2668,7 +2668,7 @@ export async function refreshOrderDetailTrades() {
             
             if (tbody) {
                 if (trades.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px 0;">æš‚æ— äº¤æ˜“æˆäº¤æ˜Žç»†è®°å½•</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px 0;">暂无交易成交明细记录</td></tr>';
                 } else {
                     tbody.innerHTML = rowsHtml;
                 }
@@ -2681,11 +2681,11 @@ export async function refreshOrderDetailTrades() {
             toggleQdetailActionFields();
             
         } else {
-            showToast(res.errorMessage || 'èŽ·å–äº¤æ˜“åŽ†å²å¤±è´¥ï¼', true);
+            showToast(res.errorMessage || '获取交易历史失败！', true);
         }
     } catch (e) {
         console.error(e);
-        showToast('è¯»å–äº¤æ˜“åŽ†å²ç½‘ç»œå¼‚å¸¸ï¼', true);
+        showToast('读取交易历史网络异常！', true);
     }
 }
 
@@ -2697,9 +2697,9 @@ export function toggleQdetailActionFields() {
     const instSelect = document.getElementById('qdetail-instrument');
     
     if (action === 'buy') {
-        if (priceLabel) priceLabel.innerText = 'ä¹°å…¥ä»·æ ¼ (Buy Price)';
-        if (qtyLabel) qtyLabel.innerText = 'ä¹°å…¥æ•°é‡ (Buy Qty) [è‡ªåŠ¨è®¡ç®—]';
-        submitBtn.innerText = 'å‘é€ç‰©ç†ã€ä¹°å…¥ã€‘æ“ç›˜æŒ‡ä»¤';
+        if (priceLabel) priceLabel.innerText = '买入价格 (Buy Price)';
+        if (qtyLabel) qtyLabel.innerText = '买入数量 (Buy Qty) [自动计算]';
+        submitBtn.innerText = '发送物理【买入】操盘指令';
         submitBtn.style.background = 'var(--primary)';
         
         if (currentDetailHoldingQty > 0 && currentDetailHoldingInstrumentId) {
@@ -2709,9 +2709,9 @@ export function toggleQdetailActionFields() {
             instSelect.disabled = false;
         }
     } else {
-        if (priceLabel) priceLabel.innerText = 'å–å‡ºä»·æ ¼ (Sell Price)';
-        if (qtyLabel) qtyLabel.innerText = 'å–å‡ºæ•°é‡ (Sell Qty)';
-        submitBtn.innerText = 'å‘é€ç‰©ç†ã€å–å‡ºã€‘æ“ç›˜æŒ‡ä»¤';
+        if (priceLabel) priceLabel.innerText = '卖出价格 (Sell Price)';
+        if (qtyLabel) qtyLabel.innerText = '卖出数量 (Sell Qty)';
+        submitBtn.innerText = '发送物理【卖出】操盘指令';
         submitBtn.style.background = '#EF4444';
         
         if (currentDetailHoldingInstrumentId) {
@@ -2754,20 +2754,20 @@ export async function submitDetailTradeControl(event) {
     const rateBrokerageStr = document.getElementById('qdetail-rate-brokerage').value;
     
     if (isNaN(price) || price <= 0 || isNaN(quantity) || quantity <= 0) {
-        showToast('âš ï¸ è¯·è¾“å…¥æœ‰æ•ˆçš„ä»·æ ¼ä¸Žæ•°é‡ï¼', true);
+        showToast('⚠️ 请输入有效的价格与数量！', true);
         return;
     }
     
     const finalQty = parseFloat(quantity.toFixed(4));
     
     if (action === 'sell' && finalQty > parseFloat(currentDetailHoldingQty.toFixed(4))) {
-        showToast(`âš ï¸ å–å‡ºæ•°é‡ä¸èƒ½å¤§äºŽå½“å‰æŒä»“æ•°é‡ ${currentDetailHoldingQty.toFixed(4)}ï¼`, true);
+        showToast(`⚠️ 卖出数量不能大于当前持仓数量 ${currentDetailHoldingQty.toFixed(4)}！`, true);
         return;
     }
     
     const submitBtn = document.getElementById('qdetail-submit-btn');
     submitBtn.disabled = true;
-    submitBtn.innerText = 'æ­£åœ¨å‘é€æ“ç›˜æŒ‡ä»¤...';
+    submitBtn.innerText = '正在发送操盘指令...';
     
     const payload = {
         orderId: currentDetailOrderId,
@@ -2787,17 +2787,17 @@ export async function submitDetailTradeControl(event) {
         const url = action === 'buy' ? '/trading/quant/trades/buy' : '/trading/quant/trades/sell';
         const res = await apiFetch('POST', url, payload, true);
         if (res.code === 200) {
-            showToast(`âœ“ AIé‡åŒ–ç‰©ç†ã€${action === 'buy' ? 'ä¹°å…¥' : 'å–å‡º'}ã€‘æ’®åˆæ“ç›˜æˆåŠŸï¼å·²å®žæ—¶ç»“ç®—ç›ˆäºã€‚`, false);
+            showToast(`✓ AI量化物理【${action === 'buy' ? '买入' : '卖出'}】撮合操盘成功！已实时结算盈亏。`, false);
             window.hasDetailTradesChanged = true;
             await refreshOrderDetailTrades();
             document.getElementById('qdetail-price').value = '';
             document.getElementById('qdetail-qty').value = '';
         } else {
-            showToast(res.errorMessage || 'æ“ç›˜æŒ‡ä»¤è¢«åŽç«¯æ‹’ç»', true);
+            showToast(res.errorMessage || '操盘指令被后端拒绝', true);
         }
     } catch (e) {
         console.error(e);
-        showToast('å‘é€æ“ç›˜æŒ‡ä»¤ç½‘ç»œå¼‚å¸¸ï¼', true);
+        showToast('发送操盘指令网络异常！', true);
     } finally {
         submitBtn.disabled = false;
         toggleQdetailActionFields();

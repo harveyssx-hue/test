@@ -1,4 +1,4 @@
-﻿// js/admin/app.js
+// js/admin/app.js
 window.isAdminPanel = true;
 import { state } from './state.js';
 
@@ -23,38 +23,38 @@ window.adminState = state;
 // Map tabs to their page sub-controllers and view titles
 const tabConfig = {
     'welcome': {
-        title: 'æŽ§åˆ¶ä¸­å¿ƒ',
-        desc: 'æ¬¢è¿Žä½¿ç”¨ MATP CORE å®¡è®¡ç®¡ç†ç³»ç»Ÿ',
+        title: '控制中心',
+        desc: '欢迎使用 MATP CORE 审计管理系统',
         controller: 'welcome',
         init: () => {}
     },
     'kyc': {
-        title: 'KYC è®¤è¯å®¡æ ¸ä¸­å¿ƒ',
-        desc: 'æŒ‰ç›‘ç®¡åˆè§„è¦æ±‚å®¡è®¡è®¤è¯å…¨ç«™äº¤æ˜“å‘˜èº«ä»½åŠæ‰§ç…§',
+        title: 'KYC 认证审核中心',
+        desc: '按监管合规要求审计认证全站交易员身份及执照',
         controller: 'kyc',
         init: () => window.loadKycList()
     },
     'risk-levels': {
-        title: 'ç”¨æˆ·é£ŽæŽ§å±‚çº§ç®¡ç†',
-        desc: 'é…ç½®ä¸Žç®¡ç†å…¨ç«™äº¤æ˜“å‘˜çš„é£ŽæŽ§ç­‰çº§ã€é¢åº¦é™åˆ¶ã€æçŽ°å®¡æ‰¹è§„åˆ™åŠå¯ç”¨çŠ¶æ€',
+        title: '用户风控层级管理',
+        desc: '配置与管理全站交易员的风控等级、额度限制、提现审批规则及启用状态',
         controller: 'users',
         init: () => window.loadRiskLevelsList()
     },
     'quant': {
-        title: 'ðŸ‘¥ å…¨ç«™ AI é‡åŒ–è®¢å•åˆ—è¡¨',
-        desc: 'å®¡æ ¸ä¸Žç®¡ç†å…¨ç«™äº¤æ˜“å‘˜çš„é‡åŒ–å§”æ‰˜è®¢å•ï¼Œæ‰¹å‡†å¯åŠ¨æˆ–æ‹’ç»æ’¤é”€',
+        title: '👥 全站 AI 量化订单列表',
+        desc: '审核与管理全站交易员的量化委托订单，批准启动或拒绝撤销',
         controller: 'quant',
         init: () => window.loadQuantMonitor()
     },
     'quant-settle': {
-        title: 'âš¡ AI é‡åŒ–äº¤æ˜“ç»“ç®—ä¸­å¿ƒ',
-        desc: 'å¯¹å·²è¢«æ‰¹å‡†è¿è¡Œä¸­ (ACTIVE) çš„é‡åŒ–å§”æ‰˜è®¢å•è¿›è¡Œå•ç‹¬ã€ç­–ç•¥æ‰¹é‡æˆ–å¤šé€‰æ‰¹é‡ä»·æ ¼æ“ç›˜ä¸Žç›ˆäºç»“ç®—',
+        title: '⚡ AI 量化交易结算中心',
+        desc: '对已被批准运行中 (ACTIVE) 的量化委托订单进行单独、策略批量或多选批量价格操盘与盈亏结算',
         controller: 'quant',
         init: () => window.loadQuantSettleList()
     },
     'copytrading': {
-        title: 'ðŸ‘‘ å¯¼å¸ˆå¸¦å•ä¸Žè·Ÿéšåˆè§„ä¸­å¿ƒ',
-        desc: 'å®¡æ ¸ä¸Žç®¡ç†ç¤¾åŒºè¾¾äººçš„å¸¦å•èµ„è´¨ï¼Œå®¡è®¡å…¨ç«™è·Ÿå•ç»‘å®šæµæ°´å¹¶å¯¹æ´»åŠ¨æŒä»“å®žæ–½å³æ—¶é£Žé™©é£ŽæŽ§',
+        title: '👑 导师带单与跟随合规中心',
+        desc: '审核与管理社区达人的带单资质，审计全站跟单绑定流水并对活动持仓实施即时风险风控',
         controller: 'quant',
         init: async () => {
             await window.loadCopyTradingStats();
@@ -62,104 +62,104 @@ const tabConfig = {
         }
     },
     'daily-report': {
-        title: 'ðŸ“Š è¿è¥æ•°æ®æ—¥æŠ¥ä¸­å¿ƒ',
-        desc: 'æŸ¥çœ‹ä¸Žåˆ†æžä»Šæ—¥å…¨ç«™æ ¸å¿ƒæ³¨å†Œå¢žé•¿ã€å……å€¼æçŽ°è´¢åŠ¡æŒ‡æ ‡ã€ä»¥åŠé‡åŒ–ç­–ç•¥æ“ç›˜çš„æ¸…ç®—æ”¶ç›Šæ—¥æŠ¥',
+        title: '📊 运营数据日报中心',
+        desc: '查看与分析今日全站核心注册增长、充值提现财务指标、以及量化策略操盘的清算收益日报',
         controller: 'system',
         init: () => window.loadDailyReport()
     },
     'users': {
-        title: 'äº¤æ˜“å‘˜è´¦æˆ·ä¸Žé’±åŒ…ç®¡ç†',
-        desc: 'æŸ¥çœ‹ä¸Žç®¡ç†å…¨ç«™äº¤æ˜“å‘˜ä½™é¢èµ„äº§ï¼Œæµæ°´è®°å½•ä¸Žæ³¨å†Œå±¥åŽ†',
+        title: '交易员账户与钱包管理',
+        desc: '查看与管理全站交易员余额资产，流水记录与注册履历',
         controller: 'users',
         init: () => window.loadUsersList()
     },
     'deposit': {
-        title: 'èµ„é‡‘å…¥é‡‘å……å€¼å®¡æ ¸ä¸­å¿ƒ',
-        desc: 'æ ¸å¯¹å¹¶å®¡è®¡å…¨ç«™äº¤æ˜“å‘˜ä¸Šä¼ çš„ç½‘å…³ä»˜æ¬¾æˆªå›¾ã€å‡­è¯å•å·å¹¶ç¡®è®¤ä¸Šè´¦',
+        title: '资金入金充值审核中心',
+        desc: '核对并审计全站交易员上传的网关付款截图、凭证单号并确认上账',
         controller: 'finance',
         init: () => window.loadDepositList()
     },
     'withdraw': {
-        title: 'èµ„é‡‘å‡ºé‡‘æçŽ°å®¡æ ¸ä¸­å¿ƒ',
-        desc: 'å¤„ç†å¹¶å®¡è®¡äº¤æ˜“å‘˜çš„ææ¬¾åœ°å€ã€å¯ç”¨é™é¢å¹¶ç¡®è®¤æœ€ç»ˆæ”¾æ¬¾æ¸…ç®—',
+        title: '资金出金提现审核中心',
+        desc: '处理并审计交易员的提款地址、可用限额并确认最终放款清算',
         controller: 'finance',
         init: () => window.loadWithdrawList()
     },
     'payment': {
-        title: 'å¹³å°æ”¯ä»˜ä¸Žå‡ºå…¥é‡‘é€šé“ç®¡ç†',
-        desc: 'ç®¡ç†å’Œé…ç½®äº¤æ˜“ç«¯æ˜¾ç¤ºçš„æ‰€æœ‰å……å€¼ï¼ˆCRYPTO/FIATï¼‰ä¸ŽæçŽ°æ–¹å¼ã€çŠ¶æ€å¯ç”¨ä¸Žç¦ç”¨',
+        title: '平台支付与出入金通道管理',
+        desc: '管理和配置交易端显示的所有充值（CRYPTO/FIAT）与提现方式、状态启用与禁用',
         controller: 'finance',
         init: () => window.loadPaymentChannels()
     },
     'rates': {
-        title: 'å¹³å°èµ„äº§ç»“ç®—æ±‡çŽ‡ç®¡ç†',
-        desc: 'ç®¡ç†ä¸Žè°ƒæ•´å¹³å°å„ç§å‡ºå…¥è´¦èµ„äº§å…‘ INR æœ¬ä½å¸çš„ç»“ç®—æ±‡çŽ‡ï¼Œå®žæ—¶åº”ç”¨äºŽå……å€¼ç»“ç®—ä¸Žè®¡ä»·å±•ç¤º',
+        title: '平台资产结算汇率管理',
+        desc: '管理与调整平台各种出入账资产兑 INR 本位币的结算汇率，实时应用于充值结算与计价展示',
         controller: 'finance',
         init: () => window.loadExchangeRatesList()
     },
     'strategies': {
-        title: 'å¹³å° AI é‡åŒ–ç­–ç•¥ç®¡ç†æŽ§åˆ¶ä¸­å¿ƒ',
-        desc: 'ç®¡ç†å’Œé…ç½®äº¤æ˜“ç«¯æ˜¾ç¤ºçš„æ‰€æœ‰ AI é‡åŒ–è·Ÿå•ç­–ç•¥æ¨¡æ¿ï¼Œæ”¯æŒä¸­è‹±æ–‡åŒè¯­ç¿»è¯‘é…ç½®ã€å¯ç”¨ä¸Žç¦ç”¨',
+        title: '平台 AI 量化策略管理控制中心',
+        desc: '管理和配置交易端显示的所有 AI 量化跟单策略模板，支持中英文双语翻译配置、启用与禁用',
         controller: 'quant',
         init: () => window.loadPlatformStrategies()
     },
     'tenant-settings': {
-        title: 'å¹³å°ç³»ç»Ÿä¸Žç§Ÿæˆ·è®¾ç½®',
-        desc: 'é…ç½®ä¸Žè°ƒæ•´ç§Ÿæˆ·çš„ç³»ç»Ÿå…¨å±€å‚æ•°ï¼ŒåŒ…æ‹¬æçŽ°æœªä½¿ç”¨èµ„é‡‘è´¹çŽ‡ã€OTPå®‰å…¨éªŒè¯ä¸Žé‡åŒ–ç»çºªè´¹çŽ‡ç­‰',
+        title: '平台系统与租户设置',
+        desc: '配置与调整租户的系统全局参数，包括提现未使用资金费率、OTP安全验证与量化经纪费率等',
         controller: 'system',
         init: () => window.loadTenantSettings()
     },
     'manual-funding': {
-        title: 'åŽå°èµ„é‡‘å­˜æç®¡ç†',
-        desc: 'å®¡è®¡ä¸Žç®¡ç†å…¨ç«™äºŒçº§è¿è¥äººå‘˜æäº¤ç‰©ç†è´¦æˆ·çš„æ‰‹å·¥å……å€¼ä¸Žæ‰£æ¬¾ç”³è¯·',
+        title: '后台资金存提管理',
+        desc: '审计与管理全站二级运营人员提交物理账户的手工充值与扣款申请',
         controller: 'finance',
         init: () => window.loadManualFundingList()
     },
     'manual-subjects': {
-        title: 'å­˜æä¼šè®¡ç§‘ç›®ç®¡ç†',
-        desc: 'ç®¡ç†å¹³å°æ‰‹å·¥èµ„é‡‘è°ƒæ•´æ‰€ä¾æ‰˜çš„ä¼šè®¡åˆ†ç±»ç§‘ç›®ã€é€‚ç”¨èŒƒå›´åŠå¯ç”¨çŠ¶æ€',
+        title: '存提会计科目管理',
+        desc: '管理平台手工资金调整所依托的会计分类科目、适用范围及启用状态',
         controller: 'finance',
         init: () => window.loadManualSubjectsList()
     },
     'platform-contents': {
-        title: 'å¹³å°æ–‡æ¡£ä¸Žåè®®ä¸­å¿ƒç®¡ç†',
-        desc: 'ç®¡ç†ä¸Žç¼–è¾‘å‰å°å±•ç¤ºçš„æ‰€æœ‰æœåŠ¡æ¡æ¬¾åè®®ã€å¸®åŠ©å­¦é™¢ï¼ˆHELPï¼‰åŠè¿è¥æ“ä½œæç¤ºæ–‡æ¡£',
+        title: '平台文档与协议中心管理',
+        desc: '管理与编辑前台展示的所有服务条款协议、帮助学院（HELP）及运营操作提示文档',
         controller: 'system',
         init: () => window.loadPlatformContentsList(1)
     },
     'instruments': {
-        title: 'äº¤æ˜“å•†å“ä¸Žäº§å“ç®¡ç†ä¸­å¿ƒ',
-        desc: 'é…ç½®ä¸Žè°ƒæ•´å…¨ç«™äº¤æ˜“ç»ˆç«¯ä¸Šæž¶çš„äº¤æ˜“äº§å“ã€ä¸Šæž¶çŠ¶æ€ã€æŽ¨èæƒé‡ã€æ ¸å¿ƒæ ‡ç­¾ä¸ŽåŸºç¡€å‚æ•°',
+        title: '交易商品与产品管理中心',
+        desc: '配置与调整全站交易终端上架的交易产品、上架状态、推荐权重、核心标签与基础参数',
         controller: 'instruments',
         init: () => window.loadInstrumentsList()
     },
     'app-versions': {
-        title: 'APP ç‰ˆæœ¬æ›´æ–°ç®¡ç†ä¸­å¿ƒ',
-        desc: 'é…ç½®ä¸Žå‘å¸ƒ iOS å’Œ Android å®¢æˆ·ç«¯çš„æœ€æ–°å¯ç”¨ç‰ˆæœ¬ã€æœ€ä½Žç‰ˆæœ¬æŽ§åˆ¶ä»¥åŠå¼ºæ›´å‡çº§è®¾ç½®',
+        title: 'APP 版本更新管理中心',
+        desc: '配置与发布 iOS 和 Android 客户端的最新可用版本、最低版本控制以及强更升级设置',
         controller: 'system',
         init: () => window.loadAppVersionsList()
     },
     'support-channels': {
-        title: 'åœ¨çº¿å®¢æœé€šé“ç®¡ç†',
-        desc: 'é…ç½®ä¸Žç®¡ç†ç”¨æˆ·å®¢æˆ·ç«¯å±•ç¤ºçš„åœ¨çº¿å®¢æœé€šé“ï¼Œä¾‹å¦‚ç»‘å®š WhatsApp, Telegram ç­‰',
+        title: '在线客服通道管理',
+        desc: '配置与管理用户客户端展示的在线客服通道，例如绑定 WhatsApp, Telegram 等',
         controller: 'system',
         init: () => window.loadSupportChannelsList()
     },
     'holidays': {
-        title: 'å¹³å°äº¤æ˜“å‡æœŸç®¡ç†',
-        desc: 'é…ç½®ä¸Žå‘å¸ƒå„äº¤æ˜“å¸‚åœºå‡æœŸå®‰æŽ’ï¼Œæ”¯æŒæ‰‹åŠ¨é…ç½®ã€åŒæ­¥å¤–éƒ¨æŽ¥å£ä»¥è‡ªåŠ¨åŒ–é£ŽæŽ§åŠä¼‘å¸‚æœºåˆ¶',
+        title: '平台交易假期管理',
+        desc: '配置与发布各交易市场假期安排，支持手动配置、同步外部接口以自动化风控及休市机制',
         controller: 'holidays',
         init: () => window.loadHolidaysList()
     },
     'locales': {
-        title: 'ç³»ç»Ÿ Locale è¯­è¨€ç®¡ç†',
-        desc: 'ç®¡ç†å’Œé…ç½®å‰ç«¯æ”¯æŒçš„å¤šè¯­è¨€æ ‡ç­¾ã€åç§°å±•ç¤ºã€å›¾æ ‡å›½æ——ï¼Œå¯ç”¨æˆ–ç¦ç”¨å›½é™…åŒ–è¯­ç§',
+        title: '系统 Locale 语言管理',
+        desc: '管理和配置前端支持的多语言标签、名称展示、图标国旗，启用或禁用国际化语种',
         controller: 'system',
         init: () => window.loadLocalesList()
     },
     'error-reports': {
-        title: 'å®¢æˆ·ç«¯é”™è¯¯ä¸ŠæŠ¥è®°å½•',
-        desc: 'åˆ†é¡µå¹¶ç­›é€‰æŸ¥çœ‹ APP å®¢æˆ·ç«¯ï¼ˆiOS/Androidï¼‰ä¸ŠæŠ¥çš„å´©æºƒåŠä¸šåŠ¡å¤„ç†é”™è¯¯ï¼ŒæŽ’æŸ¥å †æ ˆä¸Šä¸‹æ–‡',
+        title: '客户端错误上报记录',
+        desc: '分页并筛选查看 APP 客户端（iOS/Android）上报的崩溃及业务处理错误，排查堆栈上下文',
         controller: 'system',
         init: () => window.loadErrorReportsList()
     }
@@ -293,9 +293,9 @@ export async function switchAdminTab(tab, btnEl) {
         if (adminBody) {
             adminBody.innerHTML = `
                 <div style="padding: 40px; text-align: center; color: var(--text-secondary);">
-                    <h3>âŒ æ¨¡å—åŠ è½½å¤±è´¥</h3>
+                    <h3>❌ 模块加载失败</h3>
                     <p>${err.message}</p>
-                    <button class="action-btn" onclick="switchAdminTab('${tab}')" style="margin-top: 15px;">é‡æ–°å°è¯•</button>
+                    <button class="action-btn" onclick="switchAdminTab('${tab}')" style="margin-top: 15px;">重新尝试</button>
                 </div>
             `;
         }
@@ -343,7 +343,7 @@ export function paginateList(list, type) {
     const paginated = list.slice(start, start + pageConf.size);
     const indicator = document.getElementById(`${type}-page-indicator`);
     if (indicator) {
-        indicator.innerText = `ç¬¬ ${pageConf.current} / ${totalPages} é¡µ (å…± ${totalItems} æ¡)`;
+        indicator.innerText = `第 ${pageConf.current} / ${totalPages} 页 (共 ${totalItems} 条)`;
     }
     return paginated;
 }
@@ -358,7 +358,7 @@ export function updateAdminPageIndicator(type, paging) {
     
     const indicator = document.getElementById(`${type}-page-indicator`);
     if (indicator) {
-        indicator.innerText = `ç¬¬ ${pageConf.current} / ${totalPages} é¡µ (å…± ${totalItems} æ¡)`;
+        indicator.innerText = `第 ${pageConf.current} / ${totalPages} 页 (共 ${totalItems} 条)`;
     }
 }
 window.updateAdminPageIndicator = updateAdminPageIndicator;
@@ -435,14 +435,14 @@ export async function checkAdminSession() {
     try {
         const res = await window.apiFetch('GET', '/auth/status', null, false);
         if (res.code === 200 && res.data && res.data.isLogon) {
-            window.currentAdmin = { email: 'admin', nickname: 'ç³»ç»Ÿå®¡è®¡å‘˜' };
+            window.currentAdmin = { email: 'admin', nickname: '系统审计员' };
             localStorage.setItem('matp_admin_user_email', 'admin');
             localStorage.setItem('matp_admin_access_token', 'cookie_session');
             
             const profileBox = document.getElementById('admin-profile-box');
             if (profileBox) profileBox.style.display = 'flex';
             const nicknameEl = document.getElementById('admin-nickname');
-            if (nicknameEl) nicknameEl.innerText = 'ç³»ç»Ÿå®¡è®¡å‘˜';
+            if (nicknameEl) nicknameEl.innerText = '系统审计员';
             
             // Switch to initial tab (welcome)
             await switchAdminTab('welcome', document.querySelector('.sidebar-menu .menu-item.active'));
@@ -478,7 +478,7 @@ export async function handleLogout() {
     localStorage.removeItem('matp_admin_user_email');
     
     await checkAdminSession();
-    showToast('å·²å®‰å…¨é€€å‡ºç®¡ç†ç³»ç»Ÿã€‚', false);
+    showToast('已安全退出管理系统。', false);
 }
 window.handleLogout = handleLogout;
 
@@ -508,7 +508,7 @@ export async function listenToBizEvents() {
         window.bizWs = new WebSocket(`${CONFIG.BIZ_WS_URL}?ticket=${ticket}`);
         
         window.bizWs.onopen = () => {
-            console.log('ðŸ“¡ Real Admin Business WS connection established!');
+            console.log('📡 Real Admin Business WS connection established!');
         };
         
         window.bizWs.onmessage = (event) => {
@@ -518,7 +518,7 @@ export async function listenToBizEvents() {
                 const moduleName = payload.module || payload.topic || payload.channel || 'system';
                 const data = payload.data || payload.payload || payload.body || payload;
                 
-                console.log(`ðŸ›¡ï¸ [Admin Audit received (REAL)] Event: ${eventType}`, data);
+                console.log(`🛡️ [Admin Audit received (REAL)] Event: ${eventType}`, data);
                 dispatchAdminEvent(eventType, moduleName, data);
             } catch(e) {
                 console.error('Error parsing real admin WS event:', e);
@@ -554,7 +554,7 @@ export function triggerAdminDashboardReloadDebounced() {
         if (tabConfig[currentTab]) {
             try {
                 await tabConfig[currentTab].init();
-                showToast('âš¡ æ•°æ®å·²æ ¹æ®æœ€æ–°æŽ¨é€è‡ªåŠ¨æ›´æ–°', false);
+                showToast('⚡ 数据已根据最新推送自动更新', false);
             } catch (e) {
                 console.error("Failed to automatically reload active view:", e);
             }
@@ -651,15 +651,15 @@ window.escapeHtml = escapeHtml;
 
 export function translateIdType(type) {
     const dict = {
-        'PASSPORT': 'ðŸ›‚ æŠ¤ç…§ (Passport)',
-        'DRIVING_LICENSE': 'ðŸªª é©¾ç…§ (Driver License)',
-        'IDENTITY_CARD': 'ðŸ’³ èº«ä»½è¯ (National ID Card)'
+        'PASSPORT': '🛂 护照 (Passport)',
+        'DRIVING_LICENSE': '🪪 驾照 (Driver License)',
+        'IDENTITY_CARD': '💳 身份证 (National ID Card)'
     };
     return dict[type] || type || '--';
 }
 window.translateIdType = translateIdType;
 
-export function copyToClipboard(text, msg = 'å¤åˆ¶æˆåŠŸï¼') {
+export function copyToClipboard(text, msg = '复制成功！') {
     if (!navigator.clipboard) {
         const textarea = document.createElement('textarea');
         textarea.value = text;
@@ -670,7 +670,7 @@ export function copyToClipboard(text, msg = 'å¤åˆ¶æˆåŠŸï¼') {
             document.execCommand('copy');
             showToast(msg, false);
         } catch (err) {
-            showToast('å¤åˆ¶å¤±è´¥ï¼', true);
+            showToast('复制失败！', true);
         }
         document.body.removeChild(textarea);
         return;
@@ -678,7 +678,7 @@ export function copyToClipboard(text, msg = 'å¤åˆ¶æˆåŠŸï¼') {
     navigator.clipboard.writeText(text).then(() => {
         showToast(msg, false);
     }).catch(err => {
-        showToast('å¤åˆ¶å¤±è´¥ï¼', true);
+        showToast('复制失败！', true);
     });
 }
 window.copyToClipboard = copyToClipboard;
@@ -740,11 +740,11 @@ export function handleProofImageError() {
         const url = window.lastSelectedProofUrl || '';
         if (url.includes('matp-app.qchats.org') || url.endsWith('proof.png')) {
             if (errorMsgEl) {
-                errorMsgEl.innerHTML = `âš ï¸ <b>è¯¥å……å€¼å•ä¸ºåŽ†å²æµ‹è¯•/æ¨¡æ‹Ÿæ•°æ®</b><br><span style="font-size: 0.78rem; font-weight: normal; color: var(--text-secondary); display: inline-block; margin-top: 5px;">ç”±äºŽåŽŸæ¨¡æ‹ŸåŸŸå (<code>matp-app.qchats.org</code>) çš„æœåŠ¡å™¨å·²ä¸‹çº¿ï¼Œè¯¥é»˜è®¤æµ‹è¯•å›¾ç‰‡å·²å¤±æ•ˆï¼Œå› æ­¤æ— æ³•æ­£å¸¸é¢„è§ˆã€‚</span>`;
+                errorMsgEl.innerHTML = `⚠️ <b>该充值单为历史测试/模拟数据</b><br><span style="font-size: 0.78rem; font-weight: normal; color: var(--text-secondary); display: inline-block; margin-top: 5px;">由于原模拟域名 (<code>matp-app.qchats.org</code>) 的服务器已下线，该默认测试图片已失效，因此无法正常预览。</span>`;
             }
         } else {
             if (errorMsgEl) {
-                errorMsgEl.innerHTML = `âš ï¸ <b>å‡­è¯å›¾ç‰‡åŠ è½½å¤±è´¥</b><br><span style="font-size: 0.78rem; font-weight: normal; color: var(--text-secondary); display: inline-block; margin-top: 5px;">è¯¥å‡­è¯å›¾ç‰‡æ–‡ä»¶åœ¨æœåŠ¡å™¨ä¸Šä¸å­˜åœ¨ï¼Œæˆ–è€…ç½‘ç»œè®¿é—®è¶…æ—¶ã€‚</span>`;
+                errorMsgEl.innerHTML = `⚠️ <b>凭证图片加载失败</b><br><span style="font-size: 0.78rem; font-weight: normal; color: var(--text-secondary); display: inline-block; margin-top: 5px;">该凭证图片文件在服务器上不存在，或者网络访问超时。</span>`;
             }
         }
     }
