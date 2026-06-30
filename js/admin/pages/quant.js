@@ -1647,11 +1647,19 @@ export async function loadActiveOrdersForSettle() {
             } catch (e) {
                 console.error("Failed to load userPhoneMap in active orders list:", e);
             }
+
+            // Map user risk levels
+            let userRiskMap = {};
+            try {
+                userRiskMap = await getUserRiskMap();
+            } catch (e) {
+                console.error("Failed to load userRiskMap in active orders list:", e);
+            }
             
             tbody.innerHTML = list.map(o => {
-                const matchedLevel = window.cachedRiskLevels?.find(l => l.name === o.riskLevel || l.code === o.riskLevel || String(l.id) === String(o.riskLevel));
-                const levelId = matchedLevel ? matchedLevel.id : '';
-                const levelName = matchedLevel ? `${matchedLevel.name} (Level ${matchedLevel.level || 0})` : (o.riskLevel || '未分配');
+                const userRisk = userRiskMap[String(o.userId)] || null;
+                const levelId = userRisk ? userRisk.id : '';
+                const levelName = userRisk ? `${userRisk.name} (Level ${userRisk.level || 0})` : '未分配';
                 
                 const userVal = userPhoneMap[String(o.userId)] ? `${userPhoneMap[String(o.userId)]} (UID: ${o.userId})` : `UID: ${o.userId}`;
                 const amountVal = o.investAmount ? parseFloat(o.investAmount).toFixed(2) + ' USDT' : '--';
