@@ -777,7 +777,7 @@ export async function submitRiskLevelForm(event) {
     try {
         let res;
         if (id) {
-            payload.id = parseInt(id);
+            payload.id = id;
             res = await apiFetch('PUT', `/users/risk-levels/${id}`, payload, true);
         } else {
             res = await apiFetch('POST', '/users/risk-levels', payload, true);
@@ -928,7 +928,7 @@ window.closeUserGroupModal = closeUserGroupModal;
 export async function submitUserGrouping() {
     const targetType = document.getElementById('group-target-user-id').value;
     const selectedLevelId = document.getElementById('group-select-level-id').value;
-    const levelIdPayload = selectedLevelId ? parseInt(selectedLevelId) : null;
+    const levelIdPayload = selectedLevelId ? selectedLevelId.trim() : null;
     
     let finalUserIds = [];
     

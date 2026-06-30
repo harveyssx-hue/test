@@ -1,4 +1,4 @@
-﻿async function ensureRiskLevelsLoaded() {
+async function ensureRiskLevelsLoaded() {
     if (!window.cachedRiskLevels || window.cachedRiskLevels.length === 0) {
         try {
             const rlRes = await apiFetch('GET', '/users/risk-levels', null, true);
@@ -12,19 +12,7 @@
     return window.cachedRiskLevels || [];
 }
 
-async function getUserRiskMap() {
-    try {
-        const users = await window.adminState.getUsers();
-        const map = {};
-        users.forEach(u => {
-            map[String(u.id)] = u.userRisk || null;
-        });
-        return map;
-    } catch (e) {
-        console.error("Failed to map user risk levels:", e);
-        return {};
-    }
-}
+
 
 function populateRiskLevelFilter(selectId) {
     const select = document.getElementById(selectId);
@@ -231,12 +219,7 @@ export async function loadQuantMonitor() {
             console.error("Failed to load userPhoneMap in loadQuantMonitor:", e);
         }
         
-        let userRiskMap = {};
-        try {
-            userRiskMap = await getUserRiskMap();
-        } catch (e) {
-            console.error("Failed to map user risk levels in loadQuantMonitor:", e);
-        }
+        await ensureRiskLevelsLoaded();
         
         // Sort by createdAt descending
         orders.sort((a, b) => {
@@ -279,14 +262,16 @@ export async function loadQuantMonitor() {
             const targetLevelDef = window.cachedRiskLevels?.find(l => String(l.id) === String(riskLevelFilter));
             const targetLevelNum = targetLevelDef ? (targetLevelDef.level || 0) : null;
             filteredOrders = filteredOrders.filter(o => {
-                const r = userRiskMap[String(o.userId)] || null;
-                if (!r) {
+                const levelId = o.riskLevelId || '';
+                if (!levelId) {
                     return targetLevelNum === 0;
                 }
-                if (String(r.id) === String(riskLevelFilter)) {
+                if (String(levelId) === String(riskLevelFilter)) {
                     return true;
                 }
-                return targetLevelNum !== null && (r.level || 0) === targetLevelNum;
+                const levelDef = window.cachedRiskLevels?.find(l => String(l.id) === String(levelId));
+                const currentLevelNum = levelDef ? (levelDef.level || 0) : 0;
+                return targetLevelNum !== null && currentLevelNum === targetLevelNum;
             });
         }
         if (orderNoVal !== '') {
@@ -391,8 +376,9 @@ export async function loadQuantMonitor() {
                         <td>
                             <div style="font-weight: 600;">${userAccount}</div>
                             <div style="color: var(--primary); font-size: 0.72rem; font-weight: 600; font-family: monospace;">${userUidStr}${(() => {
-                                const r = userRiskMap[String(o.userId)] || null;
-                                const riskLevelName = r ? r.name : '未分组';
+                                const levelId = o.riskLevelId || '';
+                                const levelDef = (window.cachedRiskLevels || []).find(l => String(l.id) === String(levelId));
+                                const riskLevelName = levelDef ? levelDef.name : '未分组';
                                 return `<br><span style="font-size: 0.68rem; color: #38BDF8; font-weight: 600;">${riskLevelName}</span>`;
                             })()}</div>
                             <div style="color: var(--text-muted); font-size: 0.68rem;">正式</div>
@@ -1649,17 +1635,12 @@ export async function loadActiveOrdersForSettle() {
             }
 
             // Map user risk levels
-            let userRiskMap = {};
-            try {
-                userRiskMap = await getUserRiskMap();
-            } catch (e) {
-                console.error("Failed to load userRiskMap in active orders list:", e);
-            }
+            await ensureRiskLevelsLoaded();
             
             tbody.innerHTML = list.map(o => {
-                const userRisk = userRiskMap[String(o.userId)] || null;
-                const levelId = userRisk ? userRisk.id : '';
-                const levelName = userRisk ? `${userRisk.name} (Level ${userRisk.level || 0})` : '未分配';
+                const levelId = o.riskLevelId || '';
+                const levelDef = (window.cachedRiskLevels || []).find(l => String(l.id) === String(levelId));
+                const levelName = levelDef ? `${levelDef.name} (Level ${levelDef.level || 0})` : '默认层级 (Level 0)';
                 
                 const userVal = userPhoneMap[String(o.userId)] ? `${userPhoneMap[String(o.userId)]} (UID: ${o.userId})` : `UID: ${o.userId}`;
                 const amountVal = o.investAmount ? parseFloat(o.investAmount).toFixed(2) + ' USDT' : '--';
