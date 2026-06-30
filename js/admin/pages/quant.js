@@ -1470,10 +1470,16 @@ export async function openCreateCompletedBatchModal() {
     }
     
     await ensureInstrumentsLoaded();
-    const instSelect = document.getElementById('cbatch-instrument');
-    if (instSelect) {
-        instSelect.innerHTML = '<option value="">-- 请选择交易商品 --</option>' +
-            (cachedInstruments || []).map(inst => `<option value="${inst.id}">${inst.name} / ${inst.symbol}</option>`).join('');
+    const searchInput = document.getElementById('cbatch-instrument-search');
+    if (searchInput) searchInput.value = '';
+    const hiddenInput = document.getElementById('cbatch-instrument');
+    if (hiddenInput) hiddenInput.value = '';
+    
+    // Clear dropdown and hide it on modal open (do NOT render list by default!)
+    const dropdown = document.getElementById('cbatch-instrument-dropdown');
+    if (dropdown) {
+        dropdown.innerHTML = '';
+        dropdown.style.display = 'none';
     }
     
     // Hide stats box
@@ -1482,6 +1488,82 @@ export async function openCreateCompletedBatchModal() {
     
     modal.style.display = 'flex';
     modal.classList.add('active');
+}
+
+function renderCbatchInstrumentsDropdown(list) {
+    const dropdown = document.getElementById('cbatch-instrument-dropdown');
+    if (!dropdown) return;
+    
+    if (list.length === 0) {
+        dropdown.innerHTML = '<div style="padding: 10px 16px; color: #64748B; font-size: 0.8rem; text-align: center;">无匹配的商品</div>';
+        return;
+    }
+    
+    dropdown.innerHTML = list.map(inst => {
+        const displayText = `${inst.name} / ${inst.symbol}`.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        return `
+            <div class="cbatch-instrument-item" data-id="${inst.id}" data-text="${displayText}" onclick="window.selectCbatchInstrument(this)" onmouseover="this.style.background='#F1F5F9'" onmouseout="this.style.background='transparent'" style="padding: 10px 16px; font-size: 0.82rem; color: #1E293B; font-weight: 600; cursor: pointer; transition: background 0.15s; border-bottom: 1px solid #F1F5F9; text-align: left;">
+                ${displayText}
+            </div>
+        `;
+    }).join('');
+}
+
+window.selectCbatchInstrument = function(el) {
+    const id = el.getAttribute('data-id');
+    const text = el.getAttribute('data-text');
+    
+    const hiddenInput = document.getElementById('cbatch-instrument');
+    if (hiddenInput) {
+        hiddenInput.value = id;
+    }
+    const searchInput = document.getElementById('cbatch-instrument-search');
+    if (searchInput) {
+        searchInput.value = text;
+    }
+    const dropdown = document.getElementById('cbatch-instrument-dropdown');
+    if (dropdown) {
+        dropdown.style.display = 'none';
+    }
+};
+
+window.filterCbatchInstruments = function() {
+    const searchInput = document.getElementById('cbatch-instrument-search');
+    if (!searchInput) return;
+    const kw = searchInput.value.trim().toLowerCase();
+    
+    const dropdown = document.getElementById('cbatch-instrument-dropdown');
+    if (!dropdown) return;
+    
+    if (kw === '') {
+        const hiddenInput = document.getElementById('cbatch-instrument');
+        if (hiddenInput) hiddenInput.value = '';
+        dropdown.innerHTML = '';
+        dropdown.style.display = 'none';
+        return;
+    }
+    
+    const list = cachedInstruments || [];
+    const filtered = list.filter(inst => 
+        inst.name.toLowerCase().includes(kw) || 
+        inst.symbol.toLowerCase().includes(kw)
+    );
+    
+    dropdown.style.display = 'block';
+    renderCbatchInstrumentsDropdown(filtered);
+};
+
+window.showCbatchDropdown = function() {
+    window.filterCbatchInstruments();
+};
+
+window.hideCbatchDropdownDelayed = function() {
+    setTimeout(() => {
+        const dropdown = document.getElementById('cbatch-instrument-dropdown');
+        if (dropdown) {
+            dropdown.style.display = 'none';
+        }
+    }, 200);
 }
 
 export function closeCreateCompletedBatchModal() {
