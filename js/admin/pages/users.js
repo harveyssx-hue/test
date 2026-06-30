@@ -161,24 +161,8 @@ export async function loadUsersList() {
                 );
             }
             
-            // Sync KYC status map
-            let kycMap = {};
-            try {
-                if (!window.kycFetchPromise) {
-                    window.kycFetchPromise = apiFetch('GET', '/users/kyc?page=1&pageSize=1000', null, true);
-                }
-                const kycRes = await window.kycFetchPromise;
-                if (kycRes.code === 200) {
-                    const kycList = kycRes.result || kycRes.data || [];
-                    kycList.forEach(a => {
-                        kycMap[String(a.userId)] = a.status;
-                    });
-                }
-            } catch (e) {
-                console.error('Failed to pre-fetch KYC list for users list mapping:', e);
-            }
             filteredUsers.forEach(u => {
-                u.kycStatus = kycMap[String(u.id)] || 'NOT_VERIFIED';
+                u.kycStatus = u.kycStatus || 'NOT_VERIFIED';
             });
             
             if (kycFilter !== 'ALL') {
@@ -222,24 +206,8 @@ export async function loadUsersList() {
         if (res.code === 200) {
             users = res.result || res.data || [];
             
-            // Sync KYC status map for the returned page
-            let kycMap = {};
-            try {
-                if (!window.kycFetchPromise) {
-                    window.kycFetchPromise = apiFetch('GET', '/users/kyc?page=1&pageSize=1000', null, true);
-                }
-                const kycRes = await window.kycFetchPromise;
-                if (kycRes.code === 200) {
-                    const kycList = kycRes.result || kycRes.data || [];
-                    kycList.forEach(a => {
-                        kycMap[String(a.userId)] = a.status;
-                    });
-                }
-            } catch (e) {
-                console.error('Failed to pre-fetch KYC list for users list mapping:', e);
-            }
             users.forEach(u => {
-                u.kycStatus = kycMap[String(u.id)] || 'NOT_VERIFIED';
+                u.kycStatus = u.kycStatus || 'NOT_VERIFIED';
             });
             
             window.cachedUsersList = users;

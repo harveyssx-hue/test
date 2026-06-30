@@ -1,4 +1,4 @@
-// js/admin/app.js
+﻿// js/admin/app.js
 window.isAdminPanel = true;
 import { state } from './state.js';
 
@@ -495,7 +495,7 @@ export async function listenToBizEvents() {
         const res = await window.apiFetch('POST', '/auth/ws-ticket', null, true);
         const bizTicket = res.result || res.data;
         if (res.code !== 200 || !bizTicket || !bizTicket.ticket) {
-            console.error('Failed to fetch ws ticket from server');
+            console.error('Failed to fetch ws ticket from server:', res.errorMessage || res.message || 'Empty ticket returned');
             setTimeout(listenToBizEvents, 6000);
             return;
         }

@@ -1,4 +1,4 @@
-﻿async function ensureRiskLevelsLoaded() {
+async function ensureRiskLevelsLoaded() {
     if (!window.cachedRiskLevels || window.cachedRiskLevels.length === 0) {
         try {
             const rlRes = await apiFetch('GET', '/users/risk-levels', null, true);
@@ -899,20 +899,73 @@ export function togglePaymentTypeFields(prefix) {
     }
 }
 
+let cachedPresets = null;
+async function ensurePresetsLoaded() {
+    if (cachedPresets) return cachedPresets;
+    try {
+        const res = await apiFetch('GET', '/finance/payment-methods/preset', null, true);
+        if (res.code === 200) {
+            cachedPresets = res.result || res.data || { availableTypes: [], availableAssets: [] };
+            if (cachedPresets.availableAssets) {
+                if (!cachedAssets) cachedAssets = [];
+                cachedPresets.availableAssets.forEach(pa => {
+                    if (!cachedAssets.some(a => String(a.id) === String(pa.id))) {
+                        cachedAssets.push({
+                            id: pa.id,
+                            symbol: pa.symbol,
+                            name: pa.symbol
+                        });
+                    }
+                });
+            }
+        }
+    } catch (e) {
+        console.error("Failed to load payment presets:", e);
+    }
+    if (!cachedPresets) {
+        cachedPresets = { availableTypes: [], availableAssets: [] };
+    }
+    return cachedPresets;
+}
+
+function getTypeName(type) {
+    const names = {
+        'CRYPTO_WALLET': 'CRYPTO_WALLET (加密钱包转账)',
+        'UPI': 'UPI (印度 UPI 网关)',
+        'CARD': 'CARD (信用卡/网关卡)',
+        'BANK_TRANSFER': 'BANK_TRANSFER (银行卡转账)',
+        'ALIPAY': 'ALIPAY (支付宝转账/口令)',
+        'WECHAT_PAY': 'WECHAT_PAY (微信支付转账)',
+        'APPLE_PAY': 'APPLE_PAY (Apple Pay)',
+        'PAYPAL': 'PAYPAL (PayPal 贝宝)'
+    };
+    return names[type] || `${type} (${type})`;
+}
+
 export async function openPaymentAddModal() {
     const modal = document.getElementById('payment-add-modal');
     if (!modal) return;
     
+    // Load presets dynamically from preset endpoint
+    const presets = await ensurePresetsLoaded();
+    
     // Populate assets dropdown
-    const assets = await ensureAssetsLoaded();
     const assetSelect = document.getElementById('payment-add-assetId');
-    if (assetSelect) {
-        assetSelect.innerHTML = assets.map(a => `<option value="${a.id}">${a.symbol} (${a.name})</option>`).join('');
+    if (assetSelect && presets.availableAssets) {
+        assetSelect.innerHTML = presets.availableAssets.map(a => `<option value="${a.id}">${a.symbol} (${a.symbol})</option>`).join('');
+    }
+    
+    // Populate types dropdown
+    const typeSelect = document.getElementById('payment-add-paymentMethodType');
+    if (typeSelect && presets.availableTypes) {
+        typeSelect.innerHTML = presets.availableTypes.map(t => `<option value="${t}">${getTypeName(t)}</option>`).join('');
     }
     
     // Reset fields
     document.getElementById('payment-add-name').value = '';
-    document.getElementById('payment-add-paymentMethodType').value = 'CRYPTO_WALLET';
+    const firstType = presets.availableTypes && presets.availableTypes.length > 0 ? presets.availableTypes[0] : 'CRYPTO_WALLET';
+    document.getElementById('payment-add-paymentMethodType').value = firstType;
+    togglePaymentTypeFields('add');
     document.getElementById('payment-add-hintDescription').value = '';
     document.getElementById('payment-add-address').value = '';
     document.getElementById('payment-add-network').value = 'TRC20';
@@ -973,11 +1026,19 @@ export async function openPaymentEditModal(channelId) {
         return;
     }
     
+    // Load presets dynamically from preset endpoint
+    const presets = await ensurePresetsLoaded();
+    
     // Populate assets dropdown
-    const assets = await ensureAssetsLoaded();
     const assetSelect = document.getElementById('payment-edit-assetId');
-    if (assetSelect) {
-        assetSelect.innerHTML = assets.map(a => `<option value="${a.id}">${a.symbol} (${a.name})</option>`).join('');
+    if (assetSelect && presets.availableAssets) {
+        assetSelect.innerHTML = presets.availableAssets.map(a => `<option value="${a.id}">${a.symbol} (${a.symbol})</option>`).join('');
+    }
+    
+    // Populate types dropdown
+    const typeSelect = document.getElementById('payment-edit-paymentMethodType');
+    if (typeSelect && presets.availableTypes) {
+        typeSelect.innerHTML = presets.availableTypes.map(t => `<option value="${t}">${getTypeName(t)}</option>`).join('');
     }
     
     // Set values
@@ -985,6 +1046,7 @@ export async function openPaymentEditModal(channelId) {
     document.getElementById('payment-edit-name').value = m.name || '';
     document.getElementById('payment-edit-assetId').value = m.assetId || '';
     document.getElementById('payment-edit-paymentMethodType').value = m.paymentMethodType || 'CRYPTO_WALLET';
+    togglePaymentTypeFields('edit');
     document.getElementById('payment-edit-hintDescription').value = m.hintDescription || '';
     document.getElementById('payment-edit-address').value = m.address || '';
     document.getElementById('payment-edit-network').value = m.network || '';
@@ -1048,7 +1110,7 @@ export function closePaymentEditModal() {
 
 function collectPaymentFormData(prefix) {
     const name = document.getElementById(`payment-${prefix}-name`).value.trim();
-    const assetId = parseInt(document.getElementById(`payment-${prefix}-assetId`).value);
+    const assetId = document.getElementById(`payment-${prefix}-assetId`).value.trim();
     const paymentMethodType = document.getElementById(`payment-${prefix}-paymentMethodType`).value;
     const hintDescription = document.getElementById(`payment-${prefix}-hintDescription`).value.trim();
     const minDepositAmount = parseFloat(document.getElementById(`payment-${prefix}-minDepositAmount`).value || '0');
@@ -1210,7 +1272,7 @@ export async function submitPaymentRiskLevelBindings(event) {
     const paymentMethodId = document.getElementById('bind-payment-id').value;
     
     const checkboxes = document.querySelectorAll('.payment-bind-risk-checkbox:checked');
-    const riskLevelIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+    const riskLevelIds = Array.from(checkboxes).map(cb => cb.value.trim());
     
     showToast('正在保存风控可见层级设置...', false);
     try {

@@ -1,4 +1,4 @@
-// js/admin/state.js
+﻿// js/admin/state.js
 export const state = {
     users: null,
     usersPromise: null,
@@ -23,8 +23,6 @@ export const state = {
             } catch (e) {
                 console.error("Failed to fetch users list in state:", e);
                 return [];
-            } finally {
-                this.usersPromise = null;
             }
         })();
         
