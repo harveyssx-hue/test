@@ -218,12 +218,15 @@ async function loadDepositList() {
 
                 let recordRate = parseFloat(d.collectionFxRate || 0);
                 let rate = recordRate > 0 ? recordRate : exchangeRate;
-                let usdtAmt = parseFloat(d.amount || 0);
                 
                 let inrAmt = 0;
-                if (d.depositType === 'FIAT' && d.collectedAmount) {
-                    inrAmt = parseFloat(d.collectedAmount);
+                let usdtAmt = 0;
+                
+                if (d.depositType === 'FIAT') {
+                    inrAmt = parseFloat(d.amount || 0);
+                    usdtAmt = d.collectedAmount ? parseFloat(d.collectedAmount) : (rate > 0 ? inrAmt / rate : 0);
                 } else {
+                    usdtAmt = parseFloat(d.amount || 0);
                     inrAmt = usdtAmt * rate;
                 }
                 

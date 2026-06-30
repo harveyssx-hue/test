@@ -1,4 +1,4 @@
-async function ensureRiskLevelsLoaded() {
+﻿async function ensureRiskLevelsLoaded() {
     if (!window.cachedRiskLevels || window.cachedRiskLevels.length === 0) {
         try {
             const rlRes = await apiFetch('GET', '/users/risk-levels', null, true);
@@ -1296,6 +1296,7 @@ async function loadQuantSettleList() {
     if (!currentAdmin) return;
     await ensureInstrumentsLoaded();
     await ensureRiskLevelsLoaded();
+    loadActiveOrdersForSettle();
     
     // Populate risk level dropdown in filters if it exists
     populateRiskLevelFilter('filter-settle-risk-level');
@@ -1365,9 +1366,15 @@ function renderActiveSettleListHtml(batches = []) {
         const instrumentName = b.instrumentId ? translateInstrument(b.instrumentId) : '--';
         
         const buyPriceVal = b.buyPrice ? parseFloat(b.buyPrice).toFixed(4) : '--';
-        const buyTimeVal = b.buyExecutedAt ? new Date(parseInt(b.buyExecutedAt) * 1000).toLocaleString() : '--';
+        const buyTimeVal = b.buyExecutedAt ? (() => {
+            const t = parseInt(b.buyExecutedAt);
+            return new Date(t < 10000000000 ? t * 1000 : t).toLocaleString();
+        })() : '--';
         const sellPriceVal = b.sellPrice ? parseFloat(b.sellPrice).toFixed(4) : '--';
-        const sellTimeVal = b.sellExecutedAt ? new Date(parseInt(b.sellExecutedAt) * 1000).toLocaleString() : '--';
+        const sellTimeVal = b.sellExecutedAt ? (() => {
+            const t = parseInt(b.sellExecutedAt);
+            return new Date(t < 10000000000 ? t * 1000 : t).toLocaleString();
+        })() : '--';
         
         const totalBuyAmt = b.totalBuyAmount ? parseFloat(b.totalBuyAmount).toFixed(2) + ' USDT' : '--';
         const totalSellAmt = b.totalSellAmount ? parseFloat(b.totalSellAmount).toFixed(2) + ' USDT' : '--';
@@ -1617,6 +1624,83 @@ export async function submitCreateCompletedBatch(event) {
         }
     }
 }
+
+export async function loadActiveOrdersForSettle() {
+    const tbody = document.getElementById('quant-active-orders-tbody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 20px 0;">⏳ 正在加载活跃订单数据...</td></tr>';
+    
+    try {
+        const res = await apiFetch('GET', '/trading/quant/orders?status=ACTIVE&page=1&pageSize=1000', null, true);
+        if (res.code === 200) {
+            const list = res.result || res.data || [];
+            if (list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 20px 0;">ℹ️ 当前暂无待清算的活跃订单。</td></tr>';
+                return;
+            }
+            
+            // Map users for registration phone display
+            let userPhoneMap = {};
+            try {
+                userPhoneMap = await window.adminState.getUserPhoneMap();
+            } catch (e) {
+                console.error("Failed to load userPhoneMap in active orders list:", e);
+            }
+            
+            tbody.innerHTML = list.map(o => {
+                const instrumentName = o.instrumentId ? translateInstrument(o.instrumentId) : '--';
+                const levelName = o.riskLevelId ? (window.cachedRiskLevels?.find(l => String(l.id) === String(o.riskLevelId))?.name || `层级ID: ${o.riskLevelId}`) : '未分配';
+                
+                const userVal = userPhoneMap[String(o.userId)] ? `${userPhoneMap[String(o.userId)]} (UID: ${o.userId})` : `UID: ${o.userId}`;
+                const amountVal = o.investAmount ? parseFloat(o.investAmount).toFixed(2) + ' USDT' : '--';
+                const buyPriceVal = o.buyPrice ? parseFloat(o.buyPrice).toFixed(4) : '--';
+                const timeStr = o.createdAt ? new Date(parseInt(o.createdAt)).toLocaleString() : '--';
+                
+                const dirBadge = o.direction === 'BUY' 
+                    ? '<span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1.5px solid rgba(16, 185, 129, 0.25);">多头 (BUY)</span>'
+                    : '<span class="badge" style="background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1.5px solid rgba(239, 68, 68, 0.25);">空头 (SELL)</span>';
+                
+                const actionBtn = `<button class="action-btn btn-view" onclick="quickSettleForOrder('${o.riskLevelId}', '${o.instrumentId}')" style="padding: 2px 8px; font-size: 0.7rem; cursor: pointer; background: rgba(91, 81, 249, 0.08); color: var(--primary); font-weight: 600;">⚡ 撮合清算</button>`;
+                
+                return `
+                    <tr style="transition: background 0.2s;">
+                        <td style="font-family: monospace; font-size: 0.72rem; font-weight: 600; color: var(--text-secondary);">${o.id}</td>
+                        <td style="font-size: 0.75rem; color: var(--text-primary); font-weight: 600;">${userVal}</td>
+                        <td style="font-weight: 600;">${levelName}</td>
+                        <td style="font-weight: 600;">${instrumentName}</td>
+                        <td style="font-weight: 700; color: var(--primary);">${amountVal}</td>
+                        <td>${dirBadge}</td>
+                        <td style="font-family: 'Outfit'; font-weight: 600;">${buyPriceVal}</td>
+                        <td style="font-size: 0.68rem; color: var(--text-muted);">${timeStr}</td>
+                        <td style="text-align: center;">${actionBtn}</td>
+                    </tr>
+                `;
+            }).join('');
+        } else {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: #EF4444; padding: 20px 0;">❌ 数据拉取失败: ${res.errorMessage || '未知接口错误'}</td></tr>`;
+        }
+    } catch (e) {
+        console.error("Failed to load active orders for settle:", e);
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #EF4444; padding: 20px 0;">❌ 网络请求异常</td></tr>';
+    }
+}
+window.loadActiveOrdersForSettle = loadActiveOrdersForSettle;
+
+export function quickSettleForOrder(riskLevelId, instrumentId) {
+    openCreateCompletedBatchModal();
+    const lvlSelect = document.getElementById('cbatch-risk-level');
+    const instSelect = document.getElementById('cbatch-instrument');
+    if (lvlSelect) {
+        lvlSelect.value = riskLevelId;
+    }
+    if (instSelect) {
+        instSelect.value = instrumentId;
+    }
+    // Trigger statistics box
+    onBatchRiskLevelChange();
+}
+window.quickSettleForOrder = quickSettleForOrder;
 
 // Bind to window to allow calling from HTML
 window.loadQuantSettleList = loadQuantSettleList;

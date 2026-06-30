@@ -1,185 +1,208 @@
-            <div class="view-tab-content active" id="view-quant-settle">
-                <div class="glass-panel data-panel" style="padding: 18px;">
-                    <!-- Unified Title Header -->
-                    <div class="data-panel-header" style="border-bottom: 1.5px solid var(--border-light); padding-bottom: 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-                        <div class="data-panel-title" style="font-size: 1.15rem; color: var(--primary); display: flex; align-items: center; gap: 6px; font-weight: bold;">
-                            ⚡ AI 量化策略级清结算与操盘管理中心
-                        </div>
-                        <!-- Pagination Controls Right -->
-                        <div style="display: flex; gap: 6px; align-items: center; background: rgba(255, 255, 255, 0.05); padding: 2px 8px; border-radius: 6px; border: 1.5px solid var(--border-light);">
-                            <select class="filter-select" id="quantSettle-size-select" onchange="changeAdminPageSize('quantSettle', this.value)" style="height: 24px; font-size: 0.7rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 2px; width: 85px; background: transparent; color: var(--text-primary); font-weight: 600; cursor: pointer; outline: none; margin-right: 5px;">
-                                <option value="10" selected>10 条/页</option>
-                                <option value="30">30 条/页</option>
-                                <option value="50">50 条/页</option>
-                                <option value="100">100 条/页</option>
-                            </select>
-                            <button class="action-btn" onclick="changeAdminPage('quantSettle', -1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">上一页</button>
-                            <span id="quantSettle-page-indicator" style="font-size: 0.72rem; font-weight: 600; color: var(--text-primary); margin: 0 4px; white-space: nowrap;">第 1 / 1 页 (共 0 条)</span>
-                            <button class="action-btn" onclick="changeAdminPage('quantSettle', 1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">下一页</button>
-                        </div>
-                    </div>
+<div class="view-tab-content active" id="view-quant-settle">
+    <div class="glass-panel data-panel" style="padding: 18px;">
+        <!-- Unified Title Header -->
+        <div class="data-panel-header" style="border-bottom: 1.5px solid var(--border-light); padding-bottom: 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+            <div class="data-panel-title" style="font-size: 1.15rem; color: var(--primary); display: flex; align-items: center; gap: 6px; font-weight: bold;">
+                ⚡ AI 量化策略级清结算与操盘管理中心
+            </div>
+            <!-- Pagination Controls Right -->
+            <div style="display: flex; gap: 6px; align-items: center; background: rgba(255, 255, 255, 0.05); padding: 2px 8px; border-radius: 6px; border: 1.5px solid var(--border-light);">
+                <select class="filter-select" id="quantSettle-size-select" onchange="changeAdminPageSize('quantSettle', this.value)" style="height: 24px; font-size: 0.7rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 2px; width: 85px; background: transparent; color: var(--text-primary); font-weight: 600; cursor: pointer; outline: none; margin-right: 5px;">
+                    <option value="10" selected>10 条/页</option>
+                    <option value="30">30 条/页</option>
+                    <option value="50">50 条/页</option>
+                    <option value="100">100 条/页</option>
+                </select>
+                <button class="action-btn" onclick="changeAdminPage('quantSettle', -1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">上一页</button>
+                <span id="quantSettle-page-indicator" style="font-size: 0.72rem; font-weight: 600; color: var(--text-primary); margin: 0 4px; white-space: nowrap;">第 1 / 1 页 (共 0 条)</span>
+                <button class="action-btn" onclick="changeAdminPage('quantSettle', 1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">下一页</button>
+            </div>
+        </div>
 
-                    <!-- Settle Filters Bar (Phase 23 Additions) -->
-                    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 15px; padding: 12px; background: rgba(255, 255, 255, 0.02); border: 1.5px solid var(--border-light); border-radius: 8px;">
-                        <div style="display: flex; flex-direction: column; gap: 4px;">
-                            <label style="font-size: 0.68rem; font-weight: 600; color: var(--text-secondary);">用户 UID / 手机号</label>
-                            <input type="text" id="filter-settle-uid" placeholder="输入 UID 或账号" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 8px; width: 160px; background: transparent; color: var(--text-primary); outline: none;">
-                        </div>
-                        <div style="display: flex; flex-direction: column; gap: 4px;">
-                            <label style="font-size: 0.68rem; font-weight: 600; color: var(--text-secondary);">策略流水号</label>
-                            <input type="text" id="filter-settle-orderno" placeholder="输入流水号" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 8px; width: 140px; background: transparent; color: var(--text-primary); outline: none;">
-                        </div>
-                        <div style="display: flex; flex-direction: column; gap: 4px;">
-                            <label style="font-size: 0.68rem; font-weight: 600; color: var(--text-secondary);">仓位状态</label>
-                            <select id="filter-settle-status" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 4px; width: 110px; background: transparent; color: var(--text-primary); cursor: pointer; outline: none;">
-                                <option value="ALL">全部</option>
-                                <option value="BOUGHT">已买入 (持仓中)</option>
-                                <option value="SOLD">已卖出 (空仓)</option>
-                                <option value="PENDING">待交易 (未开仓)</option>
-                            </select>
-                        </div>
-                        <div style="display: flex; flex-direction: column; gap: 4px;">
-                            <label style="font-size: 0.68rem; font-weight: 600; color: var(--text-secondary);">层级</label>
-                            <select id="filter-settle-risk-level" onchange="window.adminPages.quantSettle.current=1; loadQuantSettleList()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 4px; width: 120px; background: transparent; color: var(--text-primary); cursor: pointer; outline: none;">
-                                <option value="ALL">全部层级</option>
-                            </select>
-                        </div>
-                        <div style="display: flex; gap: 6px; align-items: flex-end; margin-top: 16px;">
-                            <button class="action-btn" onclick="loadQuantSettleList()" style="height: 28px; font-size: 0.72rem; padding: 0 12px; border-radius: 4px; background: var(--primary); color: white; border: none; font-weight: 600; cursor: pointer;">🔍 筛选</button>
-                            <button class="action-btn" onclick="resetSettleFilters()" style="height: 28px; font-size: 0.72rem; padding: 0 12px; border-radius: 4px; background: rgba(255, 255, 255, 0.08); color: var(--text-primary); border: 1px solid var(--border-light); font-weight: 600; cursor: pointer;">🔄 重置</button>
-                        </div>
-                    </div>
+        <!-- Settle Filters Bar -->
+        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 15px; padding: 12px; background: rgba(255, 255, 255, 0.02); border: 1.5px solid var(--border-light); border-radius: 8px;">
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+                <label style="font-size: 0.68rem; font-weight: 600; color: var(--text-secondary);">仓位状态</label>
+                <select id="filter-settle-status" onchange="window.adminPages.quantSettle.current=1; loadQuantSettleList()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 4px; width: 150px; background: transparent; color: var(--text-primary); cursor: pointer; outline: none;">
+                    <option value="ALL">全部批次状态</option>
+                    <option value="BUY_PENDING">买入中 (BUY_PENDING)</option>
+                    <option value="BUY_COMPLETED">买入完成 (BUY_COMPLETED)</option>
+                    <option value="SELL_PENDING">卖出中 (SELL_PENDING)</option>
+                    <option value="COMPLETED">已完成 (COMPLETED)</option>
+                    <option value="FAILED">清算失败 (FAILED)</option>
+                </select>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+                <label style="font-size: 0.68rem; font-weight: 600; color: var(--text-secondary);">风控层级</label>
+                <select id="filter-settle-risk-level" onchange="window.adminPages.quantSettle.current=1; loadQuantSettleList()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 4px; width: 140px; background: transparent; color: var(--text-primary); cursor: pointer; outline: none;">
+                    <option value="ALL">全部风控层级</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 6px; align-items: flex-end; margin-top: 16px;">
+                <button class="action-btn" onclick="loadQuantSettleList()" style="height: 28px; font-size: 0.72rem; padding: 0 12px; border-radius: 4px; background: var(--primary); color: white; border: none; font-weight: 600; cursor: pointer;">🔍 筛选批次</button>
+                <button class="action-btn" onclick="resetSettleFilters()" style="height: 28px; font-size: 0.72rem; padding: 0 12px; border-radius: 4px; background: rgba(255, 255, 255, 0.08); color: var(--text-primary); border: 1px solid var(--border-light); font-weight: 600; cursor: pointer;">🔄 重置</button>
+            </div>
+        </div>
 
-                    <!-- Part B: Selected Positions Batch Operations & Table (已选仓位批量清算) -->
-                    <div style="border-top: 1.5px solid var(--border-light); padding-top: 15px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
-                            <div style="font-size: 0.82rem; font-weight: bold; color: var(--primary); display: flex; align-items: center; gap: 4px;">
-                                👥 量化操盘批次列表 (按层级/商品清算历史)
-                            </div>
-                            <div style="display: flex; gap: 8px; align-items: center;">
-                                <button class="action-btn btn-approve" onclick="openCreateCompletedBatchModal()" style="padding: 0 14px; font-size: 0.75rem; border-radius: 6px; white-space: nowrap; height: 28px; font-weight: 600; background: var(--primary); color: white; border: none; cursor: pointer;">+ 新增风控层级投资批次</button>
-                            </div>
-                        </div>
+        <!-- Section 1: Active Quant Orders Pending Settle (待清算活跃订单) -->
+        <div style="margin-bottom: 25px; border-bottom: 1.5px solid var(--border-light); padding-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div style="font-size: 0.88rem; font-weight: bold; color: var(--primary); display: flex; align-items: center; gap: 6px;">
+                    🟢 待清算量化活跃订单 (ACTIVE Status)
+                </div>
+                <button class="action-btn" onclick="loadActiveOrdersForSettle()" style="padding: 4px 10px; font-size: 0.72rem; background: rgba(16, 185, 129, 0.08); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 4px; cursor: pointer;">🔄 刷新订单</button>
+            </div>
+            <div class="table-container compact-table" style="max-height: 260px; overflow-y: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>订单 ID</th>
+                            <th>交易用户 UID</th>
+                            <th>风控层级</th>
+                            <th>交易商品</th>
+                            <th>投资金额</th>
+                            <th>操作方向</th>
+                            <th>买入委托价</th>
+                            <th>下单时间</th>
+                            <th style="text-align: center;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="quant-active-orders-tbody">
+                        <tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 20px 0;">正在加载活跃订单...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-                        <div class="table-container compact-table">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>批次 ID</th>
-                                        <th>风控层级</th>
-                                        <th>交易商品</th>
-                                        <th>买入价格 / 时间</th>
-                                        <th>卖出价格 / 时间</th>
-                                        <th>命中订单数</th>
-                                        <th>总买入金额</th>
-                                        <th>总卖出金额</th>
-                                        <th>总收益 / 总费用</th>
-                                        <th>实际收益</th>
-                                        <th>状态</th>
-                                        <th>错误原因</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="quant-settle-table-body">
-                                    <!-- Loaded dynamically -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+        <!-- Section 2: Quant Settle Batches List (清算历史批次) -->
+        <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+                <div style="font-size: 0.88rem; font-weight: bold; color: var(--primary); display: flex; align-items: center; gap: 6px;">
+                    👥 历史操盘批次列表 (按层级/商品清算历史)
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button class="action-btn btn-approve" onclick="openCreateCompletedBatchModal()" style="padding: 0 14px; font-size: 0.75rem; border-radius: 6px; white-space: nowrap; height: 28px; font-weight: 600; background: var(--primary); color: white; border: none; cursor: pointer;">+ 新增风控层级投资批次</button>
                 </div>
             </div>
 
-    <!-- VIEW: CREATE COMPLETED BATCH MODAL (创建层级完整操盘批次弹窗) -->
-    <div id="create-completed-batch-modal" class="overlay" style="display: none; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(15px); background: rgba(0,0,0,0.6);">
-        <div class="glass-panel modal-content-payment" style="max-width: 550px; padding: 30px; max-height: 90vh; overflow-y: auto;">
-            <button class="drawer-close-btn" onclick="closeCreateCompletedBatchModal()" style="top: 24px; right: 24px; font-size: 1.2rem; background: transparent; border: none; color: var(--text-secondary); cursor: pointer;">✕</button>
-            <div class="modal-header-admin" style="margin-bottom: 20px; border-bottom: 1px solid var(--border-light); padding-bottom: 12px;">
-                <h2 style="font-size: 1.35rem; display: flex; align-items: center; gap: 8px; color: var(--primary); font-weight: bold; margin: 0;">🛡️ 新增风控层级投资批次</h2>
-                <p style="font-size: 0.78rem; color: #64748B; margin-top: 6px; font-weight: 500;">一次性录入某风控层级与品种的物理买入/卖出价格与执行时间，由系统异步计算各订单明细并结算盈亏</p>
+            <div class="table-container compact-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>批次 ID</th>
+                            <th>风控层级</th>
+                            <th>交易商品</th>
+                            <th>买入价格 / 时间</th>
+                            <th>卖出价格 / 时间</th>
+                            <th>命中订单数</th>
+                            <th>总买入金额</th>
+                            <th>总卖出金额</th>
+                            <th>总收益 / 总费用</th>
+                            <th>实际收益</th>
+                            <th>状态</th>
+                            <th>错误原因</th>
+                        </tr>
+                    </thead>
+                    <tbody id="quant-settle-table-body">
+                        <!-- Loaded dynamically -->
+                    </tbody>
+                </table>
             </div>
-            
-            <form class="auth-form" onsubmit="submitCreateCompletedBatch(event)" style="display: flex; flex-direction: column; gap: 16px;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                    <div class="auth-input-group">
-                        <label>用户风控层级</label>
-                        <select id="cbatch-risk-level" required class="payment-add-select" onchange="onBatchRiskLevelChange()">
-                            <!-- Loaded dynamically -->
-                        </select>
-                    </div>
-                    <div class="auth-input-group">
-                        <label>交易商品 (Instrument)</label>
-                        <select id="cbatch-instrument" required class="payment-add-select">
-                            <!-- Loaded dynamically -->
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Risk level statistics display box -->
-                <div id="cbatch-stats-box" style="display: none; background: rgba(91, 81, 249, 0.06); border: 1px solid rgba(91, 81, 249, 0.15); border-radius: 6px; padding: 10px 12px; font-size: 0.75rem; color: var(--primary); line-height: 1.4;">
-                    <!-- Filled dynamically -->
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; border-top: 1px dashed var(--border-light); padding-top: 12px;">
-                    <div class="auth-input-group">
-                        <label>买入成交价格 (Buy Price)</label>
-                        <input type="number" step="any" min="0.000001" id="cbatch-buy-price" required placeholder="如: 68500.00">
-                    </div>
-                    <div class="auth-input-group">
-                        <label>买入执行时间 (Buy Time)</label>
-                        <input type="datetime-local" id="cbatch-buy-time" required>
-                    </div>
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                    <div class="auth-input-group">
-                        <label>卖出成交价格 (Sell Price)</label>
-                        <input type="number" step="any" min="0.000001" id="cbatch-sell-price" required placeholder="如: 69000.00">
-                    </div>
-                    <div class="auth-input-group">
-                        <label>卖出执行时间 (Sell Time)</label>
-                        <input type="datetime-local" id="cbatch-sell-time" required>
-                    </div>
-                </div>
-
-                <!-- Advanced settings section (rates override) -->
-                <details style="margin-top: 5px; font-size: 0.8rem; color: var(--text-secondary);">
-                    <summary style="cursor: pointer; font-weight: 600; color: var(--primary); outline: none;">⚙️ 费率设置 (可选，覆盖默认值)</summary>
-                    <div style="padding: 10px 0 0 0; display: flex; flex-direction: column; gap: 12px;">
-                        <div style="font-size: 0.7rem; font-weight: bold; color: var(--text-primary); border-bottom: 1px solid var(--border-light); padding-bottom: 4px;">📈 买入费率设置</div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
-                            <div class="auth-input-group">
-                                <label style="font-size: 0.65rem;">算力费用率</label>
-                                <input type="number" step="0.0001" min="0" max="1" id="cbatch-buy-rate-computing" placeholder="默认">
-                            </div>
-                            <div class="auth-input-group">
-                                <label style="font-size: 0.65rem;">经纪费率</label>
-                                <input type="number" step="0.0001" min="0" max="1" id="cbatch-buy-rate-brokerage" placeholder="默认">
-                            </div>
-                            <div class="auth-input-group">
-                                <label style="font-size: 0.65rem;">交易所费率</label>
-                                <input type="number" step="0.0001" min="0" max="1" id="cbatch-buy-rate-exchange" placeholder="默认">
-                            </div>
-                        </div>
-                        
-                        <div style="font-size: 0.7rem; font-weight: bold; color: var(--text-primary); border-bottom: 1px solid var(--border-light); padding-bottom: 4px; margin-top: 5px;">📉 卖出费率设置</div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
-                            <div class="auth-input-group">
-                                <label style="font-size: 0.65rem;">算力费用率</label>
-                                <input type="number" step="0.0001" min="0" max="1" id="cbatch-sell-rate-computing" placeholder="默认">
-                            </div>
-                            <div class="auth-input-group">
-                                <label style="font-size: 0.65rem;">经纪费率</label>
-                                <input type="number" step="0.0001" min="0" max="1" id="cbatch-sell-rate-brokerage" placeholder="默认">
-                            </div>
-                            <div class="auth-input-group">
-                                <label style="font-size: 0.65rem;">交易所费率</label>
-                                <input type="number" step="0.0001" min="0" max="1" id="cbatch-sell-rate-exchange" placeholder="默认">
-                            </div>
-                        </div>
-                    </div>
-                </details>
-                
-                <button type="submit" class="admin-auth-btn" style="margin-top: 15px; height: 44px; border-radius: 8px; font-weight: 700; background: var(--primary);" id="cbatch-submit-btn">立即创建并异步清算批次</button>
-            </form>
         </div>
     </div>
+</div>
 
+<!-- VIEW: CREATE COMPLETED BATCH MODAL -->
+<div id="create-completed-batch-modal" class="overlay" style="display: none; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(15px); background: rgba(0,0,0,0.6);">
+    <div class="glass-panel modal-content-payment" style="max-width: 550px; padding: 30px; max-height: 90vh; overflow-y: auto;">
+        <button class="drawer-close-btn" onclick="closeCreateCompletedBatchModal()" style="top: 24px; right: 24px; font-size: 1.2rem; background: transparent; border: none; color: var(--text-secondary); cursor: pointer;">✕</button>
+        <div class="modal-header-admin" style="margin-bottom: 20px; border-bottom: 1px solid var(--border-light); padding-bottom: 12px;">
+            <h2 style="font-size: 1.35rem; display: flex; align-items: center; gap: 8px; color: var(--primary); font-weight: bold; margin: 0;">🛡️ 新增风控层级投资批次</h2>
+            <p style="font-size: 0.78rem; color: #64748B; margin-top: 6px; font-weight: 500;">一次性录入某风控层级与品种的物理买入/卖出价格与执行时间，由系统异步计算各订单明细并结算盈亏</p>
+        </div>
+        
+        <form class="auth-form" onsubmit="submitCreateCompletedBatch(event)" style="display: flex; flex-direction: column; gap: 16px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="auth-input-group">
+                    <label>用户风控层级</label>
+                    <select id="cbatch-risk-level" required class="payment-add-select" onchange="onBatchRiskLevelChange()">
+                        <!-- Loaded dynamically -->
+                    </select>
+                </div>
+                <div class="auth-input-group">
+                    <label>交易商品 (Instrument)</label>
+                    <select id="cbatch-instrument" required class="payment-add-select">
+                        <!-- Loaded dynamically -->
+                    </select>
+                </div>
+            </div>
+
+            <!-- Risk level statistics display box -->
+            <div id="cbatch-stats-box" style="display: none; background: rgba(91, 81, 249, 0.06); border: 1px solid rgba(91, 81, 249, 0.15); border-radius: 6px; padding: 10px 12px; font-size: 0.75rem; color: var(--primary); line-height: 1.4;">
+                <!-- Filled dynamically -->
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; border-top: 1px dashed var(--border-light); padding-top: 12px;">
+                <div class="auth-input-group">
+                    <label>买入成交价格 (Buy Price)</label>
+                    <input type="number" step="any" min="0.000001" id="cbatch-buy-price" required placeholder="如: 68500.00">
+                </div>
+                <div class="auth-input-group">
+                    <label>买入执行时间 (Buy Time)</label>
+                    <input type="datetime-local" id="cbatch-buy-time" required>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="auth-input-group">
+                    <label>卖出成交价格 (Sell Price)</label>
+                    <input type="number" step="any" min="0.000001" id="cbatch-sell-price" required placeholder="如: 69000.00">
+                </div>
+                <div class="auth-input-group">
+                    <label>卖出执行时间 (Sell Time)</label>
+                    <input type="datetime-local" id="cbatch-sell-time" required>
+                </div>
+            </div>
+
+            <!-- Advanced settings section -->
+            <details style="margin-top: 5px; font-size: 0.8rem; color: var(--text-secondary);">
+                <summary style="cursor: pointer; font-weight: 600; color: var(--primary); outline: none;">⚙️ 费率设置 (可选，覆盖默认值)</summary>
+                <div style="padding: 10px 0 0 0; display: flex; flex-direction: column; gap: 12px;">
+                    <div style="font-size: 0.7rem; font-weight: bold; color: var(--text-primary); border-bottom: 1px solid var(--border-light); padding-bottom: 4px;">📈 买入费率设置</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                        <div class="auth-input-group">
+                            <label style="font-size: 0.65rem;">算力费用率</label>
+                            <input type="number" step="0.0001" min="0" max="1" id="cbatch-buy-rate-computing" placeholder="默认">
+                        </div>
+                        <div class="auth-input-group">
+                            <label style="font-size: 0.65rem;">经纪费率</label>
+                            <input type="number" step="0.0001" min="0" max="1" id="cbatch-buy-rate-brokerage" placeholder="默认">
+                        </div>
+                        <div class="auth-input-group">
+                            <label style="font-size: 0.65rem;">交易所费率</label>
+                            <input type="number" step="0.0001" min="0" max="1" id="cbatch-buy-rate-exchange" placeholder="默认">
+                        </div>
+                    </div>
+                    
+                    <div style="font-size: 0.7rem; font-weight: bold; color: var(--text-primary); border-bottom: 1px solid var(--border-light); padding-bottom: 4px; margin-top: 5px;">📉 卖出费率设置</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                        <div class="auth-input-group">
+                            <label style="font-size: 0.65rem;">算力费用率</label>
+                            <input type="number" step="0.0001" min="0" max="1" id="cbatch-sell-rate-computing" placeholder="默认">
+                        </div>
+                        <div class="auth-input-group">
+                            <label style="font-size: 0.65rem;">经纪费率</label>
+                            <input type="number" step="0.0001" min="0" max="1" id="cbatch-sell-rate-brokerage" placeholder="默认">
+                        </div>
+                        <div class="auth-input-group">
+                            <label style="font-size: 0.65rem;">交易所费率</label>
+                            <input type="number" step="0.0001" min="0" max="1" id="cbatch-sell-rate-exchange" placeholder="默认">
+                        </div>
+                    </div>
+                </div>
+            </details>
+            
+            <button type="submit" class="admin-auth-btn" style="margin-top: 15px; height: 44px; border-radius: 8px; font-weight: 700; background: var(--primary);" id="cbatch-submit-btn">立即创建并异步清算批次</button>
+        </form>
+    </div>
+</div>
