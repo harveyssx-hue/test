@@ -1,4 +1,4 @@
-// Finance Payments (Deposits, Withdrawals, Account Bindings) Controller
+﻿// Finance Payments (Deposits, Withdrawals, Account Bindings) Controller
 import { state } from '../modules/state.js?v=2.2.0';
 
 let currentPaymentMethods = [];
@@ -497,16 +497,16 @@ async function handleDepositFormSubmit(event) {
             }
         }
     }
-    
+
     if (!proofUrl) {
         showToast(currentLocale === 'hi' ? '⚠️ कृपया जमा वाउचर स्क्रीनशॉट अपलोड करें!' : '⚠️ Please upload deposit voucher screenshot!', true);
         return;
     }
-    
+
     const submitBtn = document.getElementById('deposit-submit-btn');
     submitBtn.disabled = true;
     submitBtn.innerText = currentLocale === 'hi' ? 'जमा अनुरोध सबमिट किया जा रहा है...' : 'Submitting deposit request...';
-    
+
     try {
         // Build stable sorted JSON body exactly matching SIGN-SPEC-1.0 to avoid precision loss on paymentMethodAssetId BigInt
         const bodyStr = `{"amount":${amt},"paymentMethodAssetId":${methodAssetIdStr},"paymentProof":"${proofUrl}","remittanceCode":"${remittanceCode}"}`;
@@ -598,7 +598,7 @@ function switchWithdrawTab(tabId) {
     // Toggle currency symbols
     const symEl = document.getElementById('withdraw-amount-currency-symbol');
     if (symEl) {
-        symEl.innerText = tabId === 'crypto' ? '$' : '\u20b9';
+        symEl.innerText = tabId === 'crypto' ? '$' : '₹';
     }
     
     // Trigger fee recalculation to dynamically update display units and limits
@@ -615,7 +615,7 @@ async function openWithdrawModal() {
             showToast(currentLocale === 'hi' ? '⚠️ आपका केवाईसी सत्यापन समीक्षाधीन है, कृपया निकासी से पहले समीक्षा पूरी होने की प्रतीक्षा करें!' : '⚠️ Your KYC verification is under review, please wait for approval before withdrawing!', true);
             return;
         } else {
-            showToast(currentLocale === 'hi' ? '⚠️ निकासी से पहले आपको केवाईसी पूरा करना होगा और स्वीकृत होना होगा!' : '⚠�  You need to complete KYC verification and be approved before withdrawing!', true);
+            showToast(currentLocale === 'hi' ? '⚠️ निकासी से पहले आपको केवाईसी पूरा करना होगा और स्वीकृत होना होगा!' : '⚠️ You need to complete KYC verification and be approved before withdrawing!', true);
             setTimeout(() => {
                 openKycModal();
             }, 1500);
@@ -647,12 +647,12 @@ async function openWithdrawModal() {
     document.getElementById('selected-withdraw-bank-name-cached').value = '';
     document.getElementById('selected-withdraw-bank-ifsc-cached').value = '';
     
-        const bindingTip = document.getElementById('withdraw-binding-tip');
-    if (bindingTip) bindingTip.innerText = currentLocale === 'hi' ? '\u2139\ufe0f \u0915\u094b\u0908 \u092c\u093e\u0927\u094d\u092f \u092a\u0924\u093e \u0928\u0939\u0940\u0902 \u092e\u093f\u0932\u093e, \u0938\u094d\u0935\u091a\u093e\u0932\u093f\u0924 \u0930\u0942\u092a \u0938\u0947 \u092c\u093e\u0927\u094d\u092f \u0915\u0930\u0928\u0947 \u0915\u0947 \u0932\u093f\u090f \u092a\u0924\u093e \u0926\u0930\u094d\u091c \u0915\u0930\u0947\u0902' : '\u2139\ufe0f No bound address detected, enter address to bind automatically';
+    const bindingTip = document.getElementById('withdraw-binding-tip');
+    if (bindingTip) bindingTip.innerText = currentLocale === 'hi' ? 'ℹ️ कोई बाध्य पता नहीं मिला, स्वचालित रूप से बाध्य करने के लिए पता दर्ज करें' : 'ℹ️ No bound address detected, enter address to bind automatically';
     const upiTip = document.getElementById('withdraw-upi-tip');
-    if (upiTip) upiTip.innerText = currentLocale === 'hi' ? '\u2139\ufe0f \u0915\u094b\u0908 \u092c\u093e\u0927\u094d\u092f \u0916\u093e\u0924\u093e \u0928\u0939\u0940\u0902 \u092e\u093f\u0932\u093e, \u0938\u094d\u0935\u091a\u093e\u0932\u093f\u0924 \u0930\u0942\u092a \u0938\u0947 \u092c\u093e\u0927\u094d\u092f \u0915\u0930\u0928\u0947 \u0915\u0947 \u0932\u093f\u090f \u092f\u0942\u092a\u0940\u0906\u0908 \u0906\u0908\u0921\u0940 \u0926\u0930\u094d\u091c \u0915\u0930\u0947\u0902' : '\u2139\ufe0f No bound account detected, enter UPI ID to bind automatically';
+    if (upiTip) upiTip.innerText = currentLocale === 'hi' ? 'ℹ️ कोई बाध्य खाता नहीं मिला, स्वचालित रूप से बाध्य करने के लिए यूपीआई आईडी दर्ज करें' : 'ℹ️ No bound account detected, enter UPI ID to bind automatically';
     const bankTip = document.getElementById('withdraw-bank-tip');
-    if (bankTip) bankTip.innerText = currentLocale === 'hi' ? '\u2139\ufe0f \u0915\u094b\u0908 \u092c\u093e\u0927\u094d\u092f \u0915\u093e\u0930\u094d\u0921 \u0928\u0939\u0940\u0902 \u092e\u093f\u0932\u093e, \u0938\u094d\u0935\u091a\u093e\u0932\u093f\u0924 \u0930\u0942\u092a \u0938\u0947 \u092c\u093e\u0927\u094d\u092f \u0915\u0930\u0928\u0947 \u0915\u0947 \u0932\u093f\u090f \u092c\u0948\u0902\u0915 \u0935\u093f\u0935\u0930\u0923 \u0926\u0930\u094d\u091c \u0915\u0930\u0947\u0902' : '\u2139\ufe0f No bound card detected, enter bank details to bind automatically';
+    if (bankTip) bankTip.innerText = currentLocale === 'hi' ? 'ℹ️ कोई बाध्य कार्ड नहीं मिला, स्वचालित रूप से बाध्य करने के लिए बैंक विवरण दर्ज करें' : 'ℹ️ No bound card detected, enter bank details to bind automatically';
     
     document.getElementById('withdraw-fee-text').innerText = '0.00 USDT';
     document.getElementById('withdraw-net-amount-text').innerText = '0.00 USDT';
@@ -683,9 +683,9 @@ async function openWithdrawModal() {
 
         if (kycStatus !== 'VERIFIED') {
             if (kycStatus === 'PENDING') {
-                showToast(currentLocale === 'hi' ? '⚠️ आपका केवाईसी सत्यापन समीक्षाधीन है, कृपया निकासी से पहले समीक्षा पूरी होने की प्रतीक्षा करें!' : '⚠�  Your KYC verification is under review, please wait for approval before withdrawing!', true);
+                showToast(currentLocale === 'hi' ? '⚠️ आपका केवाईसी सत्यापन समीक्षाधीन है, कृपया निकासी से पहले समीक्षा पूरी होने की प्रतीक्षा करें!' : '⚠️ Your KYC verification is under review, please wait for approval before withdrawing!', true);
             } else {
-                showToast(currentLocale === 'hi' ? '⚠️ निकासी से पहले आपको केवाईसी पूरा करना होगा और स्वीकृत होना होगा!' : '⚠�  You need to complete KYC verification and be approved before withdrawing!', true);
+                showToast(currentLocale === 'hi' ? '⚠️ निकासी से पहले आपको केवाईसी पूरा करना होगा और स्वीकृत होना होगा!' : '⚠️ You need to complete KYC verification and be approved before withdrawing!', true);
                 setTimeout(() => {
                     openKycModal();
                 }, 1500);
@@ -748,6 +748,9 @@ async function syncWithdrawMinLimit() {
     try {
         const res = await apiFetch('GET', '/common/bootstrap-config', null, false);
         if (res.code === 200 && res.data) {
+            if (res.data.regexPatterns) {
+                window.regexPatterns = res.data.regexPatterns;
+            }
             if (res.data.withdrawMinAmount) {
                 const parsed = parseFloat(res.data.withdrawMinAmount);
                 if (!isNaN(parsed) && parsed > 0) {
@@ -766,7 +769,6 @@ async function syncWithdrawMinLimit() {
         console.warn('Failed to sync withdraw minimum limit:', e);
     }
 }
-
 function calculateWithdrawFee() {
     const amt = parseFloat(document.getElementById('withdraw-amount').value) || 0;
     const activeTab = document.getElementById('current-withdraw-tab').value;
@@ -1051,6 +1053,32 @@ function togglePaymentEdit(method, isEdit) {
     }
 }
 
+function isValidBankCardFormat(cardNo) {
+    const pattern = (window.regexPatterns && window.regexPatterns.bankCard) || '^\\d{12,19}$';
+    return new RegExp(pattern).test(cardNo);
+}
+
+function passesLuhn(cardNo) {
+    if (!isValidBankCardFormat(cardNo)) return false;
+    let sum = 0;
+    let doubleDigit = false;
+    for (let i = cardNo.length - 1; i >= 0; i--) {
+        let d = cardNo.charCodeAt(i) - 48;
+        if (doubleDigit) {
+            d *= 2;
+            if (d > 9) d -= 9;
+        }
+        sum += d;
+        doubleDigit = !doubleDigit;
+    }
+    return sum % 10 === 0;
+}
+
+function isValidUpiFormat(upiVal) {
+    const pattern = (window.regexPatterns && window.regexPatterns.upi) || '^[a-zA-Z0-9.\\-_]+@[a-zA-Z]+$';
+    return new RegExp(pattern).test(upiVal);
+}
+
 async function savePaymentField(method) {
     if (!currentUser) return;
     
@@ -1063,6 +1091,10 @@ async function savePaymentField(method) {
             showToast(currentLocale === 'hi' ? '⚠️ कृपया अपना यूपीआई खाता दर्ज करें!' : '⚠️ Please enter your UPI account!', true);
             return;
         }
+        if (!isValidUpiFormat(upiVal)) {
+            showToast(currentLocale === 'hi' ? '⚠️ अमान्य यूपीआई आईडी प्रारूप!' : '⚠️ Invalid UPI ID format!', true);
+            return;
+        }
         body = { upi: upiVal };
     } else if (method === 'bank') {
         const bankName = document.getElementById('edit-bank-name').value.trim();
@@ -1071,6 +1103,10 @@ async function savePaymentField(method) {
         
         if (!bankName || !accNum || !ifsc) {
             showToast(currentLocale === 'hi' ? '⚠️ कृपया पूरा बैंक विवरण भरें!' : '⚠️ Please fill in complete bank details!', true);
+            return;
+        }
+        if (!passesLuhn(accNum)) {
+            showToast(currentLocale === 'hi' ? '⚠️ अमान्य बैंक कार्ड नंबर (Luhn सत्यापन विफल)!' : '⚠️ Invalid bank card number (Luhn verification failed)!', true);
             return;
         }
         body = { bankName: bankName, accountNumber: accNum, ifsc: ifsc };

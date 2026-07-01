@@ -10,7 +10,12 @@ async function syncBootstrapConfig() {
         const res = await apiFetch('GET', '/common/bootstrap-config', null, false);
         if (res.code === 200 && res.data) {
             isBootstrapSynced = true;
-            if (res.data.phoneRegexPattern) {
+            if (res.data.regexPatterns) {
+                window.regexPatterns = res.data.regexPatterns;
+                if (res.data.regexPatterns.phone) {
+                    window.phoneRegexPattern = res.data.regexPatterns.phone;
+                }
+            } else if (res.data.phoneRegexPattern) {
                 window.phoneRegexPattern = res.data.phoneRegexPattern;
             }
             if (res.data.withdrawMinAmount) {
