@@ -1469,18 +1469,12 @@ export async function openCreateCompletedBatchModal() {
             (window.cachedRiskLevels || []).map(rl => `<option value="${rl.id}">${rl.name} (Level ${rl.level || 0})</option>`).join('');
     }
     
-    await ensureInstrumentsLoaded();
-    const searchInput = document.getElementById('cbatch-instrument-search');
-    if (searchInput) searchInput.value = '';
-    const hiddenInput = document.getElementById('cbatch-instrument');
-    if (hiddenInput) hiddenInput.value = '';
-    
-    // Clear dropdown and hide it on modal open (do NOT render list by default!)
-    const dropdown = document.getElementById('cbatch-instrument-dropdown');
-    if (dropdown) {
-        dropdown.innerHTML = '';
-        dropdown.style.display = 'none';
-    }
+    const exchangeInput = document.getElementById('cbatch-exchange-code');
+    if (exchangeInput) exchangeInput.value = '';
+    const instCodeInput = document.getElementById('cbatch-instrument-code');
+    if (instCodeInput) instCodeInput.value = '';
+    const instNameInput = document.getElementById('cbatch-instrument-name');
+    if (instNameInput) instNameInput.value = '';
     
     // Hide stats box
     const statsBox = document.getElementById('cbatch-stats-box');
@@ -1488,82 +1482,6 @@ export async function openCreateCompletedBatchModal() {
     
     modal.style.display = 'flex';
     modal.classList.add('active');
-}
-
-function renderCbatchInstrumentsDropdown(list) {
-    const dropdown = document.getElementById('cbatch-instrument-dropdown');
-    if (!dropdown) return;
-    
-    if (list.length === 0) {
-        dropdown.innerHTML = '<div style="padding: 10px 16px; color: #64748B; font-size: 0.8rem; text-align: center;">无匹配的商品</div>';
-        return;
-    }
-    
-    dropdown.innerHTML = list.map(inst => {
-        const displayText = `${inst.name} / ${inst.symbol}`.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-        return `
-            <div class="cbatch-instrument-item" data-id="${inst.id}" data-text="${displayText}" onclick="window.selectCbatchInstrument(this)" onmouseover="this.style.background='#F1F5F9'" onmouseout="this.style.background='transparent'" style="padding: 10px 16px; font-size: 0.82rem; color: #1E293B; font-weight: 600; cursor: pointer; transition: background 0.15s; border-bottom: 1px solid #F1F5F9; text-align: left;">
-                ${displayText}
-            </div>
-        `;
-    }).join('');
-}
-
-window.selectCbatchInstrument = function(el) {
-    const id = el.getAttribute('data-id');
-    const text = el.getAttribute('data-text');
-    
-    const hiddenInput = document.getElementById('cbatch-instrument');
-    if (hiddenInput) {
-        hiddenInput.value = id;
-    }
-    const searchInput = document.getElementById('cbatch-instrument-search');
-    if (searchInput) {
-        searchInput.value = text;
-    }
-    const dropdown = document.getElementById('cbatch-instrument-dropdown');
-    if (dropdown) {
-        dropdown.style.display = 'none';
-    }
-};
-
-window.filterCbatchInstruments = function() {
-    const searchInput = document.getElementById('cbatch-instrument-search');
-    if (!searchInput) return;
-    const kw = searchInput.value.trim().toLowerCase();
-    
-    const dropdown = document.getElementById('cbatch-instrument-dropdown');
-    if (!dropdown) return;
-    
-    if (kw === '') {
-        const hiddenInput = document.getElementById('cbatch-instrument');
-        if (hiddenInput) hiddenInput.value = '';
-        dropdown.innerHTML = '';
-        dropdown.style.display = 'none';
-        return;
-    }
-    
-    const list = cachedInstruments || [];
-    const filtered = list.filter(inst => 
-        inst.name.toLowerCase().includes(kw) || 
-        inst.symbol.toLowerCase().includes(kw)
-    );
-    
-    dropdown.style.display = 'block';
-    renderCbatchInstrumentsDropdown(filtered);
-};
-
-window.showCbatchDropdown = function() {
-    window.filterCbatchInstruments();
-};
-
-window.hideCbatchDropdownDelayed = function() {
-    setTimeout(() => {
-        const dropdown = document.getElementById('cbatch-instrument-dropdown');
-        if (dropdown) {
-            dropdown.style.display = 'none';
-        }
-    }, 200);
 }
 
 export function closeCreateCompletedBatchModal() {
@@ -1613,14 +1531,16 @@ export async function submitCreateCompletedBatch(event) {
     if (event) event.preventDefault();
     
     const riskLevelId = document.getElementById('cbatch-risk-level').value;
-    const instrumentId = document.getElementById('cbatch-instrument').value;
+    const exchangeCode = document.getElementById('cbatch-exchange-code').value.trim();
+    const instrumentCode = document.getElementById('cbatch-instrument-code').value.trim();
+    const instrumentName = document.getElementById('cbatch-instrument-name').value.trim();
     const buyPrice = parseFloat(document.getElementById('cbatch-buy-price').value);
     const buyTimeStr = document.getElementById('cbatch-buy-time').value;
     const sellPrice = parseFloat(document.getElementById('cbatch-sell-price').value);
     const sellTimeStr = document.getElementById('cbatch-sell-time').value;
     
-    if (!riskLevelId || !instrumentId) {
-        showToast('❌ 请选择风控层级和交易商品！', true);
+    if (!riskLevelId || !exchangeCode || !instrumentCode || !instrumentName) {
+        showToast('❌ 请填写风控层级、交易所代码和交易商品信息！', true);
         return;
     }
     
@@ -1645,7 +1565,9 @@ export async function submitCreateCompletedBatch(event) {
     
     const reqBody = {
         userRiskLevelId: riskLevelId,
-        instrumentId: instrumentId,
+        exchangeCode: exchangeCode,
+        instrumentCode: instrumentCode,
+        instrumentName: instrumentName,
         buyPrice: buyPrice,
         buyExecutedAt: buyExecutedAt,
         sellPrice: sellPrice,
