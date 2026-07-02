@@ -3072,13 +3072,23 @@ export async function loadQuantDailyUsersList() {
             }
             
             tbody.innerHTML = list.map(item => {
-                const phoneText = userPhoneMap[String(item.userId)] || `UID: ${item.userId}`;
+                const userId = item.user ? item.user.id : (item.userId || '');
+                const nickname = item.user ? item.user.nickname : '';
+                const userUid = item.user ? item.user.uid : '';
+                const phone = userPhoneMap[String(userId)] || '';
+                
+                const phoneText = phone 
+                    ? `${phone}${userUid ? ` (UID: ${userUid})` : ''}` 
+                    : `${nickname || '--'}${userUid ? ` (UID: ${userUid})` : ''}`;
+                
+                const riskLevelName = item.riskLevel ? item.riskLevel.name : (item.riskLevelName || '未分组');
+                
                 return `
                     <tr style="border-bottom: 1.5px solid var(--border-light);">
                         <td style="font-weight: bold; color: var(--text-primary); font-family: monospace;">${item.date}</td>
-                        <td style="font-family: monospace;">${item.userId}</td>
+                        <td style="font-family: monospace;">${userId}</td>
                         <td>${phoneText}</td>
-                        <td><span style="font-weight: 600; color: #38BDF8;">${item.riskLevelName || '未分组'}</span></td>
+                        <td><span style="font-weight: 600; color: #38BDF8;">${riskLevelName}</span></td>
                         <td style="text-align: right; font-weight: bold; color: var(--green);">${item.aiQuantOrders || 0} 笔</td>
                         <td style="text-align: right; font-weight: bold; color: var(--primary);">${item.dailyOrders || 0} 笔</td>
                     </tr>
