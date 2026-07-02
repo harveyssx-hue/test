@@ -1899,7 +1899,26 @@ export async function loadErrorReportsList() {
     }
     
     let path = `/error-reports?page=${pageConf.current}&pageSize=${pageConf.size}`;
-    if (userIdFilter) path += `&userId=${userIdFilter}`;
+    let resolvedUserId = userIdFilter;
+    if (userIdFilter && !/^\d{15,}$/.test(userIdFilter)) {
+        try {
+            const allUsers = await window.adminState.getUsers();
+            const matchedUser = allUsers.find(u => 
+                String(u.id) === userIdFilter ||
+                String(u.uid) === userIdFilter ||
+                (u.username && u.username.toLowerCase() === userIdFilter.toLowerCase()) ||
+                (u.phone && u.phone === userIdFilter) ||
+                (u.email && u.email.toLowerCase() === userIdFilter.toLowerCase()) ||
+                (u.nickname && u.nickname.toLowerCase() === userIdFilter.toLowerCase())
+            );
+            if (matchedUser) {
+                resolvedUserId = String(matchedUser.id);
+            }
+        } catch (e) {
+            console.error("Failed to resolve user ID for error reports:", e);
+        }
+    }
+    if (resolvedUserId) path += `&userId=${resolvedUserId}`;
     if (deviceIdFilter) path += `&deviceId=${deviceIdFilter}`;
     if (osFilter) path += `&os=${osFilter}`;
     if (versionFilter) path += `&appVersion=${versionFilter}`;

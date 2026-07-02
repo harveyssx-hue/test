@@ -1655,10 +1655,28 @@ async function loadManualFundingList() {
         
         const pageConf = window.adminPages.manualFunding;
         
-        const isComplexFilter = (riskLevelFilter !== 'ALL');
+        const isComplexFilter = (riskLevelFilter !== 'ALL' || uidVal !== '');
+        
+        let resolvedUserIds = [];
+        if (uidVal) {
+            const allUsers = await window.adminState.getUsers();
+            resolvedUserIds = allUsers
+                .filter(u => 
+                    String(u.id).includes(uidVal) ||
+                    String(u.uid).toLowerCase().includes(uidVal) ||
+                    (u.phone && String(u.phone).toLowerCase().includes(uidVal)) ||
+                    (u.username && String(u.username).toLowerCase().includes(uidVal)) ||
+                    (u.email && String(u.email).toLowerCase().includes(uidVal)) ||
+                    (u.nickname && String(u.nickname).toLowerCase().includes(uidVal))
+                )
+                .map(u => String(u.id));
+            if (/^\d{15,}$/.test(uidVal) && !resolvedUserIds.includes(uidVal)) {
+                resolvedUserIds.push(uidVal);
+            }
+        }
         
         let queryParams = [];
-        if (uidVal) queryParams.push(`userId=${uidVal}`);
+        if (uidVal && !isComplexFilter) queryParams.push(`userId=${uidVal}`);
         if (subjectIdVal !== 'ALL') queryParams.push(`subjectId=${subjectIdVal}`);
         if (typeVal !== 'ALL') queryParams.push(`type=${typeVal}`);
         if (statusVal !== 'ALL') queryParams.push(`status=${statusVal}`);
@@ -1689,6 +1707,11 @@ async function loadManualFundingList() {
             
             if (isComplexFilter) {
                 let filteredList = list;
+                if (uidVal !== '') {
+                    filteredList = filteredList.filter(o => 
+                        String(o.userId).includes(uidVal) || resolvedUserIds.includes(String(o.userId))
+                    );
+                }
                 if (riskLevelFilter !== 'ALL') {
                     const targetLevelDef = window.cachedRiskLevels?.find(l => String(l.id) === String(riskLevelFilter));
                     const targetLevelNum = targetLevelDef ? (targetLevelDef.level || 0) : null;

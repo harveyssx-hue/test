@@ -1,58 +1,3 @@
-export async function fetchUserUsdtBalance(userId) {
-    try {
-        let accountIds = window.userAccountCache[userId];
-        if (!accountIds) {
-            const acctRes = await apiFetch('GET', `/finance/accounts/${userId}`, null, true);
-            const accounts = acctRes.result || acctRes.data || [];
-            accountIds = accounts.map(a => a.id).filter(id => id);
-            window.userAccountCache[userId] = accountIds;
-        }
-        if (accountIds && accountIds.length > 0) {
-            const balanceMap = {};
-            for (const accountId of accountIds) {
-                const balRes = await apiFetch('GET', `/finance/accounts/${accountId}/balances`, null, true);
-                const balances = balRes.result || balRes.data || [];
-                for (const b of balances) {
-                    const symbol = b.asset?.symbol || (String(b.assetId) === '1183348576672026624' ? 'USDT' : (String(b.assetId) === '1126151490264633456' ? 'INR' : ''));
-                    if (symbol) {
-                        const total = parseFloat(b.total) || 0;
-                        balanceMap[symbol] = (balanceMap[symbol] || 0) + total;
-                    }
-                }
-            }
-            
-            const balanceStrings = [];
-            let hasNonZero = false;
-            
-            const usdtVal = balanceMap['USDT'] || 0;
-            const inrVal = balanceMap['INR'] || 0;
-            const rate = window.userUsdtToInrRate || 1.0;
-            const totalInr = inrVal + usdtVal * rate;
-            
-            if (totalInr > 0) {
-                balanceStrings.push(`₹${totalInr.toFixed(2)}`);
-                hasNonZero = true;
-            }
-            
-            for (const symbol of Object.keys(balanceMap)) {
-                if (symbol !== 'USDT' && symbol !== 'INR') {
-                    const total = balanceMap[symbol];
-                    if (total > 0) {
-                        balanceStrings.push(`${total.toFixed(6)} ${symbol}`);
-                        hasNonZero = true;
-                    }
-                }
-            }
-            if (hasNonZero) {
-                return balanceStrings.join('<br>');
-            }
-            return '₹0.00';
-        }
-    } catch (e) {
-        console.error(`Failed to fetch balances for user ${userId}:`, e);
-    }
-    return '₹0.00';
-}
 
 export async function loadUsersList() {
     if (!currentAdmin) return;
@@ -153,11 +98,12 @@ export async function loadUsersList() {
             let filteredUsers = allUsers;
             if (searchVal !== '') {
                 filteredUsers = filteredUsers.filter(u => 
-                    String(u.id) === searchVal ||
+                    String(u.id).includes(searchVal) ||
                     String(u.uid).includes(searchVal) || 
                     (u.username && u.username.toLowerCase().includes(searchVal)) || 
                     (u.email && u.email.toLowerCase().includes(searchVal)) ||
-                    (u.nickname && u.nickname.toLowerCase().includes(searchVal))
+                    (u.nickname && u.nickname.toLowerCase().includes(searchVal)) ||
+                    (u.phone && String(u.phone).toLowerCase().includes(searchVal))
                 );
             }
             
@@ -303,7 +249,10 @@ export async function loadUsersList() {
                 <td style="text-align: center;">
                     <input type="checkbox" class="user-select-checkbox" value="${u.id}" ${isChecked} onchange="updateBatchActionBtnState()" style="cursor: pointer;">
                 </td>
-                <td>${u.uid || '--'}</td>
+                <td>
+                    <div style="font-weight: 600;">${u.uid || '--'}</div>
+                    <div style="font-size: 0.65rem; color: var(--text-secondary); font-family: monospace; margin-top: 2px;">ID: ${u.id}</div>
+                </td>
                 <td>${u.username || '--'}</td>
                 <td>${u.email || '--'}</td>
                 <td>

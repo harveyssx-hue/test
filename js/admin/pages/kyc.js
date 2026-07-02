@@ -120,9 +120,23 @@ export async function loadKycList() {
                 });
             }
             if (uidVal !== '') {
+                const allUsers = await window.adminState.getUsers();
+                const matchedUserIds = allUsers
+                    .filter(u => 
+                        String(u.id).includes(uidVal) || 
+                        String(u.uid).toLowerCase().includes(uidVal) ||
+                        (u.phone && String(u.phone).toLowerCase().includes(uidVal)) ||
+                        (u.username && String(u.username).toLowerCase().includes(uidVal)) ||
+                        (u.email && String(u.email).toLowerCase().includes(uidVal)) ||
+                        (u.nickname && String(u.nickname).toLowerCase().includes(uidVal))
+                    )
+                    .map(u => String(u.id));
+                
                 allApps = allApps.filter(a => {
                     const phone = phoneMap[String(a.userId)] || '';
-                    return String(a.userId).toLowerCase().includes(uidVal) || phone.toLowerCase().includes(uidVal);
+                    return String(a.userId).toLowerCase().includes(uidVal) || 
+                           phone.toLowerCase().includes(uidVal) || 
+                           matchedUserIds.includes(String(a.userId));
                 });
             }
             if (emailVal !== '') {

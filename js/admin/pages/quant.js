@@ -169,7 +169,7 @@ export async function loadQuantMonitor() {
     }
     
     try {
-        const isComplexFilter = (riskLevelFilter !== 'ALL');
+        const isComplexFilter = (riskLevelFilter !== 'ALL' || uidVal !== '');
         let fetchUrl = '';
         if (isComplexFilter) {
             fetchUrl = `/trading/quant/orders?page=1&pageSize=1000`;
@@ -181,23 +181,27 @@ export async function loadQuantMonitor() {
             if (statusVal !== 'ALL') {
                 fetchUrl += `&status=${statusVal}`;
             }
+            if (uidVal !== '') {
+                fetchUrl += `&userId=${uidVal}`;
+            }
         }
         
-        // Coordinated search by user phone number or full userId
+        let resolvedUserIds = [];
         if (uidVal !== '') {
-            let matchedUserId = uidVal;
-            if (!/^\d{18,}$/.test(uidVal)) {
-                try {
-                    const userPhoneMap = await window.adminState.getUserPhoneMap();
-                    const matchedUid = Object.keys(userPhoneMap).find(id => userPhoneMap[id].toLowerCase().includes(uidVal.toLowerCase()));
-                    if (matchedUid) {
-                        matchedUserId = matchedUid;
-                    }
-                } catch(e) {
-                    console.error("Failed to map user phone for quant orders filter:", e);
-                }
+            const allUsers = await window.adminState.getUsers();
+            resolvedUserIds = allUsers
+                .filter(u => 
+                    String(u.id).includes(uidVal) ||
+                    String(u.uid).toLowerCase().includes(uidVal) ||
+                    (u.phone && String(u.phone).toLowerCase().includes(uidVal)) ||
+                    (u.username && String(u.username).toLowerCase().includes(uidVal)) ||
+                    (u.email && String(u.email).toLowerCase().includes(uidVal)) ||
+                    (u.nickname && String(u.nickname).toLowerCase().includes(uidVal))
+                )
+                .map(u => String(u.id));
+            if (/^\d{15,}$/.test(uidVal) && !resolvedUserIds.includes(uidVal)) {
+                resolvedUserIds.push(uidVal);
             }
-            fetchUrl += `&userId=${matchedUserId}`;
         }
 
         const res = await apiFetch('GET', fetchUrl, null, true);
@@ -262,7 +266,7 @@ export async function loadQuantMonitor() {
             const targetLevelDef = window.cachedRiskLevels?.find(l => String(l.id) === String(riskLevelFilter));
             const targetLevelNum = targetLevelDef ? (targetLevelDef.level || 0) : null;
             filteredOrders = filteredOrders.filter(o => {
-                const levelId = o.riskLevelId || '';
+                const levelId = o.riskLevelId || (o.riskLevel ? o.riskLevel.id : '');
                 if (!levelId) {
                     return targetLevelNum === 0;
                 }
@@ -273,6 +277,11 @@ export async function loadQuantMonitor() {
                 const currentLevelNum = levelDef ? (levelDef.level || 0) : 0;
                 return targetLevelNum !== null && currentLevelNum === targetLevelNum;
             });
+        }
+        if (uidVal !== '') {
+            filteredOrders = filteredOrders.filter(o => 
+                String(o.userId).includes(uidVal) || resolvedUserIds.includes(String(o.userId))
+            );
         }
         if (orderNoVal !== '') {
             filteredOrders = filteredOrders.filter(o => String(o.orderNo).toLowerCase().includes(orderNoVal));
@@ -376,9 +385,9 @@ export async function loadQuantMonitor() {
                         <td>
                             <div style="font-weight: 600;">${userAccount}</div>
                             <div style="color: var(--primary); font-size: 0.72rem; font-weight: 600; font-family: monospace;">${userUidStr}${(() => {
-                                const levelId = o.riskLevelId || '';
+                                const levelId = o.riskLevelId || (o.riskLevel ? o.riskLevel.id : '');
                                 const levelDef = (window.cachedRiskLevels || []).find(l => String(l.id) === String(levelId));
-                                const riskLevelName = levelDef ? levelDef.name : '未分组';
+                                const riskLevelName = levelDef ? levelDef.name : (o.riskLevel && o.riskLevel.name ? o.riskLevel.name : '未分组');
                                 return `<br><span style="font-size: 0.68rem; color: #38BDF8; font-weight: 600;">${riskLevelName}</span>`;
                             })()}</div>
                             <div style="color: var(--text-muted); font-size: 0.68rem;">正式</div>
@@ -515,62 +524,6 @@ async function handleQuantReviewSubmit(orderId, action) {
     }
 }
 
-window.userAccountCache = window.userAccountCache || {};
-async function fetchUserUsdtBalance(userId) {
-    try {
-        let accountIds = window.userAccountCache[userId];
-        if (!accountIds) {
-            const acctRes = await apiFetch('GET', `/finance/accounts/${userId}`, null, true);
-            const accounts = acctRes.result || acctRes.data || [];
-            accountIds = accounts.map(a => a.id).filter(id => id);
-            window.userAccountCache[userId] = accountIds;
-        }
-        if (accountIds && accountIds.length > 0) {
-            const balanceMap = {};
-            for (const accountId of accountIds) {
-                const balRes = await apiFetch('GET', `/finance/accounts/${accountId}/balances`, null, true);
-                const balances = balRes.result || balRes.data || [];
-                for (const b of balances) {
-                    const symbol = b.asset?.symbol || (String(b.assetId) === '1183348576672026624' ? 'USDT' : (String(b.assetId) === '1126151490264633456' ? 'INR' : ''));
-                    if (symbol) {
-                        const total = parseFloat(b.total) || 0;
-                        balanceMap[symbol] = (balanceMap[symbol] || 0) + total;
-                    }
-                }
-            }
-            
-            const balanceStrings = [];
-            let hasNonZero = false;
-            
-            const usdtVal = balanceMap['USDT'] || 0;
-            const inrVal = balanceMap['INR'] || 0;
-            const rate = window.userUsdtToInrRate || 1.0;
-            const totalInr = inrVal + usdtVal * rate;
-            
-            if (totalInr > 0) {
-                balanceStrings.push(`₹${totalInr.toFixed(2)}`);
-                hasNonZero = true;
-            }
-            
-            for (const symbol of Object.keys(balanceMap)) {
-                if (symbol !== 'USDT' && symbol !== 'INR') {
-                    const total = balanceMap[symbol];
-                    if (total > 0) {
-                        balanceStrings.push(`${total.toFixed(6)} ${symbol}`);
-                        hasNonZero = true;
-                    }
-                }
-            }
-            if (hasNonZero) {
-                return balanceStrings.join('<br>');
-            }
-            return '₹0.00';
-        }
-    } catch (e) {
-        console.error(`Failed to fetch balances for user ${userId}:`, e);
-    }
-    return '₹0.00';
-}
 
 
 export // --- QUANT STRATEGIES MANAGEMENT Logic (平台量化策略模板控制中心 CRUD) ---
@@ -1763,9 +1716,9 @@ export async function loadActiveOrdersForSettle() {
             await ensureRiskLevelsLoaded();
             
             tbody.innerHTML = list.map(o => {
-                const levelId = o.riskLevelId || '';
+                const levelId = o.riskLevelId || (o.riskLevel ? o.riskLevel.id : '');
                 const levelDef = (window.cachedRiskLevels || []).find(l => String(l.id) === String(levelId));
-                const levelName = levelDef ? `${levelDef.name} (Level ${levelDef.level || 0})` : '默认层级 (Level 0)';
+                const levelName = levelDef ? `${levelDef.name} (Level ${levelDef.level || 0})` : (o.riskLevel && o.riskLevel.name ? o.riskLevel.name : '默认层级 (Level 0)');
                 
                 const userVal = userPhoneMap[String(o.userId)] ? `${userPhoneMap[String(o.userId)]} (UID: ${o.userId})` : `UID: ${o.userId}`;
                 const amountVal = o.investAmount ? parseFloat(o.investAmount).toFixed(2) + ' USDT' : '--';
@@ -1927,10 +1880,30 @@ async function loadCopyTradingLeaders() {
             const bodyEl = document.getElementById('copytrading-leaders-table-body');
             if (!bodyEl) return;
             
+            let resolvedUserIds = [];
+            if (filterUid !== '') {
+                const allUsers = await window.adminState.getUsers();
+                resolvedUserIds = allUsers
+                    .filter(u => 
+                        String(u.id).includes(filterUid) ||
+                        String(u.uid).toLowerCase().includes(filterUid) ||
+                        (u.phone && String(u.phone).toLowerCase().includes(filterUid)) ||
+                        (u.username && String(u.username).toLowerCase().includes(filterUid)) ||
+                        (u.email && String(u.email).toLowerCase().includes(filterUid)) ||
+                        (u.nickname && String(u.nickname).toLowerCase().includes(filterUid))
+                    )
+                    .map(u => String(u.id));
+                if (/^\d{15,}$/.test(filterUid) && !resolvedUserIds.includes(filterUid)) {
+                    resolvedUserIds.push(filterUid);
+                }
+            }
+
             // Local hybrid search filter
             let filteredList = list;
             if (filterUid !== '') {
-                filteredList = filteredList.filter(l => String(l.userId).toLowerCase().includes(filterUid));
+                filteredList = filteredList.filter(l => 
+                    String(l.userId).toLowerCase().includes(filterUid) || resolvedUserIds.includes(String(l.userId))
+                );
             }
             if (filterNickname !== '') {
                 filteredList = filteredList.filter(l => String(l.name || '').toLowerCase().includes(filterNickname) || String(l.title || '').toLowerCase().includes(filterNickname));
