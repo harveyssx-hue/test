@@ -31,6 +31,7 @@
                         <th>标识代码</th>
                         <th>充值限额</th>
                         <th>提现限额</th>
+                        <th>日订单限制</th>
                         <th>提现需审核</th>
                         <th>备注描述</th>
                         <th>启用状态</th>
@@ -80,12 +81,18 @@
                 </div>
             </div>
             
-            <div class="auth-input-group" style="margin-bottom: 15px;">
-                <label>提现人工审核 (Need Audit)</label>
-                <select id="risk-level-needAudit" required class="payment-add-select">
-                    <option value="true">需要人工审核 (TRUE)</option>
-                    <option value="false">免审核直接放款 (FALSE)</option>
-                </select>
+            <div class="form-grid-2" style="margin-bottom: 15px;">
+                <div class="auth-input-group">
+                    <label>提现人工审核 (Need Audit)</label>
+                    <select id="risk-level-needAudit" required class="payment-add-select">
+                        <option value="true">需要人工审核 (TRUE)</option>
+                        <option value="false">免审核直接放款 (FALSE)</option>
+                    </select>
+                </div>
+                <div class="auth-input-group">
+                    <label>日最多订单量限制</label>
+                    <input type="number" min="0" id="risk-level-dailyMaxOrders" required placeholder="0表示不限制">
+                </div>
             </div>
             
             <div class="auth-input-group" style="width: 100%; margin-bottom: 20px;">

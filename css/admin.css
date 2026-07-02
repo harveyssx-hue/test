@@ -1474,6 +1474,13 @@ tr:hover td.sticky-right {
     padding: 6px 0;
 }
 
+.action-dropdown-container.dropup .action-dropdown-menu {
+    top: auto;
+    bottom: 100%;
+    margin-top: 0;
+    margin-bottom: 5px;
+}
+
 .dropdown-item {
     display: block;
     padding: 8px 16px;

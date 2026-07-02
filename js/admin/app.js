@@ -1,4 +1,4 @@
-﻿// js/admin/app.js
+// js/admin/app.js
 window.isAdminPanel = true;
 import { state } from './state.js';
 
@@ -51,6 +51,12 @@ const tabConfig = {
         desc: '对已被批准运行中 (ACTIVE) 的量化委托订单进行单独、策略批量或多选批量价格操盘与盈亏结算',
         controller: 'quant',
         init: () => window.loadQuantSettleList()
+    },
+    'quant-daily-users': {
+        title: '📊 用户订单日统计报表',
+        desc: '多维度统计全站量化订单的日运行记录与量化指标，支持按用户UID及风控层级穿透检索',
+        controller: 'quant',
+        init: () => window.loadQuantDailyUsersList()
     },
     'copytrading': {
         title: '👑 导师带单与跟随合规中心',
@@ -321,6 +327,7 @@ window.adminPages = {
     rates: { current: 1, size: 10 },
     strategies: { current: 1, size: 10 },
     quantSettle: { current: 1, size: 10 },
+    quantDailyUsers: { current: 1, size: 10 },
     manualFunding: { current: 1, size: 10 },
     manualSubjects: { current: 1, size: 10 },
     instruments: { current: 1, size: 10 },
@@ -389,6 +396,7 @@ export function changeAdminPage(type, delta) {
     else if (typeof window.loadExchangeRatesList === 'function' && type === 'rates') window.loadExchangeRatesList();
     else if (typeof window.loadPlatformStrategies === 'function' && type === 'strategies') window.loadPlatformStrategies();
     else if (typeof window.loadQuantSettleList === 'function' && type === 'quantSettle') window.loadQuantSettleList();
+    else if (typeof window.loadQuantDailyUsersList === 'function' && type === 'quantDailyUsers') window.loadQuantDailyUsersList();
     else if (typeof window.loadManualFundingList === 'function' && type === 'manualFunding') window.loadManualFundingList();
     else if (typeof window.loadManualSubjectsList === 'function' && type === 'manualSubjects') window.loadManualSubjectsList();
     else if (typeof window.loadInstrumentsList === 'function' && type === 'instruments') window.loadInstrumentsList();
@@ -419,6 +427,7 @@ export function changeAdminPageSize(type, newSize) {
     else if (typeof window.loadExchangeRatesList === 'function' && type === 'rates') window.loadExchangeRatesList();
     else if (typeof window.loadPlatformStrategies === 'function' && type === 'strategies') window.loadPlatformStrategies();
     else if (typeof window.loadQuantSettleList === 'function' && type === 'quantSettle') window.loadQuantSettleList();
+    else if (typeof window.loadQuantDailyUsersList === 'function' && type === 'quantDailyUsers') window.loadQuantDailyUsersList();
     else if (typeof window.loadManualFundingList === 'function' && type === 'manualFunding') window.loadManualFundingList();
     else if (typeof window.loadManualSubjectsList === 'function' && type === 'manualSubjects') window.loadManualSubjectsList();
     else if (typeof window.loadInstrumentsList === 'function' && type === 'instruments') window.loadInstrumentsList();

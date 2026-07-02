@@ -1231,7 +1231,14 @@ export async function openBindPaymentRiskLevelsModal(paymentMethodId) {
         
         // Fetch current bindings
         const bindingsRes = await apiFetch('GET', `/finance/payment-methods/${paymentMethodId}/risk-level-bindings`, null, true);
-        const boundIds = bindingsRes.code === 200 ? (bindingsRes.result || bindingsRes.data || []) : [];
+        
+        let boundIds = [];
+        if (bindingsRes.code === 200) {
+            const resData = bindingsRes.result || bindingsRes.data || {};
+            // The API returns { paymentMethodId: ..., levels: [...] } where levels contains bound risk level items
+            const levelsList = Array.isArray(resData) ? resData : (resData.levels || []);
+            boundIds = levelsList.map(item => String(item.id || item));
+        }
         
         if (container) {
             if (!window.cachedRiskLevels || window.cachedRiskLevels.length === 0) {
@@ -1240,7 +1247,7 @@ export async function openBindPaymentRiskLevelsModal(paymentMethodId) {
             }
             
             container.innerHTML = window.cachedRiskLevels.map(rl => {
-                const isChecked = boundIds.includes(rl.id) ? 'checked' : '';
+                const isChecked = boundIds.includes(String(rl.id)) ? 'checked' : '';
                 return `
                     <label style="display: flex; align-items: center; gap: 8px; font-size: 0.78rem; cursor: pointer; color: var(--text-primary);">
                         <input type="checkbox" class="payment-bind-risk-checkbox" value="${rl.id}" ${isChecked}>

@@ -201,24 +201,43 @@ export async function loadUsersList() {
             users = paginateList(filteredUsers, 'users');
         }
     } else {
-        // No filter active: direct native server-side pagination!
+        // No filter active: try querying the server first to check if server-side pagination is supported
         const res = await apiFetch('GET', `/users?page=${pageConf.current}&pageSize=${pageConf.size}`, null, true);
         if (res.code === 200) {
-            users = res.result || res.data || [];
-            
-            users.forEach(u => {
-                u.kycStatus = u.kycStatus || 'NOT_VERIFIED';
-            });
-            
-            window.cachedUsersList = users;
-            
-            pagingObj = res.paging || {
-                page: pageConf.current,
-                pageSize: pageConf.size,
-                records: users.length,
-                pages: 1
-            };
-            updateAdminPageIndicator('users', pagingObj);
+            const serverPaging = res.paging;
+            // If the server returns a valid paging configuration (records > 0 and pageSize > 0), use server-side pagination
+            if (serverPaging && serverPaging.records > 0 && serverPaging.pageSize > 0) {
+                users = res.result || res.data || [];
+                users.forEach(u => {
+                    u.kycStatus = u.kycStatus || 'NOT_VERIFIED';
+                });
+                window.cachedUsersList = users;
+                pagingObj = serverPaging;
+                updateAdminPageIndicator('users', pagingObj);
+            } else {
+                // Otherwise fallback to client-side pagination using the adminState cache to avoid database/network burden
+                const allUsers = await window.adminState.getUsers();
+                if (allUsers) {
+                    users = allUsers;
+                    users.forEach(u => {
+                        u.kycStatus = u.kycStatus || 'NOT_VERIFIED';
+                    });
+                    
+                    window.cachedUsersList = users;
+                    
+                    pagingObj = {
+                        page: pageConf.current,
+                        pageSize: pageConf.size,
+                        records: users.length,
+                        pages: Math.max(1, Math.ceil(users.length / pageConf.size))
+                    };
+                    
+                    users = paginateList(users, 'users');
+                } else {
+                    showToast('获取用户列表失败！', true);
+                    return;
+                }
+            }
         } else {
             showToast(res.errorMessage || '获取用户列表失败！', true);
             return;
@@ -245,7 +264,7 @@ export async function loadUsersList() {
     
     window.selectedUserIds = window.selectedUserIds || {};
     
-    bodyEl.innerHTML = users.map(u => {
+    bodyEl.innerHTML = users.map((u, index) => {
         const date = u.createdAt ? new Date(parseInt(u.createdAt)).toLocaleDateString() : '--';
         
         const kycBadgeType = u.kycStatus === 'APPROVED' ? 'APPROVED' : (u.kycStatus === 'PENDING' ? 'PENDING' : 'REJECTED');
@@ -276,6 +295,9 @@ export async function loadUsersList() {
             
         const subordinatesBtn = `<div style="margin-top: 4px;"><button class="action-btn" onclick="showUserReferralsTree('${u.id}', '${u.nickname || u.uid}')" style="padding: 2px 6px; font-size: 0.65rem; background: rgba(16, 185, 129, 0.1); border: 1.5px solid rgba(16, 185, 129, 0.25); color: #10B981; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 2px; height: 20px; font-weight: 600;">🌳 下级关系树</button></div>`;
         
+        const isLastUser = (index === users.length - 1);
+        const dropupClass = isLastUser ? 'dropup' : '';
+
         return `
             <tr>
                 <td style="text-align: center;">
@@ -304,7 +326,7 @@ export async function loadUsersList() {
                 <td style="font-weight: 600;">${balanceText}</td>
                 <td style="color: var(--text-muted);">${date}</td>
                 <td class="sticky-right" style="text-align: center;">
-                    <div class="action-dropdown-container">
+                    <div class="action-dropdown-container ${dropupClass}">
                         <button class="action-btn btn-approve" onclick="toggleUserActionDropdown(event, '${u.id}')" style="padding: 4px 10px; font-size: 0.72rem; font-weight: 600; background: var(--primary); color: white; border: none; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; height: 26px;">
                             操作 ▾
                         </button>
@@ -356,6 +378,7 @@ async function toggleUserStatus(userId, newStatus) {
         
         if (res.code === 200) {
             showToast(`✓ 交易员账户已成功${actionStr}！`, false);
+            window.adminState.clearUsersCache();
             loadUsersList(); // 自动热刷新列表
         } else {
             showToast(res.errorMessage || `执行${actionStr}失败！`, true);
@@ -550,6 +573,7 @@ async function submitUpdateReferralUser() {
         if (res.code === 200) {
             showToast('✓ 推荐人关系已成功强制变更！', false);
             closeUpdateReferralModal();
+            window.adminState.clearUsersCache();
             if (typeof loadUsersList === 'function') {
                 loadUsersList();
             }
@@ -618,6 +642,7 @@ export async function loadRiskLevelsList() {
                         <td><code style="background: rgba(0,0,0,0.04); padding: 2px 6px; border-radius: 4px; font-family: monospace; font-weight: 600;">等级 ${item.level || 0}</code></td>
                         <td style="font-weight: 600; color: var(--text-primary);">${parseFloat(item.depositLimit || 0).toFixed(2)} USDT</td>
                         <td style="font-weight: 600; color: var(--text-primary);">${parseFloat(item.withdrawLimit || 0).toFixed(2)} USDT</td>
+                        <td>${item.dailyMaxOrders !== undefined && item.dailyMaxOrders > 0 ? `${item.dailyMaxOrders} 单/日` : '<span style="color: var(--text-muted);">不限制</span>'}</td>
                         <td>${needAuditText}</td>
                         <td>${item.remark || item.memo || '-'}</td>
                         <td>
@@ -703,6 +728,8 @@ export function openRiskLevelModal(id = null) {
     const needAuditEl = document.getElementById('risk-level-needAudit');
     const remarkEl = document.getElementById('risk-level-remark');
     
+    const dailyMaxOrdersEl = document.getElementById('risk-level-dailyMaxOrders');
+    
     if (!titleEl || !editIdEl) return;
     
     if (id) {
@@ -717,6 +744,9 @@ export function openRiskLevelModal(id = null) {
             withdrawLimitEl.value = matched.withdrawLimit !== undefined ? matched.withdrawLimit : '';
             needAuditEl.value = matched.needAudit ? 'true' : 'false';
             remarkEl.value = matched.remark || matched.memo || '';
+            if (dailyMaxOrdersEl) {
+                dailyMaxOrdersEl.value = matched.dailyMaxOrders !== undefined ? matched.dailyMaxOrders : '0';
+            }
         }
     } else {
         titleEl.innerText = '🛡️ 新增风控层级';
@@ -727,6 +757,9 @@ export function openRiskLevelModal(id = null) {
         withdrawLimitEl.value = '0';
         needAuditEl.value = 'true';
         remarkEl.value = '';
+        if (dailyMaxOrdersEl) {
+            dailyMaxOrdersEl.value = '0';
+        }
     }
     
     const modal = document.getElementById('risk-level-modal');
@@ -757,6 +790,8 @@ export async function submitRiskLevelForm(event) {
     const needAudit = document.getElementById('risk-level-needAudit').value === 'true';
     const remark = document.getElementById('risk-level-remark').value.trim();
     
+    const dailyMaxOrders = parseInt(document.getElementById('risk-level-dailyMaxOrders')?.value) || 0;
+    
     if (!name || isNaN(level)) {
         showToast('层级名称和级别是必填字段！', true);
         return;
@@ -771,6 +806,7 @@ export async function submitRiskLevelForm(event) {
         withdrawLimit,
         needAudit,
         remark,
+        dailyMaxOrders,
         enabled: true
     };
     

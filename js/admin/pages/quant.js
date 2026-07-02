@@ -1461,6 +1461,19 @@ export async function openCreateCompletedBatchModal() {
         console.error("Failed to pre-fill fee rates:", e);
     }
     
+    // Fetch bootstrap config to pre-fill default timezone
+    try {
+        const configRes = await apiFetch('GET', '/bootstrap-config', null, true);
+        if (configRes.code === 200 && configRes.data && configRes.data.marketTimezone) {
+            const tzSelect = document.getElementById('cbatch-timezone');
+            if (tzSelect) {
+                tzSelect.value = configRes.data.marketTimezone;
+            }
+        }
+    } catch (e) {
+        console.error("Failed to load bootstrap config for timezone:", e);
+    }
+    
     // Populate risk level options and instrument options
     await ensureRiskLevelsLoaded();
     const levelSelect = document.getElementById('cbatch-risk-level');
@@ -1527,6 +1540,60 @@ export async function onBatchRiskLevelChange() {
     }
 }
 
+function getTimestampInTimezone(dateTimeStr, timeZone) {
+    if (!dateTimeStr) return 0;
+    const parts = dateTimeStr.split(/[-TH:]/);
+    if (parts.length < 5) return 0;
+    
+    const year = parseInt(parts[0]);
+    const month = parseInt(parts[1]);
+    const day = parseInt(parts[2]);
+    const hour = parseInt(parts[3]);
+    const minute = parseInt(parts[4]);
+    
+    // 1. Create a dummy date around this time in UTC to calculate the offset for this specific date
+    const dummyDate = new Date(Date.UTC(year, month - 1, day, hour, minute));
+    
+    // 2. Format to parts in the target timezone
+    try {
+        const formatter = new Intl.DateTimeFormat('en-US', {
+            timeZone,
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: 'numeric',
+            second: 'numeric',
+            hour12: false
+        });
+        const formattedParts = formatter.formatToParts(dummyDate);
+        
+        let tzYear, tzMonth, tzDay, tzHour = 0, tzMinute = 0, tzSecond = 0;
+        formattedParts.forEach(p => {
+            if (p.type === 'year') tzYear = parseInt(p.value);
+            else if (p.type === 'month') tzMonth = parseInt(p.value) - 1;
+            else if (p.type === 'day') tzDay = parseInt(p.value);
+            else if (p.type === 'hour') {
+                let val = parseInt(p.value);
+                if (val === 24) val = 0;
+                tzHour = val;
+            }
+            else if (p.type === 'minute') tzMinute = parseInt(p.value);
+            else if (p.type === 'second') tzSecond = parseInt(p.value);
+        });
+        
+        const tzDateUtc = Date.UTC(tzYear, tzMonth, tzDay, tzHour, tzMinute, tzSecond);
+        const offset = tzDateUtc - dummyDate.getTime();
+        
+        // 3. The actual UTC timestamp is local time minus offset
+        const localUtc = Date.UTC(year, month - 1, day, hour, minute);
+        return localUtc - offset;
+    } catch (e) {
+        console.error("Timezone conversion failed, fallback to local date parsing:", e);
+        return new Date(dateTimeStr).getTime();
+    }
+}
+
 export async function submitCreateCompletedBatch(event) {
     if (event) event.preventDefault();
     
@@ -1538,6 +1605,7 @@ export async function submitCreateCompletedBatch(event) {
     const buyTimeStr = document.getElementById('cbatch-buy-time').value;
     const sellPrice = parseFloat(document.getElementById('cbatch-sell-price').value);
     const sellTimeStr = document.getElementById('cbatch-sell-time').value;
+    const timeZone = document.getElementById('cbatch-timezone').value;
     
     if (!riskLevelId || !exchangeCode || !instrumentCode || !instrumentName) {
         showToast('❌ 请填写风控层级、交易所代码和交易商品信息！', true);
@@ -1554,9 +1622,9 @@ export async function submitCreateCompletedBatch(event) {
         return;
     }
     
-    // Parse times to unix timestamps in seconds
-    const buyExecutedAt = Math.floor(new Date(buyTimeStr).getTime() / 1000);
-    const sellExecutedAt = Math.floor(new Date(sellTimeStr).getTime() / 1000);
+    // Parse times to unix timestamps in seconds using selected timezone
+    const buyExecutedAt = Math.floor(getTimestampInTimezone(buyTimeStr, timeZone) / 1000);
+    const sellExecutedAt = Math.floor(getTimestampInTimezone(sellTimeStr, timeZone) / 1000);
     
     if (sellExecutedAt < buyExecutedAt) {
         showToast('❌ 卖出执行时间不能早于买入执行时间！', true);
@@ -2883,3 +2951,139 @@ window.refreshOrderDetailTrades = refreshOrderDetailTrades;
 window.toggleQdetailActionFields = toggleQdetailActionFields;
 window.recalculateQdetailQuantity = recalculateQdetailQuantity;
 window.submitDetailTradeControl = submitDetailTradeControl;
+
+export async function loadQuantDailyUsersList() {
+    if (!currentAdmin) return;
+    
+    // 1. Populate risk levels dropdown if not already populated or if options count is 1
+    const rlSelect = document.getElementById('filter-qdu-risk-level');
+    if (rlSelect && rlSelect.options.length <= 1) {
+        if (!window.cachedRiskLevels || window.cachedRiskLevels.length === 0) {
+            try {
+                const rlRes = await apiFetch('GET', '/users/risk-levels', null, true);
+                if (rlRes.code === 200) {
+                    window.cachedRiskLevels = rlRes.result || rlRes.data || [];
+                }
+            } catch (e) {
+                console.error("Failed to load risk levels for daily users report:", e);
+            }
+        }
+        
+        const currentSelected = rlSelect.value;
+        rlSelect.innerHTML = '<option value="ALL">全部风控层级</option>';
+        const riskLevels = window.cachedRiskLevels || [];
+        riskLevels.forEach(rl => {
+            if (rl.enabled) {
+                const opt = document.createElement('option');
+                opt.value = rl.id;
+                opt.textContent = `${rl.name} (等级 ${rl.level || 0})`;
+                rlSelect.appendChild(opt);
+            }
+        });
+        rlSelect.value = currentSelected || 'ALL';
+    }
+
+    const uidVal = document.getElementById('filter-qdu-uid')?.value.trim() || '';
+    const riskLevelVal = document.getElementById('filter-qdu-risk-level')?.value || 'ALL';
+    const startDateVal = document.getElementById('filter-qdu-start-date')?.value || '';
+    const endDateVal = document.getElementById('filter-qdu-end-date')?.value || '';
+    
+    const pageConf = window.adminPages.quantDailyUsers;
+    
+    let queryParams = [];
+    queryParams.push(`page=${pageConf.current}`);
+    queryParams.push(`pageSize=${pageConf.size}`);
+    
+    if (uidVal) {
+        queryParams.push(`userId=${uidVal}`);
+    }
+    if (riskLevelVal !== 'ALL') {
+        queryParams.push(`riskLevelIds=${riskLevelVal}`);
+    }
+    if (startDateVal) {
+        const startMs = new Date(startDateVal.replace(/-/g, '/') + ' 00:00:00').getTime();
+        if (!isNaN(startMs)) {
+            queryParams.push(`startTime=${startMs}`);
+        }
+    }
+    if (endDateVal) {
+        const endMs = new Date(endDateVal.replace(/-/g, '/') + ' 23:59:59').getTime();
+        if (!isNaN(endMs)) {
+            queryParams.push(`endTime=${endMs}`);
+        }
+    }
+    
+    const url = `/trading/quant/orders/statistics/daily-users?${queryParams.join('&')}`;
+    const tbody = document.getElementById('quant-daily-users-table-body');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">🔄 正在拉取用户量化订单日统计报表...</td></tr>';
+    
+    let userPhoneMap = {};
+    try {
+        userPhoneMap = await window.adminState.getUserPhoneMap();
+    } catch (e) {
+        console.error("Failed to load userPhoneMap in daily users stats:", e);
+    }
+
+    try {
+        const res = await apiFetch('GET', url, null, true);
+        if (res.code === 200) {
+            const list = res.result || res.data || [];
+            
+            const paging = res.paging || {
+                page: pageConf.current,
+                pageSize: pageConf.size,
+                records: list.length,
+                pages: 1
+            };
+            
+            updateAdminPageIndicator('quantDailyUsers', paging);
+            
+            if (list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">📭 暂无匹配的用户订单日统计数据</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = list.map(item => {
+                const phoneText = userPhoneMap[String(item.userId)] || `UID: ${item.userId}`;
+                return `
+                    <tr style="border-bottom: 1.5px solid var(--border-light);">
+                        <td style="font-weight: bold; color: var(--text-primary); font-family: monospace;">${item.date}</td>
+                        <td style="font-family: monospace;">${item.userId}</td>
+                        <td>${phoneText}</td>
+                        <td><span style="font-weight: 600; color: #38BDF8;">${item.riskLevelName || '未分组'}</span></td>
+                        <td style="text-align: right; font-weight: bold; color: var(--green);">${item.aiQuantOrders || 0} 笔</td>
+                        <td style="text-align: right; font-weight: bold; color: var(--primary);">${item.dailyOrders || 0} 笔</td>
+                    </tr>
+                `;
+            }).join('');
+        } else {
+            showToast(res.errorMessage || '获取订单日统计报表失败！', true);
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #EF4444; padding: 40px 0;">❌ 获取失败: ${res.errorMessage || '未知接口错误'}</td></tr>`;
+        }
+    } catch (e) {
+        console.error(e);
+        showToast('获取订单日统计报表网络异常！', true);
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #EF4444; padding: 40px 0;">❌ 网络请求错误，请重试！</td></tr>';
+    }
+}
+window.loadQuantDailyUsersList = loadQuantDailyUsersList;
+
+export function resetQuantDailyUsersFilters() {
+    const uidInput = document.getElementById('filter-qdu-uid');
+    const rlSelect = document.getElementById('filter-qdu-risk-level');
+    const startInput = document.getElementById('filter-qdu-start-date');
+    const endInput = document.getElementById('filter-qdu-end-date');
+    
+    if (uidInput) uidInput.value = '';
+    if (rlSelect) rlSelect.value = 'ALL';
+    if (startInput) startInput.value = '';
+    if (endInput) endInput.value = '';
+    
+    window.adminPages.quantDailyUsers.current = 1;
+    loadQuantDailyUsersList();
+    showToast('✓ 检索条件已重置', false);
+}
+window.resetQuantDailyUsersFilters = resetQuantDailyUsersFilters;
+

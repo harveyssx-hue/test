@@ -1,0 +1,67 @@
+<div class="view-tab-content active" id="view-quant-daily-users">
+    <div class="glass-panel data-panel" style="padding: 18px;">
+        <!-- Header -->
+        <div class="data-panel-header" style="border-bottom: 1.5px solid var(--border-light); padding-bottom: 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+            <div class="data-panel-title" style="font-size: 1.15rem; color: var(--primary); display: flex; align-items: center; gap: 6px; font-weight: bold;">
+                📊 用户订单日统计报表
+            </div>
+            <!-- Pagination Controls Right -->
+            <div style="display: flex; gap: 6px; align-items: center; background: rgba(255, 255, 255, 0.05); padding: 2px 8px; border-radius: 6px; border: 1.5px solid var(--border-light);">
+                <select class="filter-select" id="quantDailyUsers-size-select" onchange="changeAdminPageSize('quantDailyUsers', this.value)" style="height: 24px; font-size: 0.7rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 2px; width: 85px; background: transparent; color: var(--text-primary); font-weight: 600; cursor: pointer; outline: none; margin-right: 5px;">
+                    <option value="10" selected>10 条/页</option>
+                    <option value="20">20 条/页</option>
+                    <option value="50">50 条/页</option>
+                    <option value="100">100 条/页</option>
+                </select>
+                <button class="action-btn" onclick="changeAdminPage('quantDailyUsers', -1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">上一页</button>
+                <span id="quantDailyUsers-page-indicator" style="font-size: 0.72rem; font-weight: 600; color: var(--text-primary); margin: 0 4px; white-space: nowrap;">第 1 / 1 页 (共 0 条)</span>
+                <button class="action-btn" onclick="changeAdminPage('quantDailyUsers', 1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">下一页</button>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 15px; padding: 12px; background: rgba(255, 255, 255, 0.02); border: 1.5px solid var(--border-light); border-radius: 8px;">
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+                <label style="font-size: 0.68rem; font-weight: 600; color: var(--text-secondary);">查询用户 ID</label>
+                <input type="text" id="filter-qdu-uid" placeholder="请输入用户 ID" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 8px; background: transparent; color: var(--text-primary); width: 140px; outline: none;">
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+                <label style="font-size: 0.68rem; font-weight: 600; color: var(--text-secondary);">风控层级</label>
+                <select id="filter-qdu-risk-level" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 4px; width: 140px; background: transparent; color: var(--text-primary); cursor: pointer; outline: none;">
+                    <option value="ALL">全部风控层级</option>
+                </select>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+                <label style="font-size: 0.68rem; font-weight: 600; color: var(--text-secondary);">日期范围</label>
+                <div style="display: flex; align-items: center; gap: 4px;">
+                    <input type="date" id="filter-qdu-start-date" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 6px; background: transparent; color: var(--text-primary); outline: none;">
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">-</span>
+                    <input type="date" id="filter-qdu-end-date" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 6px; background: transparent; color: var(--text-primary); outline: none;">
+                </div>
+            </div>
+            <div style="display: flex; gap: 6px; align-items: flex-end; margin-top: 16px;">
+                <button class="action-btn" onclick="loadQuantDailyUsersList()" style="height: 28px; font-size: 0.72rem; padding: 0 12px; border-radius: 4px; background: var(--primary); color: white; border: none; font-weight: 600; cursor: pointer;">🔍 查询报表</button>
+                <button class="action-btn" onclick="resetQuantDailyUsersFilters()" style="height: 28px; font-size: 0.72rem; padding: 0 12px; border-radius: 4px; background: rgba(255, 255, 255, 0.08); color: var(--text-primary); border: 1px solid var(--border-light); font-weight: 600; cursor: pointer;">🔄 重置</button>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-container compact-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="min-width: 110px;">统计日期</th>
+                        <th>用户 ID</th>
+                        <th>用户昵称 / 关系</th>
+                        <th>所属风控层级</th>
+                        <th style="text-align: right;">AI 量化订单数量</th>
+                        <th style="text-align: right;">累计日订单数</th>
+                    </tr>
+                </thead>
+                <tbody id="quant-daily-users-table-body">
+                    <tr><td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">🔄 正在拉取用户量化订单日统计报表...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
