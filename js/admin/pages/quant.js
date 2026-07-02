@@ -3081,7 +3081,11 @@ export async function loadQuantDailyUsersList() {
                     ? `${phone}${userUid ? ` (UID: ${userUid})` : ''}` 
                     : `${nickname || '--'}${userUid ? ` (UID: ${userUid})` : ''}`;
                 
-                const riskLevelName = item.riskLevel ? item.riskLevel.name : (item.riskLevelName || '未分组');
+                const levelId = item.riskLevel ? item.riskLevel.id : '';
+                const levelDef = (window.cachedRiskLevels || []).find(l => String(l.id) === String(levelId));
+                const riskLevelName = levelDef 
+                    ? `${levelDef.name} (等级 ${levelDef.level || 0})` 
+                    : (item.riskLevel && item.riskLevel.name ? item.riskLevel.name : '未分组');
                 
                 return `
                     <tr style="border-bottom: 1.5px solid var(--border-light);">
