@@ -1464,14 +1464,18 @@ export async function openCreateCompletedBatchModal() {
     // Fetch bootstrap config to pre-fill default timezone
     try {
         const configRes = await apiFetch('GET', '/bootstrap-config', null, true);
+        let tz = 'Asia/Kolkata'; // Default fallback
         if (configRes.code === 200 && configRes.data && configRes.data.marketTimezone) {
+            tz = configRes.data.marketTimezone;
             const tzSelect = document.getElementById('cbatch-timezone');
             if (tzSelect) {
-                tzSelect.value = configRes.data.marketTimezone;
+                tzSelect.value = tz;
             }
         }
+        updateBatchTimezoneDefaultTimes(tz);
     } catch (e) {
         console.error("Failed to load bootstrap config for timezone:", e);
+        updateBatchTimezoneDefaultTimes('Asia/Kolkata');
     }
     
     // Populate risk level options and instrument options
@@ -1568,7 +1572,7 @@ function getTimestampInTimezone(dateTimeStr, timeZone) {
         });
         const formattedParts = formatter.formatToParts(dummyDate);
         
-        let tzYear, tzMonth, tzDay, tzHour = 0, tzMinute = 0, tzSecond = 0;
+        let tzYear = year, tzMonth = month - 1, tzDay = day, tzHour = hour, tzMinute = minute, tzSecond = 0;
         formattedParts.forEach(p => {
             if (p.type === 'year') tzYear = parseInt(p.value);
             else if (p.type === 'month') tzMonth = parseInt(p.value) - 1;
@@ -1593,6 +1597,55 @@ function getTimestampInTimezone(dateTimeStr, timeZone) {
         return new Date(dateTimeStr).getTime();
     }
 }
+
+function getCurrentTimeInTimezone(timeZone) {
+    try {
+        const now = new Date();
+        const formatter = new Intl.DateTimeFormat('en-US', {
+            timeZone,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        });
+        const parts = formatter.formatToParts(now);
+        let year, month, day, hour, minute;
+        parts.forEach(p => {
+            if (p.type === 'year') year = p.value;
+            else if (p.type === 'month') month = p.value;
+            else if (p.type === 'day') day = p.value;
+            else if (p.type === 'hour') {
+                let val = parseInt(p.value);
+                if (val === 24) val = 0;
+                hour = String(val).padStart(2, '0');
+            }
+            else if (p.type === 'minute') minute = p.value;
+        });
+        return `${year}-${month}-${day}T${hour}:${minute}`;
+    } catch (e) {
+        console.error("Failed to format current time in timezone:", e);
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hour = String(now.getHours()).padStart(2, '0');
+        const minute = String(now.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hour}:${minute}`;
+    }
+}
+
+export function updateBatchTimezoneDefaultTimes(timeZone) {
+    const buyInput = document.getElementById('cbatch-buy-time');
+    const sellInput = document.getElementById('cbatch-sell-time');
+    if (buyInput && sellInput) {
+        const timeStr = getCurrentTimeInTimezone(timeZone);
+        buyInput.value = timeStr;
+        sellInput.value = timeStr;
+    }
+}
+window.updateBatchTimezoneDefaultTimes = updateBatchTimezoneDefaultTimes;
 
 export async function submitCreateCompletedBatch(event) {
     if (event) event.preventDefault();
@@ -3086,4 +3139,5 @@ export function resetQuantDailyUsersFilters() {
     showToast('✓ 检索条件已重置', false);
 }
 window.resetQuantDailyUsersFilters = resetQuantDailyUsersFilters;
+window.updateBatchTimezoneDefaultTimes = updateBatchTimezoneDefaultTimes;
 

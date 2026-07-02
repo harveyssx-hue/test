@@ -786,4 +786,23 @@ window.loadDashboardStats = async () => {};
 document.addEventListener('DOMContentLoaded', () => {
     checkAdminSession();
     initializeSidebarGroups();
+    
+    // Premium click scale & micro-feedback interceptor
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('button, .action-btn, .admin-auth-btn, .menu-item, .logout-icon-btn');
+        if (btn) {
+            window.lastClickedButton = btn;
+            btn.classList.add('btn-active-feedback');
+            setTimeout(() => {
+                btn.classList.remove('btn-active-feedback');
+            }, 150);
+            
+            // Clear reference in the next tick so background polling doesn't capture it
+            setTimeout(() => {
+                if (window.lastClickedButton === btn) {
+                    window.lastClickedButton = null;
+                }
+            }, 50);
+        }
+    });
 });

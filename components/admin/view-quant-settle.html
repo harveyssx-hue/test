@@ -151,7 +151,7 @@
 
             <div class="auth-input-group" style="margin-bottom: 15px; border-top: 1px dashed var(--border-light); padding-top: 12px;">
                 <label>股票交易市场时区 (Market Timezone)</label>
-                <select id="cbatch-timezone" required class="payment-add-select">
+                <select id="cbatch-timezone" required class="payment-add-select" onchange="updateBatchTimezoneDefaultTimes(this.value)">
                     <option value="Asia/Kolkata">印度 (Asia/Kolkata - GMT+5:30)</option>
                     <option value="US/Eastern">美国东部 (US/Eastern - GMT-5/GMT-4)</option>
                     <option value="Asia/Shanghai">中国/香港 (Asia/Shanghai - GMT+8)</option>

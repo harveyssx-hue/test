@@ -1498,3 +1498,59 @@ tr:hover td.sticky-right {
     color: var(--primary) !important;
 }
 
+/* Premium Click & Active Micro-feedback */
+.action-btn:active, 
+.admin-auth-btn:active, 
+.logout-icon-btn:active,
+.drawer-close-btn:active,
+.menu-item:active,
+button:active {
+    transform: scale(0.96) !important;
+    opacity: 0.85;
+}
+
+/* Temporary active feedback scale-down */
+.btn-active-feedback {
+    transform: scale(0.96) !important;
+    opacity: 0.85;
+    transition: transform 0.1s ease, opacity 0.1s ease;
+}
+
+/* Button Loading State Styles */
+button.loading,
+.action-btn.loading,
+.admin-auth-btn.loading {
+    position: relative !important;
+    color: transparent !important;
+    pointer-events: none !important;
+    cursor: not-allowed !important;
+}
+
+button.loading::after,
+.action-btn.loading::after,
+.admin-auth-btn.loading::after {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: auto;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: button-spin 0.6s linear infinite;
+}
+
+@keyframes button-spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+

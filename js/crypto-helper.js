@@ -1,4 +1,4 @@
-﻿// Lexical stable stringify and HMAC-SHA256 signature helpers using modern native Web Crypto API
+// Lexical stable stringify and HMAC-SHA256 signature helpers using modern native Web Crypto API
 // Conforms strictly to SIGN-SPEC-1.0 for production security authentication.
 
 function getLocalizedError(key) {
@@ -156,135 +156,114 @@ function checkRateLimit(path) {
  * Features production-grade disaster recovery parser for non-JSON responses to completely avoid frontend screen crashes.
  */
 async function apiFetch(method, path, body = null, requireAuth = true) {
-    method = method.toUpperCase();
-    const timestamp = Date.now().toString();
-    
-    // Natively generate and persist unique device UUID following SIGN-SPEC-1.0 to bypass risk controls
-    let deviceId = localStorage.getItem('matp_device_id');
-    if (!deviceId) {
-        deviceId = 'dev_' + 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-            return v.toString(16);
-        });
-        localStorage.setItem('matp_device_id', deviceId);
+    const triggerButton = window.lastClickedButton;
+    if (triggerButton) {
+        triggerButton.activeRequests = (triggerButton.activeRequests || 0) + 1;
+        triggerButton.classList.add('loading');
     }
     
-    // Normalize path with `/api/v1` prefix
-    let realPath = path.startsWith('/api/v1') ? path : '/api/v1' + path;
+    try {
+        method = method.toUpperCase();
+        const timestamp = Date.now().toString();
+        
+        // Natively generate and persist unique device UUID following SIGN-SPEC-1.0 to bypass risk controls
+        let deviceId = localStorage.getItem('matp_device_id');
+        if (!deviceId) {
+            deviceId = 'dev_' + 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+            localStorage.setItem('matp_device_id', deviceId);
+        }
+        
+        // Normalize path with `/api/v1` prefix
+        let realPath = path.startsWith('/api/v1') ? path : '/api/v1' + path;
+        
+        // Add trailing slash only to specific admin endpoints that require it (users, kyc, tenants, risk-levels)
+        const pathsWithTrailingSlash = [
+            '/api/v1/users',
+            '/api/v1/users/kyc',
+            '/api/v1/tenants',
+            '/api/v1/users/risk-levels'
+        ];
+        let [pathPart, queryPart] = realPath.split('?');
+        if (pathsWithTrailingSlash.includes(pathPart) && !pathPart.endsWith('/')) {
+            pathPart += '/';
+        }
+        realPath = queryPart ? `${pathPart}?${queryPart}` : pathPart;
     
-    // Add trailing slash only to specific admin endpoints that require it (users, kyc, tenants, risk-levels)
-    const pathsWithTrailingSlash = [
-        '/api/v1/users',
-        '/api/v1/users/kyc',
-        '/api/v1/tenants',
-        '/api/v1/users/risk-levels'
-    ];
-    let [pathPart, queryPart] = realPath.split('?');
-    if (pathsWithTrailingSlash.includes(pathPart) && !pathPart.endsWith('/')) {
-        pathPart += '/';
-    }
-    realPath = queryPart ? `${pathPart}?${queryPart}` : pathPart;
-
-    // Client-side rate-limiting check conforming to 3.1
-    if (!checkRateLimit(realPath)) {
-        return {
-            code: 429,
-            errorMessage: getLocalizedError('rate_limit')
+        // Client-side rate-limiting check conforming to 3.1
+        if (!checkRateLimit(realPath)) {
+            return {
+                code: 429,
+                errorMessage: getLocalizedError('rate_limit')
+            };
+        }
+        
+        // Stable serialization of body: empty objects/arrays evaluate to "" for signatures (per 3-API调用规范.md)
+        let bodyStr = '';
+        if (body !== null && (typeof body !== 'object' || Object.keys(body).length > 0)) {
+            bodyStr = stableStringify(body);
+        }
+        
+        // Intelligent environment routing: detect admin page context or admin routes
+        let baseUrl = CONFIG.APP_API_BASE;
+        const isAdminRequest = window.isAdminPanel === true || window.location.pathname.includes('admin') || realPath.startsWith('/api/v1/admin') || realPath.includes('audit') || realPath.includes('approve') || realPath.includes('reject');
+        const isCommonEndpoint = realPath.includes('/common/') || realPath.includes('/itick/') || (realPath.includes('/market/') && !realPath.includes('/market/holidays'));
+        const isAdminPageContext = window.isAdminPanel === true || window.location.pathname.includes('admin');
+        const routeToAdmin = (isAdminPageContext || isAdminRequest) && !isCommonEndpoint;
+        if (routeToAdmin) {
+            baseUrl = CONFIG.ADMIN_API_BASE;
+        }
+        
+        // Retrieve Auth Credentials
+        const accessToken = localStorage.getItem('matp_access_token');
+        const sessionKey = localStorage.getItem('matp_session_key');
+        
+        let isCrossOrigin = false;
+        try {
+            if (baseUrl.startsWith('http')) {
+                isCrossOrigin = new URL(baseUrl).origin !== window.location.origin;
+            }
+        } catch(e) {}
+    
+        const headers = (routeToAdmin || isCrossOrigin) ? {
+            'Content-Type': 'application/json'
+        } : {
+            'Content-Type': 'application/json',
+            'X-App-Version': CONFIG.APP_VERSION,
+            'X-Device-Id': deviceId,
+            'X-Timestamp': timestamp,
+            'X-Locale': CONFIG.DEFAULT_LOCALE
         };
-    }
-    
-    // Stable serialization of body: empty objects/arrays evaluate to "" for signatures (per 3-API调用规范.md)
-    let bodyStr = '';
-    if (body !== null && (typeof body !== 'object' || Object.keys(body).length > 0)) {
-        bodyStr = stableStringify(body);
-    }
-    
-    // Intelligent environment routing: detect admin page context or admin routes
-    let baseUrl = CONFIG.APP_API_BASE;
-    const isAdminRequest = window.isAdminPanel === true || window.location.pathname.includes('admin') || realPath.startsWith('/api/v1/admin') || realPath.includes('audit') || realPath.includes('approve') || realPath.includes('reject');
-    const isCommonEndpoint = realPath.includes('/common/') || realPath.includes('/itick/') || (realPath.includes('/market/') && !realPath.includes('/market/holidays'));
-    const isAdminPageContext = window.isAdminPanel === true || window.location.pathname.includes('admin');
-    const routeToAdmin = (isAdminPageContext || isAdminRequest) && !isCommonEndpoint;
-    if (routeToAdmin) {
-        baseUrl = CONFIG.ADMIN_API_BASE;
-    }
-    
-    // Retrieve Auth Credentials
-    const accessToken = localStorage.getItem('matp_access_token');
-    const sessionKey = localStorage.getItem('matp_session_key');
-    
-    let isCrossOrigin = false;
-    try {
-        if (baseUrl.startsWith('http')) {
-            isCrossOrigin = new URL(baseUrl).origin !== window.location.origin;
-        }
-    } catch(e) {}
-
-    const headers = (routeToAdmin || isCrossOrigin) ? {
-        'Content-Type': 'application/json'
-    } : {
-        'Content-Type': 'application/json',
-        'X-App-Version': CONFIG.APP_VERSION,
-        'X-Device-Id': deviceId,
-        'X-Timestamp': timestamp,
-        'X-Locale': CONFIG.DEFAULT_LOCALE
-    };
-    
-    // Admin API endpoints are strictly cookie-based and must not carry User App Bearer Tokens
-    if (requireAuth && accessToken && !routeToAdmin) {
-        headers['X-Token'] = `Bearer ${accessToken}`;
-        if (sessionKey) {
-            // Apply HMAC signature strictly conforming to SIGN-SPEC-1.0: exclude QueryString from path
-            const signaturePath = realPath.split('?')[0];
-            const signature = await signRequest(method, signaturePath, timestamp, bodyStr, sessionKey);
-            headers['X-Signature'] = signature;
-        }
-    }
-    
-    try {
-        const isLocalDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const finalPath = (routeToAdmin && isLocalDev) ? '/admin-proxy' + realPath : realPath;
-        const response = await fetch(baseUrl + finalPath, {
-            method: method,
-            headers: headers,
-            credentials: routeToAdmin ? 'include' : 'same-origin',
-            cache: 'no-store',
-            body: method !== 'GET' && method !== 'DELETE' && body !== null ? bodyStr : undefined
-        });
         
-        // Disaster-recovery safe parser for non-JSON or HTTP error responses
-        const text = await response.text();
-        
-        // Check for 401 unauthorized session expiration
-        if (response.status === 401) {
-            const isAdmin = window.isAdminPanel === true || window.location.pathname.includes('admin');
-            if (isAdmin) {
-                ['matp_admin_logged_in', 'matp_admin_access_token', 'matp_admin_session_key', 'matp_admin_user_uid', 'matp_admin_user_email'].forEach(k => localStorage.removeItem(k));
-                setTimeout(() => {
-                    if (window.checkAdminSession) {
-                        window.checkAdminSession();
-                    } else {
-                        window.location.href = 'admin_login.html';
-                    }
-                }, 100);
-            } else {
-                if (localStorage.getItem('matp_access_token')) {
-                    ['matp_access_token','matp_session_key','matp_user_uid','matp_user_nickname','matp_user_email','matp_user_kyc'].forEach(k => localStorage.removeItem(k));
-                    setTimeout(() => {
-                        if (window.checkAuthSession) window.checkAuthSession();
-                    }, 100);
-                }
+        // Admin API endpoints are strictly cookie-based and must not carry User App Bearer Tokens
+        if (requireAuth && accessToken && !routeToAdmin) {
+            headers['X-Token'] = `Bearer ${accessToken}`;
+            if (sessionKey) {
+                // Apply HMAC signature strictly conforming to SIGN-SPEC-1.0: exclude QueryString from path
+                const signaturePath = realPath.split('?')[0];
+                const signature = await signRequest(method, signaturePath, timestamp, bodyStr, sessionKey);
+                headers['X-Signature'] = signature;
             }
         }
         
         try {
-            // Quote BigInts (15+ digits) safely outside string literals to prevent precision loss in JS
-            const safeText = text.replace(
-                /("[^"\\]*(?:\\.[^"\\]*)*")|(?<=[:,\s\[]|^)(-?\d{15,})(?=[,\}\]\s]|$)/g,
-                (match, p1, p2) => p1 ? p1 : '"' + p2 + '"'
-            );
-            const parsed = JSON.parse(safeText);
-            if (parsed.code === 401) {
+            const isLocalDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            const finalPath = (routeToAdmin && isLocalDev) ? '/admin-proxy' + realPath : realPath;
+            const response = await fetch(baseUrl + finalPath, {
+                method: method,
+                headers: headers,
+                credentials: routeToAdmin ? 'include' : 'same-origin',
+                cache: 'no-store',
+                body: method !== 'GET' && method !== 'DELETE' && body !== null ? bodyStr : undefined
+            });
+            
+            // Disaster-recovery safe parser for non-JSON or HTTP error responses
+            const text = await response.text();
+            
+            // Check for 401 unauthorized session expiration
+            if (response.status === 401) {
                 const isAdmin = window.isAdminPanel === true || window.location.pathname.includes('admin');
                 if (isAdmin) {
                     ['matp_admin_logged_in', 'matp_admin_access_token', 'matp_admin_session_key', 'matp_admin_user_uid', 'matp_admin_user_email'].forEach(k => localStorage.removeItem(k));
@@ -304,20 +283,56 @@ async function apiFetch(method, path, body = null, requireAuth = true) {
                     }
                 }
             }
-            return parsed;
+            
+            try {
+                // Quote BigInts (15+ digits) safely outside string literals to prevent precision loss in JS
+                const safeText = text.replace(
+                    /("[^"\\]*(?:\\.[^"\\]*)*")|(?<=[:,\s\[]|^)(-?\d{15,})(?=[,\}\]\s]|$)/g,
+                    (match, p1, p2) => p1 ? p1 : '"' + p2 + '"'
+                );
+                const parsed = JSON.parse(safeText);
+                if (parsed.code === 401) {
+                    const isAdmin = window.isAdminPanel === true || window.location.pathname.includes('admin');
+                    if (isAdmin) {
+                        ['matp_admin_logged_in', 'matp_admin_access_token', 'matp_admin_session_key', 'matp_admin_user_uid', 'matp_admin_user_email'].forEach(k => localStorage.removeItem(k));
+                        setTimeout(() => {
+                            if (window.checkAdminSession) {
+                                window.checkAdminSession();
+                            } else {
+                                window.location.href = 'admin_login.html';
+                            }
+                        }, 100);
+                    } else {
+                        if (localStorage.getItem('matp_access_token')) {
+                            ['matp_access_token','matp_session_key','matp_user_uid','matp_user_nickname','matp_user_email','matp_user_kyc'].forEach(k => localStorage.removeItem(k));
+                            setTimeout(() => {
+                                if (window.checkAuthSession) window.checkAuthSession();
+                            }, 100);
+                        }
+                    }
+                }
+                return parsed;
+            } catch(e) {
+                console.error('API response is not a valid JSON string:', text);
+                return {
+                    code: response.status,
+                    errorMessage: text || `Server responded with status code: ${response.status}`
+                };
+            }
         } catch(e) {
-            console.error('API response is not a valid JSON string:', text);
+            console.error('Network request failed or endpoint unreachable:', e);
             return {
-                code: response.status,
-                errorMessage: text || `Server responded with status code: ${response.status}`
+                code: 500,
+                errorMessage: getLocalizedError('network_cors')
             };
         }
-    } catch(e) {
-        console.error('Network request failed or endpoint unreachable:', e);
-        return {
-            code: 500,
-            errorMessage: getLocalizedError('network_cors')
-        };
+    } finally {
+        if (triggerButton) {
+            triggerButton.activeRequests = Math.max(0, (triggerButton.activeRequests || 1) - 1);
+            if (triggerButton.activeRequests === 0) {
+                triggerButton.classList.remove('loading');
+            }
+        }
     }
 }
 
