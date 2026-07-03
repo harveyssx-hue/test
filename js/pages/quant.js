@@ -371,6 +371,12 @@ function openOrderDetailsDrawer(orderId) {
     const orderTimeStr = order.createdAt ? new Date(parseInt(order.createdAt)).toLocaleString() : '--';
     document.getElementById('detail-order-time').innerText = orderTimeStr;
     
+    // Timezone
+    const tzEl = document.getElementById('detail-order-timezone');
+    if (tzEl) {
+        tzEl.innerText = order.tradeTimezone || '--';
+    }
+    
     // Trade details
     const buyPriceVal = buyTrade ? parseFloat(buyTrade.price) : null;
     const sellPriceVal = sellTrade ? parseFloat(sellTrade.price) : null;

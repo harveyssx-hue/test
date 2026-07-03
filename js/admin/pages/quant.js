@@ -401,7 +401,7 @@ export async function loadQuantMonitor() {
                         <td style="text-align: center; font-family: monospace;">1</td>
                         <td>
                             <div style="font-family: monospace; font-size: 0.72rem; font-weight: 600;">${o.orderNo}</div>
-                            <div style="color: var(--text-muted); font-size: 0.68rem; margin-top: 2px;">${formattedFullTime}</div>
+                            <div style="color: var(--text-muted); font-size: 0.68rem; margin-top: 2px;">${formattedFullTime}${o.tradeTimezone ? ` <span style="color: var(--primary); font-weight: 600;">(${o.tradeTimezone})</span>` : ''}</div>
                             ${(o.status === 'ACTIVE' || o.status === 'COMPLETED') && o.price && o.quantity ? `<div style="color: var(--primary); font-size: 0.68rem; margin-top: 3px; font-weight: 600;">📈 买入: ${parseFloat(o.price).toFixed(2)} / ${parseFloat(o.quantity).toFixed(4)}</div>` : ''}
                         </td>
                         <td style="font-size: 0.72rem; line-height: 1.3; font-weight: 600;">${commissionRate}</td>
@@ -1358,7 +1358,10 @@ function renderActiveSettleListHtml(batches = []) {
             <tr>
                 <td style="font-family: monospace; font-size: 0.72rem; font-weight: 600; color: var(--primary);">${idStr}</td>
                 <td style="font-weight: 600; color: var(--text-primary);">${riskLevelName}</td>
-                <td style="font-weight: 600; color: var(--text-primary);">${instrumentName}</td>
+                <td style="font-weight: 600; color: var(--text-primary);">
+                    <div>${instrumentName}</div>
+                    ${b.tradeTimezone ? `<div style="font-size: 0.65rem; color: var(--text-muted); font-weight: normal; margin-top: 2px;">🌐 ${b.tradeTimezone}</div>` : ''}
+                </td>
                 <td>
                     <div style="font-weight: 700; color: var(--text-primary); font-family: 'Outfit';">${buyPriceVal}</div>
                     <div style="font-size: 0.68rem; color: var(--text-muted);">${buyTimeVal}</div>
@@ -1632,8 +1635,13 @@ export async function submitCreateCompletedBatch(event) {
     const buyExecutedAt = Math.floor(getTimestampInTimezone(buyTimeStr, timeZone) / 1000);
     const sellExecutedAt = Math.floor(getTimestampInTimezone(sellTimeStr, timeZone) / 1000);
     
-    if (sellExecutedAt < buyExecutedAt) {
-        showToast('❌ 卖出执行时间不能早于买入执行时间！', true);
+    if (isNaN(buyExecutedAt) || isNaN(sellExecutedAt) || buyExecutedAt <= 0 || sellExecutedAt <= 0) {
+        showToast('❌ 投资执行时间格式无效，请重新选择！', true);
+        return;
+    }
+    
+    if (sellExecutedAt <= buyExecutedAt) {
+        showToast('❌ 卖出执行时间不能早于或等于买入执行时间！', true);
         return;
     }
     
@@ -1645,7 +1653,8 @@ export async function submitCreateCompletedBatch(event) {
         buyPrice: buyPrice,
         buyExecutedAt: buyExecutedAt,
         sellPrice: sellPrice,
-        sellExecutedAt: sellExecutedAt
+        sellExecutedAt: sellExecutedAt,
+        tradeTimezone: timeZone
     };
     
     // Optional rate overrides (numbers, convert from string if present)
@@ -1739,7 +1748,10 @@ export async function loadActiveOrdersForSettle() {
                         <td style="font-weight: 700; color: var(--primary);">${amountVal}</td>
                         <td>${dirBadge}</td>
                         <td style="font-family: 'Outfit'; font-weight: 600;">${buyPriceVal}</td>
-                        <td style="font-size: 0.68rem; color: var(--text-muted);">${timeStr}</td>
+                        <td style="font-size: 0.68rem; color: var(--text-muted);">
+                            <div>${timeStr}</div>
+                            ${o.tradeTimezone ? `<span style="color: var(--primary); font-weight: 600; font-size: 0.62rem;">🌐 ${o.tradeTimezone}</span>` : ''}
+                        </td>
                         <td style="text-align: center;">${actionBtn}</td>
                     </tr>
                 `;
