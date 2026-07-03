@@ -32,25 +32,29 @@ async function loadInstrumentsList() {
             instrumentsList = dataList;
             
             // 使用后端返回的分页数据更新界面分页状态
-            const paging = res.paging || { page: pageConf.current, pages: 1, pageSize: pageConf.size, records: dataList.length };
-            const totalItems = paging.records !== undefined ? paging.records : dataList.length;
-            const totalPages = paging.pages !== undefined ? paging.pages : Math.max(1, Math.ceil(totalItems / pageConf.size));
+            const isBackendPaginated = res.paging && res.paging.pages !== undefined && res.paging.pages > 1;
             
-            pageConf.current = paging.page || pageConf.current;
-            
-            // 更新页面底部页码文字指示器
-            const indicator = document.getElementById('instruments-page-indicator');
-            if (indicator) {
-                indicator.innerText = `第 ${pageConf.current} / ${totalPages} 页 (共 ${totalItems} 条)`;
+            let renderList = dataList;
+            if (isBackendPaginated) {
+                const paging = res.paging;
+                pageConf.pages = paging.pages || 1;
+                pageConf.current = paging.page || pageConf.current;
+                const indicator = document.getElementById('instruments-page-indicator');
+                if (indicator) {
+                    indicator.innerText = `第 ${pageConf.current} / ${pageConf.pages} 页 (共 ${paging.records || dataList.length} 条)`;
+                }
+            } else {
+                // Fallback to client-side pagination to prevent page lag/freeze when dataList is large
+                renderList = window.paginateList(dataList, 'instruments');
             }
             
-            if (dataList.length === 0) {
+            if (renderList.length === 0) {
                 tableBody.innerHTML = '<tr><td colspan="11" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">📭 暂无匹配的交易商品记录</td></tr>';
                 return;
             }
             
             let html = '';
-            dataList.forEach(inst => {
+            renderList.forEach(inst => {
                 const enabledChecked = inst.enabled ? 'checked' : '';
                 const coreChecked = inst.isCore ? 'checked' : '';
                 const recChecked = inst.recommended ? 'checked' : '';
