@@ -1595,10 +1595,14 @@ function getCurrentTimeInTimezone(timeZone) {
 export function updateBatchTimezoneDefaultTimes(timeZone) {
     const buyInput = document.getElementById('cbatch-buy-time');
     const sellInput = document.getElementById('cbatch-sell-time');
+    const deadlineInput = document.getElementById('cbatch-deadline-time');
     if (buyInput && sellInput) {
         const timeStr = getCurrentTimeInTimezone(timeZone);
         buyInput.value = timeStr;
         sellInput.value = timeStr;
+        if (deadlineInput) {
+            deadlineInput.value = timeStr;
+        }
     }
 }
 window.updateBatchTimezoneDefaultTimes = updateBatchTimezoneDefaultTimes;
@@ -1631,6 +1635,17 @@ export async function submitCreateCompletedBatch(event) {
         return;
     }
     
+    const deadlineTimeStr = document.getElementById('cbatch-deadline-time')?.value || '';
+    if (!deadlineTimeStr) {
+        showToast('❌ 请指定订单截止时间！', true);
+        return;
+    }
+    const orderDeadlineAt = Math.floor(getTimestampInTimezone(deadlineTimeStr, timeZone) / 1000);
+    if (isNaN(orderDeadlineAt) || orderDeadlineAt <= 0) {
+        showToast('❌ 订单截止时间格式无效，请重新选择！', true);
+        return;
+    }
+    
     // Parse times to unix timestamps in seconds using selected timezone
     const buyExecutedAt = Math.floor(getTimestampInTimezone(buyTimeStr, timeZone) / 1000);
     const sellExecutedAt = Math.floor(getTimestampInTimezone(sellTimeStr, timeZone) / 1000);
@@ -1654,6 +1669,7 @@ export async function submitCreateCompletedBatch(event) {
         buyExecutedAt: buyExecutedAt,
         sellPrice: sellPrice,
         sellExecutedAt: sellExecutedAt,
+        orderDeadlineAt: orderDeadlineAt,
         tradeTimezone: timeZone
     };
     
@@ -1681,7 +1697,16 @@ export async function submitCreateCompletedBatch(event) {
     try {
         const res = await apiFetch('POST', '/trading/quant/trades/risk-level/batches/completed', reqBody, true);
         if (res.code === 200) {
-            showToast('✓ 完整投资批次已成功创建，系统正在异步展开清结算！', false);
+            const dataObj = res.result || res.data || {};
+            const failedIds = dataObj.failedOrderIds || [];
+            const successIds = dataObj.successOrderIds || [];
+            
+            if (failedIds.length > 0) {
+                // Focus on failed IDs by showing a warning popup/toast
+                showToast(`✓ 创建批次成功，但部分订单清算失败！成功: ${successIds.length} 笔，失败: ${failedIds.length} 笔。失败订单 ID: ${failedIds.join(', ')}`, true);
+            } else {
+                showToast(`✓ 完整投资批次已成功创建！共成功清算 ${successIds.length} 笔订单。`, false);
+            }
             closeCreateCompletedBatchModal();
             loadQuantSettleList();
         } else {

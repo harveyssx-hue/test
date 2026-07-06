@@ -20,6 +20,17 @@ function getLocalizedError(key) {
     return (dict[key] && dict[key][locale]) ? dict[key][locale] : (dict[key] ? dict[key]['en'] : key);
 }
 
+function getSystemTimezone() {
+    try {
+        if (typeof Intl !== 'undefined' && Intl.DateTimeFormat) {
+            return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+        }
+    } catch (e) {
+        console.error("Failed to resolve system timezone:", e);
+    }
+    return 'UTC';
+}
+
 /**
  * Lexicographical stable stringify for JSON bodies according to SIGN-SPEC-1.0.
  * Rules:
@@ -228,13 +239,15 @@ async function apiFetch(method, path, body = null, requireAuth = true) {
         } catch(e) {}
     
         const headers = (routeToAdmin || isCrossOrigin) ? {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-Timezone': getSystemTimezone()
         } : {
             'Content-Type': 'application/json',
             'X-App-Version': CONFIG.APP_VERSION,
             'X-Device-Id': deviceId,
             'X-Timestamp': timestamp,
-            'X-Locale': CONFIG.DEFAULT_LOCALE
+            'X-Locale': CONFIG.DEFAULT_LOCALE,
+            'X-Timezone': getSystemTimezone()
         };
         
         // Admin API endpoints are strictly cookie-based and must not carry User App Bearer Tokens
@@ -401,13 +414,15 @@ async function apiFetchRaw(method, path, body = null, requireAuth = true) {
     } catch(e) {}
 
     const headers = (routeToAdmin || isCrossOrigin) ? {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'X-Timezone': getSystemTimezone()
     } : {
         'Content-Type': 'application/json',
         'X-App-Version': CONFIG.APP_VERSION,
         'X-Device-Id': deviceId,
         'X-Timestamp': timestamp,
-        'X-Locale': CONFIG.DEFAULT_LOCALE
+        'X-Locale': CONFIG.DEFAULT_LOCALE,
+        'X-Timezone': getSystemTimezone()
     };
     
     if (requireAuth && accessToken && !routeToAdmin) {
@@ -517,13 +532,15 @@ async function apiFetchWithRawBody(method, path, rawBodyStr, requireAuth = true)
     } catch(e) {}
 
     const headers = (routeToAdmin || isCrossOrigin) ? {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'X-Timezone': getSystemTimezone()
     } : {
         'Content-Type': 'application/json',
         'X-App-Version': CONFIG.APP_VERSION,
         'X-Device-Id': deviceId,
         'X-Timestamp': timestamp,
-        'X-Locale': CONFIG.DEFAULT_LOCALE
+        'X-Locale': CONFIG.DEFAULT_LOCALE,
+        'X-Timezone': getSystemTimezone()
     };
     
     if (requireAuth && accessToken && !routeToAdmin) {
