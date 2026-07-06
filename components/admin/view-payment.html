@@ -53,9 +53,13 @@
                     </div>
                     <div class="auth-input-group">
                         <label>结算充值资产</label>
-                        <select id="payment-add-assetId" required class="payment-add-select">
-                            <!-- Loaded dynamically -->
-                        </select>
+                        <div class="searchable-select-container" style="position: relative; width: 100%;">
+                            <input type="text" id="payment-add-assetSearch" class="payment-add-select" placeholder="🔍 输入检索资产 (如 USDT, INR)..." onfocus="showSearchableDropdown('add')" oninput="filterSearchableDropdown('add')" required autocomplete="off">
+                            <input type="hidden" id="payment-add-assetId">
+                            <div id="payment-add-assetDropdown" class="searchable-dropdown-list">
+                                <!-- Loaded dynamically -->
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
@@ -262,9 +266,13 @@
                     </div>
                     <div class="auth-input-group">
                         <label>结算充值资产</label>
-                        <select id="payment-edit-assetId" required class="payment-add-select">
-                            <!-- Loaded dynamically -->
-                        </select>
+                        <div class="searchable-select-container" style="position: relative; width: 100%;">
+                            <input type="text" id="payment-edit-assetSearch" class="payment-add-select" placeholder="🔍 输入检索资产 (如 USDT, INR)..." onfocus="showSearchableDropdown('edit')" oninput="filterSearchableDropdown('edit')" required autocomplete="off">
+                            <input type="hidden" id="payment-edit-assetId">
+                            <div id="payment-edit-assetDropdown" class="searchable-dropdown-list">
+                                <!-- Loaded dynamically -->
+                            </div>
+                        </div>
                     </div>
                 </div>
                 

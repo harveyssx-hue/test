@@ -950,13 +950,21 @@ export async function openPaymentAddModal() {
     const presets = await ensurePresetsLoaded();
     
     // Populate assets dropdown
-    const assetSelect = document.getElementById('payment-add-assetId');
-    if (assetSelect) {
-        const assets = (presets && presets.availableAssets && presets.availableAssets.length > 0)
-            ? presets.availableAssets
-            : cachedAssets;
-        assetSelect.innerHTML = assets.map(a => `<option value="${a.id}">${a.symbol} (${a.symbol})</option>`).join('');
+    const assetDropdown = document.getElementById('payment-add-assetDropdown');
+    const assets = (presets && presets.availableAssets && presets.availableAssets.length > 0)
+        ? presets.availableAssets
+        : cachedAssets;
+    if (assetDropdown) {
+        assetDropdown.innerHTML = assets.map(a => {
+            const optionLabel = `${a.symbol} (${a.symbol})`;
+            const escapedLabel = optionLabel.replace(/'/g, "\\'");
+            return `<div class="searchable-dropdown-item" onclick="selectSearchableOption('add', '${a.id}', '${escapedLabel}')">${optionLabel}</div>`;
+        }).join('');
     }
+    
+    // Reset asset inputs
+    document.getElementById('payment-add-assetId').value = '';
+    document.getElementById('payment-add-assetSearch').value = '';
     
     // Populate types dropdown
     const typeSelect = document.getElementById('payment-add-paymentMethodType');
@@ -1035,12 +1043,25 @@ export async function openPaymentEditModal(channelId) {
     const presets = await ensurePresetsLoaded();
     
     // Populate assets dropdown
-    const assetSelect = document.getElementById('payment-edit-assetId');
-    if (assetSelect) {
-        const assets = (presets && presets.availableAssets && presets.availableAssets.length > 0)
-            ? presets.availableAssets
-            : cachedAssets;
-        assetSelect.innerHTML = assets.map(a => `<option value="${a.id}">${a.symbol} (${a.symbol})</option>`).join('');
+    const assetDropdown = document.getElementById('payment-edit-assetDropdown');
+    const assets = (presets && presets.availableAssets && presets.availableAssets.length > 0)
+        ? presets.availableAssets
+        : cachedAssets;
+    if (assetDropdown) {
+        assetDropdown.innerHTML = assets.map(a => {
+            const optionLabel = `${a.symbol} (${a.symbol})`;
+            const escapedLabel = optionLabel.replace(/'/g, "\\'");
+            return `<div class="searchable-dropdown-item" onclick="selectSearchableOption('edit', '${a.id}', '${escapedLabel}')">${optionLabel}</div>`;
+        }).join('');
+    }
+    
+    // Set asset ID and search input text
+    document.getElementById('payment-edit-assetId').value = m.assetId || '';
+    const selectedAsset = assets.find(a => String(a.id) === String(m.assetId));
+    if (selectedAsset) {
+        document.getElementById('payment-edit-assetSearch').value = `${selectedAsset.symbol} (${selectedAsset.symbol})`;
+    } else {
+        document.getElementById('payment-edit-assetSearch').value = '';
     }
     
     // Populate types dropdown
@@ -1052,7 +1073,6 @@ export async function openPaymentEditModal(channelId) {
     // Set values
     document.getElementById('payment-edit-id').value = m.id;
     document.getElementById('payment-edit-name').value = m.name || '';
-    document.getElementById('payment-edit-assetId').value = m.assetId || '';
     document.getElementById('payment-edit-paymentMethodType').value = m.paymentMethodType || 'CRYPTO_WALLET';
     togglePaymentTypeFields('edit');
     document.getElementById('payment-edit-hintDescription').value = m.hintDescription || '';
@@ -1090,7 +1110,7 @@ export async function openPaymentEditModal(channelId) {
     // Set previews
     const qrPreview = document.getElementById('payment-edit-qrCodePreview');
     if (qrPreview) {
-        if (m.qrCodeUrl) {
+        if (m.qrCodeUrl && !m.qrCodeUrl.includes('example.com')) {
             qrPreview.src = m.qrCodeUrl;
             qrPreview.style.display = 'block';
         } else {
@@ -1100,7 +1120,7 @@ export async function openPaymentEditModal(channelId) {
     }
     const iconPreview = document.getElementById('payment-edit-iconPreview');
     if (iconPreview) {
-        if (m.iconUrl) {
+        if (m.iconUrl && !m.iconUrl.includes('example.com')) {
             iconPreview.src = m.iconUrl;
             iconPreview.style.display = 'block';
         } else {
@@ -1322,6 +1342,61 @@ export async function submitPaymentRiskLevelBindings(event) {
         showToast('可见层级保存网络异常！', true);
     }
 }
+
+// Searchable dropdown helper functions
+export function showSearchableDropdown(prefix) {
+    // Hide all first
+    const addDrop = document.getElementById('payment-add-assetDropdown');
+    const editDrop = document.getElementById('payment-edit-assetDropdown');
+    if (addDrop) addDrop.style.display = 'none';
+    if (editDrop) editDrop.style.display = 'none';
+    
+    const dropdown = document.getElementById(`payment-${prefix}-assetDropdown`);
+    if (dropdown) {
+        dropdown.style.display = 'block';
+    }
+}
+
+export function filterSearchableDropdown(prefix) {
+    const query = document.getElementById(`payment-${prefix}-assetSearch`).value.toLowerCase().trim();
+    const dropdown = document.getElementById(`payment-${prefix}-assetDropdown`);
+    if (!dropdown) return;
+    
+    const items = dropdown.getElementsByClassName('searchable-dropdown-item');
+    for (let item of items) {
+        const text = item.innerText.toLowerCase();
+        if (text.includes(query)) {
+            item.style.display = 'block';
+        } else {
+            item.style.display = 'none';
+        }
+    }
+}
+
+export function selectSearchableOption(prefix, id, label) {
+    const hiddenInput = document.getElementById(`payment-${prefix}-assetId`);
+    const searchInput = document.getElementById(`payment-${prefix}-assetSearch`);
+    const dropdown = document.getElementById(`payment-${prefix}-assetDropdown`);
+    
+    if (hiddenInput) hiddenInput.value = id;
+    if (searchInput) searchInput.value = label;
+    if (dropdown) dropdown.style.display = 'none';
+}
+
+// Global click outside handler for custom dropdowns
+document.addEventListener('click', function(e) {
+    const isDropdownClick = e.target.closest('.searchable-select-container');
+    if (!isDropdownClick) {
+        const addDropdown = document.getElementById('payment-add-assetDropdown');
+        if (addDropdown) addDropdown.style.display = 'none';
+        const editDropdown = document.getElementById('payment-edit-assetDropdown');
+        if (editDropdown) editDropdown.style.display = 'none';
+    }
+});
+
+window.showSearchableDropdown = showSearchableDropdown;
+window.filterSearchableDropdown = filterSearchableDropdown;
+window.selectSearchableOption = selectSearchableOption;
 
 window.loadPaymentChannels = loadPaymentChannels;
 window.togglePaymentChannelStatus = togglePaymentChannelStatus;

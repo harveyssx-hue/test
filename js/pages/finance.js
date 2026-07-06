@@ -1,4 +1,4 @@
-﻿// Finance Payments (Deposits, Withdrawals, Account Bindings) Controller
+// Finance Payments (Deposits, Withdrawals, Account Bindings) Controller
 import { state } from '../modules/state.js?v=2.2.0';
 
 let currentPaymentMethods = [];
@@ -190,10 +190,14 @@ async function openDepositModal() {
                     
                     const methodBadge = m.assetClass === 'FIAT' ? (m.asset?.symbol || 'FIAT') : (m.target?.network || 'USDT');
                     
+                    const finalIconUrl = (m.iconUrl && !m.iconUrl.includes('example.com')) 
+                        ? m.iconUrl 
+                        : (m.asset?.logo || 'https://storage.googleapis.com/matpcs-dev/uploads/images/9093375a-4ead-4f93-818a-14a91cfe7370.png');
+                    
                     return `
                         <div class="channel-card-item" id="channel-card-${idx}" onclick="selectDepositChannel(${idx})" style="display: flex; align-items: center; justify-content: space-between; border: ${borderStyle}; background: ${bgStyle}; box-shadow: ${shadowStyle}; padding: 12px 15px; border-radius: 10px; cursor: pointer; transition: all 0.2s;">
                             <div style="display: flex; align-items: center; gap: 10px;">
-                                <img src="${m.iconUrl || m.asset?.logo || 'https://storage.googleapis.com/matpcs-dev/uploads/images/9093375a-4ead-4f93-818a-14a91cfe7370.png'}" style="width: 26px; height: 26px; border-radius: 5px; object-fit: contain;">
+                                <img src="${finalIconUrl}" style="width: 26px; height: 26px; border-radius: 5px; object-fit: contain;">
                                 <div style="text-align: left;">
                                     <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-primary);">${displayName}</div>
                                     <div style="font-size: 0.72rem; color: var(--text-secondary);">${displayDesc}</div>
