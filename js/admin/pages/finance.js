@@ -951,8 +951,11 @@ export async function openPaymentAddModal() {
     
     // Populate assets dropdown
     const assetSelect = document.getElementById('payment-add-assetId');
-    if (assetSelect && presets.availableAssets) {
-        assetSelect.innerHTML = presets.availableAssets.map(a => `<option value="${a.id}">${a.symbol} (${a.symbol})</option>`).join('');
+    if (assetSelect) {
+        const assets = (presets && presets.availableAssets && presets.availableAssets.length > 0)
+            ? presets.availableAssets
+            : cachedAssets;
+        assetSelect.innerHTML = assets.map(a => `<option value="${a.id}">${a.symbol} (${a.symbol})</option>`).join('');
     }
     
     // Populate types dropdown
@@ -977,6 +980,8 @@ export async function openPaymentAddModal() {
     document.getElementById('payment-add-branchName').value = '';
     document.getElementById('payment-add-swiftCode').value = '';
     document.getElementById('payment-add-iban').value = '';
+    document.getElementById('payment-add-routingLabel').value = '';
+    document.getElementById('payment-add-routingValue').value = '';
     document.getElementById('payment-add-regionCode').value = 'HK';
     document.getElementById('payment-add-walletAccountNumber').value = '';
     document.getElementById('payment-add-walletAccountHolderName').value = '';
@@ -1031,8 +1036,11 @@ export async function openPaymentEditModal(channelId) {
     
     // Populate assets dropdown
     const assetSelect = document.getElementById('payment-edit-assetId');
-    if (assetSelect && presets.availableAssets) {
-        assetSelect.innerHTML = presets.availableAssets.map(a => `<option value="${a.id}">${a.symbol} (${a.symbol})</option>`).join('');
+    if (assetSelect) {
+        const assets = (presets && presets.availableAssets && presets.availableAssets.length > 0)
+            ? presets.availableAssets
+            : cachedAssets;
+        assetSelect.innerHTML = assets.map(a => `<option value="${a.id}">${a.symbol} (${a.symbol})</option>`).join('');
     }
     
     // Populate types dropdown
@@ -1058,6 +1066,13 @@ export async function openPaymentEditModal(channelId) {
     document.getElementById('payment-edit-branchName').value = m.branchName || '';
     document.getElementById('payment-edit-swiftCode').value = m.swiftCode || '';
     document.getElementById('payment-edit-iban').value = m.iban || '';
+    
+    // Populate bankRoutingFields
+    const routingFields = m.bankRoutingFields || [];
+    const firstField = routingFields[0] || { label: '', value: '' };
+    document.getElementById('payment-edit-routingLabel').value = firstField.label || '';
+    document.getElementById('payment-edit-routingValue').value = firstField.value || '';
+    
     document.getElementById('payment-edit-regionCode').value = m.regionCode || 'HK';
     document.getElementById('payment-edit-walletAccountNumber').value = m.accountNumber || '';
     document.getElementById('payment-edit-walletAccountHolderName').value = m.accountHolderName || '';
@@ -1163,6 +1178,14 @@ function collectPaymentFormData(prefix) {
         body.swiftCode = document.getElementById(`payment-${prefix}-swiftCode`).value.trim();
         body.iban = document.getElementById(`payment-${prefix}-iban`).value.trim();
         body.regionCode = document.getElementById(`payment-${prefix}-regionCode`).value.trim();
+        
+        const routingLabel = document.getElementById(`payment-${prefix}-routingLabel`).value.trim();
+        const routingValue = document.getElementById(`payment-${prefix}-routingValue`).value.trim();
+        if (routingLabel && routingValue) {
+            body.bankRoutingFields = [{ label: routingLabel, value: routingValue }];
+        } else {
+            body.bankRoutingFields = [];
+        }
     } else {
         // UPI / ALIPAY / WECHAT_PAY etc.
         body.accountNumber = document.getElementById(`payment-${prefix}-walletAccountNumber`).value.trim();
