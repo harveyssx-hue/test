@@ -1496,13 +1496,16 @@ export async function onBatchRiskLevelChange() {
         const statsRes = await apiFetch('GET', `/trading/quant/orders/statistics/risk-levels?status=ACTIVE&riskLevelIds=${levelId}`, null, true);
         const ordersRes = await apiFetch('GET', `/trading/quant/orders?status=ACTIVE&page=1&pageSize=1000`, null, true);
         
-        let ordersTimesStr = '';
         if (ordersRes.code === 200) {
             const list = ordersRes.result || ordersRes.data || [];
+            
+            // Filter only active orders for the selected risk level that are NOT assigned to any batch (batchId is null/empty/0)
             const filtered = list.filter(o => {
                 const rId = o.riskLevelId || (o.riskLevel ? o.riskLevel.id : '');
-                return String(rId) === String(levelId);
+                const isUnassigned = !o.batchId || o.batchId === '0' || o.batchId === 0;
+                return String(rId) === String(levelId) && isUnassigned;
             });
+            
             if (filtered.length > 0) {
                 const timeZone = document.getElementById('cbatch-timezone').value || 'Asia/Kolkata';
                 const formattedTimes = filtered.map(o => {
@@ -1510,23 +1513,18 @@ export async function onBatchRiskLevelChange() {
                     const date = new Date(t < 10000000000 ? t * 1000 : t);
                     return date.toLocaleString('sv-SE', { timeZone });
                 });
-                ordersTimesStr = `<br>• 订单创建时间 (${timeZone}):<br>${formattedTimes.map(time => `  - <span style="font-family: monospace;">${time}</span>`).join('<br>')}`;
-            }
-        }
-        
-        if (statsRes.code === 200) {
-            const statsList = statsRes.result || statsRes.data || [];
-            const lvlStat = statsList.find(s => String(s.riskLevelId) === String(levelId));
-            if (lvlStat) {
-                const totalOrders = lvlStat.totalOrders || 0;
-                const totalAmount = lvlStat.totalInvestAmount ? parseFloat(lvlStat.totalInvestAmount).toFixed(2) : '0.00';
-                const totalUsers = lvlStat.totalUsers || 0;
-                statsBox.innerHTML = `👥 <b>${lvlStat.riskLevel || '该层级'}</b> 当前活跃订单统计：<br>• 活动订单总数: <b>${totalOrders}</b> 笔<br>• 去重下单用户: <b>${totalUsers}</b> 人<br>• 活动投资总金额: <b style="color: var(--primary); font-size: 0.8rem;">${totalAmount} USDT</b>${ordersTimesStr}`;
+                
+                const uniqueUsers = new Set(filtered.map(o => o.userId || o.userUid || o.user?.uid || o.user?.id).filter(Boolean)).size;
+                const totalAmount = filtered.reduce((sum, o) => sum + parseFloat(o.amount || o.investAmount || 0), 0).toFixed(2);
+                
+                const ordersTimesStr = `<br>• 待清算订单创建时间 (${timeZone}):<br>${formattedTimes.map(time => `  - <span style="font-family: monospace;">${time}</span>`).join('<br>')}`;
+                
+                statsBox.innerHTML = `👥 <b>当前可清算活跃订单统计</b>（已过滤被锁定订单）：<br>• 活动订单总数: <b>${filtered.length}</b> 笔<br>• 去重下单用户: <b>${uniqueUsers}</b> 人<br>• 活动投资总金额: <b style="color: var(--primary); font-size: 0.8rem;">${totalAmount} USDT</b>${ordersTimesStr}`;
             } else {
-                statsBox.innerHTML = 'ℹ️ 该风控层级当前无活跃 (ACTIVE) 量化订单。';
+                statsBox.innerHTML = 'ℹ️ 该风控层级当前无<b>未分配（可清算）</b>的活跃量化订单。<br><span style="color: #EF4444; font-size: 0.72rem; font-weight: bold;">⚠️ 提示：若页面上有该层级的“买入中/待执行”批次，说明订单已被锁定，请直接在列表中执行已有批次。</span>';
             }
         } else {
-            statsBox.innerHTML = `⚠️ 统计数据拉取失败: ${statsRes.errorMessage || '接口错误'}`;
+            statsBox.innerHTML = `⚠️ 订单数据拉取失败: ${ordersRes.errorMessage || '接口错误'}`;
         }
     } catch (e) {
         console.error("Failed to load risk level order stats:", e);
