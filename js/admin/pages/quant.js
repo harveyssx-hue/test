@@ -1804,6 +1804,7 @@ export function openExecuteBatchModal(batchId) {
     
     updateExecuteBatchDefaultTimes('Asia/Kolkata');
     modal.style.display = 'flex';
+    modal.classList.add('active');
 }
 window.openExecuteBatchModal = openExecuteBatchModal;
 
@@ -1811,6 +1812,7 @@ export function closeExecuteBatchModal() {
     const modal = document.getElementById('execute-batch-modal');
     if (modal) {
         modal.style.display = 'none';
+        modal.classList.remove('active');
     }
 }
 window.closeExecuteBatchModal = closeExecuteBatchModal;
