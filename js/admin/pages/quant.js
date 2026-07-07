@@ -1245,7 +1245,7 @@ async function loadQuantSettleList() {
     const pageConf = window.adminPages.quantSettle;
     const tbody = document.getElementById('quant-settle-table-body');
     if (tbody) {
-        tbody.innerHTML = '<tr><td colspan="12" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">🔄 正在安全同步量化操盘批次列表...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="13" style="text-align: center; color: var(--text-secondary); padding: 40px 0;">🔄 正在安全同步量化操盘批次列表...</td></tr>';
     }
     
     try {
@@ -1261,7 +1261,7 @@ async function loadQuantSettleList() {
         if (res.code !== 200) {
             showToast(res.errorMessage || '获取量化批次列表失败！', true);
             if (tbody) {
-                tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; color: #EF4444; padding: 30px 0;">❌ 加载失败: ${res.errorMessage || '未知接口错误'}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; color: #EF4444; padding: 30px 0;">❌ 加载失败: ${res.errorMessage || '未知接口错误'}</td></tr>`;
             }
             return;
         }
@@ -1285,7 +1285,7 @@ async function loadQuantSettleList() {
         console.error('Error fetching batches:', err);
         showToast('获取批次列表网络异常！', true);
         if (tbody) {
-            tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; color: #EF4444; padding: 30px 0;">❌ 网络请求错误，请刷新重试！</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; color: #EF4444; padding: 30px 0;">❌ 网络请求错误，请刷新重试！</td></tr>`;
         }
     }
 }
@@ -1295,7 +1295,7 @@ function renderActiveSettleListHtml(batches = []) {
     if (!tbody) return;
     
     if (batches.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; color: var(--text-muted); padding: 30px 0;">当前没有符合条件的量化操盘批次记录</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; color: var(--text-muted); padding: 30px 0;">当前没有符合条件的量化操盘批次记录</td></tr>`;
         return;
     }
     
@@ -1380,6 +1380,11 @@ function renderActiveSettleListHtml(batches = []) {
                 <td style="font-family: 'Outfit'; font-size: 0.75rem;">${actualProfitText}</td>
                 <td>${statusBadge}</td>
                 <td style="color: #EF4444; font-size: 0.7rem; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${errStr}">${errStr}</td>
+                <td style="text-align: center;">
+                    ${(b.status === 'CREATED' || b.status === 'PENDING') 
+                        ? `<button class="action-btn btn-approve" onclick="executeQuantBatch('${idStr}')" style="padding: 2px 8px; font-size: 0.7rem; cursor: pointer; white-space: nowrap;">▶ 执行</button>`
+                        : '--'}
+                </td>
             </tr>
         `;
     }).join('');
@@ -1801,6 +1806,25 @@ export function quickSettleForOrder(riskLevelId) {
     onBatchRiskLevelChange();
 }
 window.quickSettleForOrder = quickSettleForOrder;
+
+export async function executeQuantBatch(batchId) {
+    if (!confirm('确定要执行该投资操作批次吗？')) return;
+    
+    showToast('正在提交批次执行投资...', false);
+    try {
+        const res = await apiFetch('POST', `/trading/quant/trades/risk-level/batches/${batchId}/execute`, null, true);
+        if (res.code === 200) {
+            showToast('✓ 批次投资执行成功！已提交后台处理。', false);
+            loadQuantSettleList();
+        } else {
+            showToast(res.errorMessage || '执行批次投资失败！', true);
+        }
+    } catch (e) {
+        console.error("Execute batch failed:", e);
+        showToast('执行批次投资网络异常！', true);
+    }
+}
+window.executeQuantBatch = executeQuantBatch;
 
 // Bind to window to allow calling from HTML
 window.loadQuantSettleList = loadQuantSettleList;

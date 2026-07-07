@@ -787,6 +787,31 @@ document.addEventListener('DOMContentLoaded', () => {
     checkAdminSession();
     initializeSidebarGroups();
     
+    // Start header clock
+    const timeDisplay = document.getElementById('header-time-display');
+    if (timeDisplay) {
+        const updateClock = () => {
+            const now = new Date();
+            // Format time as YYYY-MM-DD HH:MM:SS
+            const yyyy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            const hh = String(now.getHours()).padStart(2, '0');
+            const min = String(now.getMinutes()).padStart(2, '0');
+            const ss = String(now.getSeconds()).padStart(2, '0');
+            
+            // Get timezone name
+            let tz = 'UTC';
+            try {
+                tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+            } catch (e) {}
+            
+            timeDisplay.innerHTML = `🕒 当前时间: ${yyyy}-${mm}-${dd} ${hh}:${min}:${ss} (${tz})`;
+        };
+        updateClock();
+        setInterval(updateClock, 1000);
+    }
+    
     // Premium click scale & micro-feedback interceptor
     document.addEventListener('click', (e) => {
         const btn = e.target.closest('button, .action-btn, .admin-auth-btn, .menu-item, .logout-icon-btn');
