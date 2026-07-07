@@ -118,30 +118,16 @@
         <button class="drawer-close-btn" onclick="closeCreateCompletedBatchModal()" style="top: 24px; right: 24px; font-size: 1.2rem; background: transparent; border: none; color: var(--text-secondary); cursor: pointer;">✕</button>
         <div class="modal-header-admin" style="margin-bottom: 20px; border-bottom: 1px solid var(--border-light); padding-bottom: 12px;">
             <h2 style="font-size: 1.35rem; display: flex; align-items: center; gap: 8px; color: var(--primary); font-weight: bold; margin: 0;">🛡️ 新增风控层级投资批次</h2>
-            <p style="font-size: 0.78rem; color: #64748B; margin-top: 6px; font-weight: 500;">一次性录入某风控层级与品种的物理买入/卖出价格与执行时间，由系统异步计算各订单明细并结算盈亏</p>
+            <p style="font-size: 0.78rem; color: #64748B; margin-top: 6px; font-weight: 500;">指定风控层级与订单截止时间，系统将自动汇总该层级下所有未清算的活跃量化订单并生成结算批次</p>
         </div>
         
         <form class="auth-form" onsubmit="submitCreateCompletedBatch(event)" style="display: flex; flex-direction: column; gap: 16px;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div style="display: grid; grid-template-columns: 1fr; gap: 16px;">
                 <div class="auth-input-group">
                     <label>用户风控层级</label>
                     <select id="cbatch-risk-level" required class="payment-add-select" onchange="onBatchRiskLevelChange()">
                         <!-- Loaded dynamically -->
                     </select>
-                </div>
-                <div class="auth-input-group">
-                    <label>交易所代码 (Exchange Code)</label>
-                    <input type="text" id="cbatch-exchange-code" required placeholder="如: BINANCE">
-                </div>
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                <div class="auth-input-group">
-                    <label>交易商品代码 (Instrument Code)</label>
-                    <input type="text" id="cbatch-instrument-code" required placeholder="如: BTCUSDT">
-                </div>
-                <div class="auth-input-group">
-                    <label>交易商品名称 (Instrument Name)</label>
-                    <input type="text" id="cbatch-instrument-name" required placeholder="如: BTCUSDT">
                 </div>
             </div>
 
@@ -167,66 +153,6 @@
                     <input type="datetime-local" id="cbatch-deadline-time" required>
                 </div>
             </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                <div class="auth-input-group">
-                    <label>买入成交价格 (Buy Price)</label>
-                    <input type="number" step="any" min="0.000001" id="cbatch-buy-price" required placeholder="如: 68500.00">
-                </div>
-                <div class="auth-input-group">
-                    <label>买入执行时间 (Buy Time)</label>
-                    <input type="datetime-local" id="cbatch-buy-time" required>
-                </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                <div class="auth-input-group">
-                    <label>卖出成交价格 (Sell Price)</label>
-                    <input type="number" step="any" min="0.000001" id="cbatch-sell-price" required placeholder="如: 69000.00">
-                </div>
-                <div class="auth-input-group">
-                    <label>卖出执行时间 (Sell Time)</label>
-                    <input type="datetime-local" id="cbatch-sell-time" required>
-                </div>
-            </div>
-
-            <!-- Advanced settings section -->
-            <details style="margin-top: 5px; font-size: 0.8rem; color: var(--text-secondary);">
-                <summary style="cursor: pointer; font-weight: 600; color: var(--primary); outline: none;">⚙️ 费率设置 (可选，覆盖默认值)</summary>
-                <div style="padding: 10px 0 0 0; display: flex; flex-direction: column; gap: 12px;">
-                    <div style="font-size: 0.7rem; font-weight: bold; color: var(--text-primary); border-bottom: 1px solid var(--border-light); padding-bottom: 4px;">📈 买入费率设置</div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
-                        <div class="auth-input-group">
-                            <label style="font-size: 0.65rem;">算力费用率</label>
-                            <input type="number" step="0.0001" min="0" max="1" id="cbatch-buy-rate-computing" placeholder="默认">
-                        </div>
-                        <div class="auth-input-group">
-                            <label style="font-size: 0.65rem;">经纪费率</label>
-                            <input type="number" step="0.0001" min="0" max="1" id="cbatch-buy-rate-brokerage" placeholder="默认">
-                        </div>
-                        <div class="auth-input-group">
-                            <label style="font-size: 0.65rem;">交易所费率</label>
-                            <input type="number" step="0.0001" min="0" max="1" id="cbatch-buy-rate-exchange" placeholder="默认">
-                        </div>
-                    </div>
-                    
-                    <div style="font-size: 0.7rem; font-weight: bold; color: var(--text-primary); border-bottom: 1px solid var(--border-light); padding-bottom: 4px; margin-top: 5px;">📉 卖出费率设置</div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
-                        <div class="auth-input-group">
-                            <label style="font-size: 0.65rem;">算力费用率</label>
-                            <input type="number" step="0.0001" min="0" max="1" id="cbatch-sell-rate-computing" placeholder="默认">
-                        </div>
-                        <div class="auth-input-group">
-                            <label style="font-size: 0.65rem;">经纪费率</label>
-                            <input type="number" step="0.0001" min="0" max="1" id="cbatch-sell-rate-brokerage" placeholder="默认">
-                        </div>
-                        <div class="auth-input-group">
-                            <label style="font-size: 0.65rem;">交易所费率</label>
-                            <input type="number" step="0.0001" min="0" max="1" id="cbatch-sell-rate-exchange" placeholder="默认">
-                        </div>
-                    </div>
-                </div>
-            </details>
             
             <button type="submit" class="admin-auth-btn" style="margin-top: 15px; height: 44px; border-radius: 8px; font-weight: 700; background: var(--primary);" id="cbatch-submit-btn">立即创建并异步清算批次</button>
         </form>
