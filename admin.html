@@ -6,6 +6,9 @@
     <link rel="icon" href="data:;base64,iVBORw0KGgo=">
     <title>MATP Core - 后台合规审计管理系统</title>
     <script>
+        // Set isAdminPanel globally so crypto-helper routes admin requests correctly
+        window.isAdminPanel = true;
+
         // Super-early globally accessible proof image error handler to prevent race conditions & ReferenceError
         window.handleProofImageError = function() {
             const errorDiv = document.getElementById('proof-lightbox-error');

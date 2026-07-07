@@ -1638,8 +1638,7 @@ function getCurrentTimeInTimezone(timeZone) {
 export function updateBatchTimezoneDefaultTimes(timeZone) {
     const deadlineInput = document.getElementById('cbatch-deadline-time');
     if (deadlineInput) {
-        const timeStr = getCurrentTimeInTimezone(timeZone);
-        deadlineInput.value = timeStr;
+        deadlineInput.value = '';
     }
 }
 window.updateBatchTimezoneDefaultTimes = updateBatchTimezoneDefaultTimes;
@@ -1656,20 +1655,21 @@ export async function submitCreateCompletedBatch(event) {
     }
     
     const deadlineTimeStr = document.getElementById('cbatch-deadline-time')?.value || '';
-    if (!deadlineTimeStr) {
-        showToast('❌ 请指定订单截止时间！', true);
-        return;
-    }
-    const orderDeadlineAt = Math.floor(getTimestampInTimezone(deadlineTimeStr, timeZone) / 1000);
-    if (isNaN(orderDeadlineAt) || orderDeadlineAt <= 0) {
-        showToast('❌ 订单截止时间格式无效，请重新选择！', true);
-        return;
+    let orderDeadlineAt = null;
+    if (deadlineTimeStr) {
+        orderDeadlineAt = Math.floor(getTimestampInTimezone(deadlineTimeStr, timeZone) / 1000);
+        if (isNaN(orderDeadlineAt) || orderDeadlineAt <= 0) {
+            showToast('❌ 订单截止时间格式无效，请重新选择！', true);
+            return;
+        }
     }
     
     const reqBody = {
-        userRiskLevelId: riskLevelId,
-        orderDeadlineAt: orderDeadlineAt
+        userRiskLevelId: riskLevelId
     };
+    if (orderDeadlineAt) {
+        reqBody.orderDeadlineAt = orderDeadlineAt;
+    }
     
     const submitBtn = document.getElementById('cbatch-submit-btn');
     if (submitBtn) {
