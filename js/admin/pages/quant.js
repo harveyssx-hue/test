@@ -1381,7 +1381,7 @@ function renderActiveSettleListHtml(batches = []) {
                 <td>${statusBadge}</td>
                 <td style="color: #EF4444; font-size: 0.7rem; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${errStr}">${errStr}</td>
                 <td class="sticky-right" style="text-align: center;">
-                    ${(b.status === 'CREATED' || b.status === 'PENDING') 
+                    ${(b.status === 'BUY_PENDING') 
                         ? `<button class="action-btn btn-approve" onclick="openExecuteBatchModal('${idStr}')" style="padding: 2px 8px; font-size: 0.7rem; cursor: pointer; white-space: nowrap;">▶ 执行</button>`
                         : '--'}
                 </td>
