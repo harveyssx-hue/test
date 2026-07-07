@@ -1595,9 +1595,12 @@ function getTimestampInTimezone(dateTimeStr, timeZone) {
     }
 }
 
-function getCurrentTimeInTimezone(timeZone) {
+function getCurrentTimeInTimezone(timeZone, offsetMinutes = 0) {
     try {
         const now = new Date();
+        if (offsetMinutes !== 0) {
+            now.setMinutes(now.getMinutes() + offsetMinutes);
+        }
         const formatter = new Intl.DateTimeFormat('en-US', {
             timeZone,
             year: 'numeric',
@@ -1624,6 +1627,9 @@ function getCurrentTimeInTimezone(timeZone) {
     } catch (e) {
         console.error("Failed to format current time in timezone:", e);
         const now = new Date();
+        if (offsetMinutes !== 0) {
+            now.setMinutes(now.getMinutes() + offsetMinutes);
+        }
         const year = now.getFullYear();
         const month = String(now.getMonth() + 1).padStart(2, '0');
         const day = String(now.getDate()).padStart(2, '0');
@@ -1860,8 +1866,9 @@ export function updateExecuteBatchDefaultTimes(timeZone) {
     const buyTimeInput = document.getElementById('ebatch-buy-time');
     const sellTimeInput = document.getElementById('ebatch-sell-time');
     const nowStr = getCurrentTimeInTimezone(timeZone);
+    const futureStr = getCurrentTimeInTimezone(timeZone, 10); // Default sell time to 10 minutes later
     if (buyTimeInput) buyTimeInput.value = nowStr;
-    if (sellTimeInput) sellTimeInput.value = nowStr;
+    if (sellTimeInput) sellTimeInput.value = futureStr;
 }
 window.updateExecuteBatchDefaultTimes = updateExecuteBatchDefaultTimes;
 
@@ -1892,6 +1899,11 @@ export async function submitExecuteQuantBatch(event) {
     
     if (isNaN(buyExecutedAt) || buyExecutedAt <= 0 || isNaN(sellExecutedAt) || sellExecutedAt <= 0) {
         showToast('❌ 委托时间格式无效，请重新选择！', true);
+        return;
+    }
+
+    if (sellExecutedAt <= buyExecutedAt) {
+        showToast('❌ 卖出委托时间必须晚于买入委托时间！', true);
         return;
     }
     

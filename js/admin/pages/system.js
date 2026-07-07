@@ -23,54 +23,123 @@ async function loadTenantSettings() {
         activeTenantId = tenantsRes.data[0].id;
         document.getElementById('setting-tenant-id').innerText = activeTenantId;
 
-        // 2. Fetch tenant settings
-        const settingsRes = await apiFetch('GET', `/tenants/${activeTenantId}/settings`, null, true);
-        if (!settingsRes || settingsRes.code !== 200 || !settingsRes.data) {
-            showToast('获取租户设置失败！', true);
-            loader.innerText = '⚠️ 获取租户设置数据失败，请重试';
+        // 2. Fetch grouped tenant settings
+        const groupedRes = await apiFetch('GET', `/tenants/${activeTenantId}/settings/grouped`, null, true);
+        if (!groupedRes || groupedRes.code !== 200 || !groupedRes.data) {
+            showToast('获取租户分组设置数据失败！', true);
+            loader.innerText = '⚠️ 获取租户分组设置数据失败，请重试';
             return;
         }
 
-        cachedTenantSettings = settingsRes.data;
+        const groups = groupedRes.data;
+        
+        // Flatten into cachedTenantSettings to maintain backward compatibility
+        cachedTenantSettings = [];
+        groups.forEach(g => {
+            if (g.items) {
+                cachedTenantSettings.push(...g.items);
+            }
+        });
 
-        // 3. Map keys to form input fields
-        const keyMap = {
-            'finance.withdraw.untraded_deposit_fee_rate': 'input-untraded-deposit-fee-rate',
-            'finance.withdraw.untraded_fee_rate': 'input-untraded-fee-rate',
-            'finance.withdraw.min_amount': 'input-withdraw-min-amount',
-            'finance.withdraw.max_amount': 'input-withdraw-max-amount',
-            'otp.code_validity': 'input-otp-validity',
-            'otp.daily_limit': 'input-otp-daily-limit',
-            'otp.interval': 'input-otp-interval',
-            'otp.max_retries': 'input-otp-max-retries',
-            'commons.phone_regex': 'input-commons-phone-regex',
-            'quant.min_invest_amount': 'input-quant-min-invest',
-            'quant.max_invest_amount': 'input-quant-max-invest',
-            'quant.brokerage.rate': 'input-quant-brokerage-rate',
-            'quant.brokerage.min_amount': 'input-quant-brokerage-min',
-            'quant.brokerage.max_amount': 'input-quant-brokerage-max',
-            'quant.ai_computing_cost.rate': 'input-quant-computing-rate',
-            'quant.ai_computing_cost.min_amount': 'input-quant-computing-min',
-            'quant.ai_computing_cost.max_amount': 'input-quant-computing-max',
-            'quant.exchange_fee.rate': 'input-quant-exchange-rate',
-            'quant.exchange_fee.min_amount': 'input-quant-exchange-min',
-            'quant.exchange_fee.max_amount': 'input-quant-exchange-max',
-            'quant.commission_rate': 'input-quant-commission-rate',
-            'quant.backtest_data': 'input-quant-backtest-data'
+        const tbody = document.getElementById('tenant-settings-tbody');
+        if (!tbody) return;
+
+        let html = '';
+        const groupIcons = {
+            'finance': '💸',
+            'otp': '🛡️',
+            'quant': '🤖',
+            'commons': '⚙️',
+            'system': '🔧',
+            'regex_pattern': '🧩'
         };
 
-        // Pre-populate input values
-        for (const [key, inputId] of Object.entries(keyMap)) {
-            const setting = cachedTenantSettings.find(s => s.key === key);
-            const inputEl = document.getElementById(inputId);
-            if (inputEl) {
-                if (setting) {
-                    inputEl.value = setting.value;
+        groups.forEach(g => {
+            const icon = groupIcons[g.group.toLowerCase()] || '⚙️';
+            // Group header row
+            html += `
+                <tr style="background: rgba(91, 81, 249, 0.03); border-bottom: 1.5px solid var(--border-light); border-top: 1.5px solid var(--border-light);">
+                    <td colspan="3" style="font-weight: 700; color: var(--primary); font-size: 0.85rem; padding: 10px 24px;">${icon} ${g.groupName || g.group} 参数 (${g.group})</td>
+                </tr>
+            `;
+
+            (g.items || []).forEach(item => {
+                let inputHtml = '';
+                const valType = (item.valueType || 'STRING').toUpperCase();
+
+                if (valType === 'BOOL' || valType === 'BOOLEAN') {
+                    const selectTrue = item.value === 'true' ? 'selected' : '';
+                    const selectFalse = item.value === 'false' ? 'selected' : '';
+                    inputHtml = `
+                        <select data-key="${item.key}" class="tenant-setting-input payment-add-select" style="width: 100%; max-width: 240px; height: 38px; padding: 0 10px; border-radius: 8px; border: 1.5px solid var(--border-light); background: rgba(255,255,255,0.6); outline: none;">
+                            <option value="true" ${selectTrue}>开启 (True)</option>
+                            <option value="false" ${selectFalse}>关闭 (False)</option>
+                        </select>
+                    `;
+                } else if (valType === 'DECIMAL' || valType === 'INT' || valType === 'NUMBER') {
+                    const step = valType === 'INT' ? '1' : 'any';
+                    inputHtml = `
+                        <input type="number" step="${step}" data-key="${item.key}" class="tenant-setting-input" required value="${item.value}" style="width: 100%; max-width: 240px; padding: 8px 12px; border: 1.5px solid var(--border-light); border-radius: 8px; background: rgba(255,255,255,0.6); outline: none;">
+                    `;
+                } else if (valType === 'JSON' || valType === 'TEXT' || item.value.length > 50 || item.key.includes('backtest')) {
+                    inputHtml = `
+                        <textarea data-key="${item.key}" class="tenant-setting-input" required style="width: 100%; max-width: 240px; height: 80px; padding: 8px 12px; border: 1.5px solid var(--border-light); border-radius: 8px; background: rgba(255,255,255,0.6); outline: none; font-family: monospace; font-size: 0.75rem; resize: vertical;">${item.value}</textarea>
+                    `;
                 } else {
-                    inputEl.value = '';
+                    inputHtml = `
+                        <input type="text" data-key="${item.key}" class="tenant-setting-input" required value="${item.value}" style="width: 100%; max-width: 240px; padding: 8px 12px; border: 1.5px solid var(--border-light); border-radius: 8px; background: rgba(255,255,255,0.6); outline: none;">
+                    `;
                 }
-            }
-        }
+
+                html += `
+                    <tr style="border-bottom: 1.5px solid var(--border-light);">
+                        <td>
+                            <div style="font-weight: 600; color: var(--text-primary); font-size: 0.82rem;">${item.description || item.key}</div>
+                            <span style="font-size: 0.68rem; color: var(--text-secondary); font-family: monospace; display: block; margin-top: 2px;">${item.key}</span>
+                        </td>
+                        <td>
+                            ${inputHtml}
+                        </td>
+                        <td style="font-size: 0.75rem; color: var(--text-secondary); line-height: 1.4;">
+                            ${item.description || '--'}
+                        </td>
+                    </tr>
+                `;
+            });
+        });
+
+        // Append Local App Download links section
+        html += `
+            <tr style="background: rgba(91, 81, 249, 0.03); border-bottom: 1px solid var(--border-light); border-top: 1px solid var(--border-light);">
+                <td colspan="3" style="font-weight: 700; color: var(--primary); font-size: 0.85rem; padding: 10px 24px;">📲 APP 客户端下载配置 (LocalStorage Settings)</td>
+            </tr>
+            <tr>
+                <td>
+                    <div style="font-weight: 600; color: var(--text-primary); font-size: 0.82rem;">安卓 APP 下载地址</div>
+                    <span style="font-size: 0.68rem; color: var(--text-secondary); font-family: monospace; display: block; margin-top: 2px;">app_download_android</span>
+                </td>
+                <td>
+                    <input type="text" id="input-app-download-android" placeholder="例如: https://matp-app.qchats.org/download/android.apk" style="width: 100%; max-width: 240px; padding: 8px 12px; border: 1.5px solid var(--border-light); border-radius: 8px; background: rgba(255,255,255,0.6); outline: none;">
+                </td>
+                <td style="font-size: 0.75rem; color: var(--text-secondary); line-height: 1.4;">
+                    用户端安卓平台点击下载 APP 按钮时的直接 apk 下载跳转链接。
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <div style="font-weight: 600; color: var(--text-primary); font-size: 0.82rem;">苹果 APP 下载地址</div>
+                    <span style="font-size: 0.68rem; color: var(--text-secondary); font-family: monospace; display: block; margin-top: 2px;">app_download_ios</span>
+                </td>
+                <td>
+                    <input type="text" id="input-app-download-ios" placeholder="例如: https://apps.apple.com/app/xxxx" style="width: 100%; max-width: 240px; padding: 8px 12px; border: 1.5px solid var(--border-light); border-radius: 8px; background: rgba(255,255,255,0.6); outline: none;">
+                </td>
+                <td style="font-size: 0.75rem; color: var(--text-secondary); line-height: 1.4;">
+                    用户端苹果 iOS 平台点击下载 APP 按钮时跳转的 App Store 分发链接。
+                </td>
+            </tr>
+        `;
+
+        tbody.innerHTML = html;
 
         // Cookie helpers for cross-subdomain sharing
         function getCookieDomain() {
@@ -91,7 +160,6 @@ async function loadTenantSettings() {
             return matches ? decodeURIComponent(matches[1]) : '';
         }
 
-        // Populate local app download links
         const androidInput = document.getElementById('input-app-download-android');
         const iosInput = document.getElementById('input-app-download-ios');
         if (androidInput) {
@@ -160,82 +228,46 @@ async function submitTenantSettings(event) {
         }
     }
 
-    const keyMap = {
-        'finance.withdraw.untraded_deposit_fee_rate': 'input-untraded-deposit-fee-rate',
-        'finance.withdraw.untraded_fee_rate': 'input-untraded-fee-rate',
-        'finance.withdraw.min_amount': 'input-withdraw-min-amount',
-        'finance.withdraw.max_amount': 'input-withdraw-max-amount',
-        'otp.code_validity': 'input-otp-validity',
-        'otp.daily_limit': 'input-otp-daily-limit',
-        'otp.interval': 'input-otp-interval',
-        'otp.max_retries': 'input-otp-max-retries',
-        'commons.phone_regex': 'input-commons-phone-regex',
-        'quant.min_invest_amount': 'input-quant-min-invest',
-        'quant.max_invest_amount': 'input-quant-max-invest',
-        'quant.brokerage.rate': 'input-quant-brokerage-rate',
-        'quant.brokerage.min_amount': 'input-quant-brokerage-min',
-        'quant.brokerage.max_amount': 'input-quant-brokerage-max',
-        'quant.ai_computing_cost.rate': 'input-quant-computing-rate',
-        'quant.ai_computing_cost.min_amount': 'input-quant-computing-min',
-        'quant.ai_computing_cost.max_amount': 'input-quant-computing-max',
-        'quant.exchange_fee.rate': 'input-quant-exchange-rate',
-        'quant.exchange_fee.min_amount': 'input-quant-exchange-min',
-        'quant.exchange_fee.max_amount': 'input-quant-exchange-max',
-        'quant.commission_rate': 'input-quant-commission-rate',
-        'quant.backtest_data': 'input-quant-backtest-data'
-    };
-
     showToast('正在安全提交并保存设置参数...', false);
 
     try {
         const updatedSettings = [];
-        const skippedKeys = [];
+        const inputEls = document.querySelectorAll('.tenant-setting-input');
 
-        for (const [key, inputId] of Object.entries(keyMap)) {
-            const inputEl = document.getElementById(inputId);
-            if (!inputEl) continue;
+        inputEls.forEach(inputEl => {
+            const key = inputEl.getAttribute('data-key');
+            if (!key) return;
 
-            let setting = cachedTenantSettings.find(s => s.key === key);
+            const setting = cachedTenantSettings.find(s => s.key === key);
             const newValue = inputEl.value.trim();
 
             if (setting) {
-                // 仅在值发生实际变化时提交，降低请求荷载并避免不必要的服务端重置
                 if (String(setting.value).trim() !== newValue) {
-                    const updatedObj = { ...setting, value: newValue };
+                    const updatedObj = {
+                        key: setting.key,
+                        value: newValue,
+                        valueType: setting.valueType,
+                        enabled: setting.enabled !== undefined ? setting.enabled : true,
+                        description: setting.description || ''
+                    };
                     updatedSettings.push(updatedObj);
                 }
-            } else {
-                // 如果后端初始配置列表里不存在此 key，说明当前系统后端版本尚未定义/不支持该参数。
-                // 强行提交会触发后端的 'unsupported sys setting key' (11001003) 校验错误。
-                // 采取白名单防御过滤，并打印警告，让支持的参数能够顺利保存。
-                skippedKeys.push(key);
-                console.warn(`[Tenant Settings] Key "${key}" (Element #${inputId}) is not defined/supported by the backend, skipped to prevent upsert failure.`);
             }
-        }
+        });
 
-        // 如果没有有效修改
         if (updatedSettings.length === 0) {
             if (localChanged) {
                 showToast('✓ 租户系统设置保存成功！', false);
             } else {
-                if (skippedKeys.length > 0) {
-                    showToast(`⚠️ 保存跳过 (不支持的键: ${skippedKeys.join(', ')})，无其他有效参数修改。`, true);
-                } else {
-                    showToast('✓ 未检测到任何配置参数修改，无需保存。', false);
-                }
+                showToast('✓ 未检测到任何配置参数修改，无需保存。', false);
             }
             return;
         }
 
-        // 发送 batch-upsert
         const res = await apiFetch('POST', `/tenants/${activeTenantId}/settings/batch-upsert`, { items: updatedSettings }, true);
         
         if (res && res.code === 200) {
-            let successMsg = '✓ 租户系统设置保存成功，配置已实时生效！';
-            if (skippedKeys.length > 0) {
-                successMsg += ` (已忽略不支持的键: ${skippedKeys.join(', ')})`;
-            }
-            showToast(successMsg, false);
+            showToast('✓ 租户系统设置保存成功，配置已实时生效！', false);
             loadTenantSettings();
         } else {
             console.error('Failed to batch upsert tenant settings:', res);
