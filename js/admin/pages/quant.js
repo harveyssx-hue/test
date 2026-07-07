@@ -1380,7 +1380,7 @@ function renderActiveSettleListHtml(batches = []) {
                 <td style="font-family: 'Outfit'; font-size: 0.75rem;">${actualProfitText}</td>
                 <td>${statusBadge}</td>
                 <td style="color: #EF4444; font-size: 0.7rem; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${errStr}">${errStr}</td>
-                <td style="text-align: center;">
+                <td class="sticky-right" style="text-align: center;">
                     ${(b.status === 'CREATED' || b.status === 'PENDING') 
                         ? `<button class="action-btn btn-approve" onclick="executeQuantBatch('${idStr}')" style="padding: 2px 8px; font-size: 0.7rem; cursor: pointer; white-space: nowrap;">▶ 执行</button>`
                         : '--'}
