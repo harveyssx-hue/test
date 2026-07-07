@@ -1805,6 +1805,22 @@ export function openExecuteBatchModal(batchId) {
     updateExecuteBatchDefaultTimes('Asia/Kolkata');
     modal.style.display = 'flex';
     modal.classList.add('active');
+
+    // Dynamically load exchanges from backend API
+    apiFetch('GET', '/exchanges?enabled=true', null, true).then(res => {
+        if (res.code === 200) {
+            const exchanges = res.result || res.data || [];
+            window.cachedExchanges = exchanges;
+            if (exchanges.length > 0 && exchSelect) {
+                const currentVal = exchSelect.value;
+                exchSelect.innerHTML = '<option value="">-- 请选择交易所 --</option>' +
+                    exchanges.map(e => `<option value="${e.code}">${e.displayName || e.name || e.code}</option>`).join('');
+                exchSelect.value = currentVal;
+            }
+        }
+    }).catch(e => {
+        console.error("Failed to load exchanges:", e);
+    });
 }
 window.openExecuteBatchModal = openExecuteBatchModal;
 
@@ -1824,7 +1840,17 @@ export function onExecuteExchangeChange(exch) {
         instSelect.innerHTML = '<option value="">-- 请选择交易商品 --</option>';
         return;
     }
-    const filtered = (window.cachedInstruments || []).filter(i => i.exchangeCode === exch);
+    
+    // Find matching exchange ID from cachedExchanges to support matching by ID when exchangeCode is null in DB
+    const matchExchange = (window.cachedExchanges || []).find(e => e.code === exch);
+    const exchId = matchExchange ? matchExchange.id : null;
+
+    const filtered = (window.cachedInstruments || []).filter(i => {
+        const matchCode = i.exchangeCode && i.exchangeCode.toUpperCase() === exch.toUpperCase();
+        const matchId = exchId && String(i.exchangeId) === String(exchId);
+        return matchCode || matchId;
+    });
+
     instSelect.innerHTML = '<option value="">-- 请选择交易商品 --</option>' +
         filtered.map(i => `<option value="${i.code}" data-name="${i.name}">${i.name} (${i.code})</option>`).join('');
 }
@@ -2458,7 +2484,7 @@ let instrumentsLoaded = false;
 
 async function loadInstruments() {
     try {
-        const res = await apiFetch('GET', '/instruments?enabled=true&pageSize=100', null, true);
+        const res = await apiFetch('GET', '/instruments?enabled=true&pageSize=1000', null, true);
         if (res.code === 200) {
             cachedInstruments = res.result || res.data || [];
             window.cachedInstruments = cachedInstruments;
