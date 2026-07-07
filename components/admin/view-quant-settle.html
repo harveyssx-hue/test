@@ -158,3 +158,107 @@
         </form>
     </div>
 </div>
+
+<!-- VIEW: EXECUTE BATCH MODAL -->
+<div id="execute-batch-modal" class="overlay" style="display: none; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(15px); background: rgba(0,0,0,0.6);">
+    <div class="glass-panel modal-content-payment" style="max-width: 600px; padding: 30px; max-height: 90vh; overflow-y: auto;">
+        <button class="drawer-close-btn" onclick="closeExecuteBatchModal()" style="top: 24px; right: 24px; font-size: 1.2rem; background: transparent; border: none; color: var(--text-secondary); cursor: pointer;">✕</button>
+        <div class="modal-header-admin" style="margin-bottom: 20px; border-bottom: 1px solid var(--border-light); padding-bottom: 12px;">
+            <h2 style="font-size: 1.35rem; display: flex; align-items: center; gap: 8px; color: var(--primary); font-weight: bold; margin: 0;">🚀 提交批次执行投资</h2>
+            <p style="font-size: 0.78rem; color: #64748B; margin-top: 6px; font-weight: 500;">输入买卖委托详情，将量化批次提交到后台执行真实结算交易</p>
+        </div>
+        
+        <form class="auth-form" id="execute-batch-form" onsubmit="submitExecuteQuantBatch(event)" style="display: flex; flex-direction: column; gap: 16px;">
+            <input type="hidden" id="ebatch-id">
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="auth-input-group">
+                    <label>交易市场时区 *</label>
+                    <select id="ebatch-timezone" required class="payment-add-select" onchange="updateExecuteBatchDefaultTimes(this.value)">
+                        <option value="Asia/Kolkata">印度 (Asia/Kolkata - GMT+5:30)</option>
+                        <option value="US/Eastern">美国东部 (US/Eastern - GMT-5/GMT-4)</option>
+                        <option value="Asia/Shanghai">中国/香港 (Asia/Shanghai - GMT+8)</option>
+                        <option value="Europe/London">英国 (Europe/London - GMT+0/GMT+1)</option>
+                        <option value="Asia/Tokyo">日本 (Asia/Tokyo - GMT+9)</option>
+                        <option value="UTC">世界协调时 (UTC - GMT+0)</option>
+                    </select>
+                </div>
+                <div class="auth-input-group">
+                    <label>选择交易所 *</label>
+                    <select id="ebatch-exchange" required class="payment-add-select" onchange="onExecuteExchangeChange(this.value)">
+                        <option value="">-- 请选择交易所 --</option>
+                        <option value="NSE">印度NSE</option>
+                        <option value="BSE">印度BSE</option>
+                        <option value="NYSE">纽约证券交易所 NYSE</option>
+                        <option value="NASDAQ">纳斯达克 NASDAQ</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr; gap: 16px;">
+                <div class="auth-input-group">
+                    <label>选择交易商品 *</label>
+                    <select id="ebatch-instrument" required class="payment-add-select">
+                        <option value="">-- 请选择交易商品 --</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; border-top: 1px dashed var(--border-light); padding-top: 12px;">
+                <div class="auth-input-group">
+                    <label>买入成交价格 *</label>
+                    <input type="number" id="ebatch-buy-price" step="any" placeholder="输入买入成交价格" required>
+                </div>
+                <div class="auth-input-group">
+                    <label>买入委托时间 *</label>
+                    <input type="datetime-local" id="ebatch-buy-time" required>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="auth-input-group">
+                    <label>卖出成交价格 *</label>
+                    <input type="number" id="ebatch-sell-price" step="any" placeholder="输入卖出成交价格" required>
+                </div>
+                <div class="auth-input-group">
+                    <label>卖出委托时间 *</label>
+                    <input type="datetime-local" id="ebatch-sell-time" required>
+                </div>
+            </div>
+
+            <div style="border-top: 1px dashed var(--border-light); padding-top: 12px;">
+                <h4 style="font-size: 0.8rem; color: var(--text-primary); margin: 0 0 10px 0;">💰 费率覆盖控制 (非必填，为空则使用租户默认费率)</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                    <div class="auth-input-group">
+                        <label style="font-size: 0.68rem;">买入算力费率</label>
+                        <input type="number" id="ebatch-buy-computing" step="any" placeholder="例: 0.001">
+                    </div>
+                    <div class="auth-input-group">
+                        <label style="font-size: 0.68rem;">买入经纪费率</label>
+                        <input type="number" id="ebatch-buy-brokerage" step="any" placeholder="例: 0.002">
+                    </div>
+                    <div class="auth-input-group">
+                        <label style="font-size: 0.68rem;">买入交易所费率</label>
+                        <input type="number" id="ebatch-buy-exchange" step="any" placeholder="例: 0.0005">
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+                    <div class="auth-input-group">
+                        <label style="font-size: 0.68rem;">卖出算力费率</label>
+                        <input type="number" id="ebatch-sell-computing" step="any" placeholder="例: 0.001">
+                    </div>
+                    <div class="auth-input-group">
+                        <label style="font-size: 0.68rem;">卖出经纪费率</label>
+                        <input type="number" id="ebatch-sell-brokerage" step="any" placeholder="例: 0.002">
+                    </div>
+                    <div class="auth-input-group">
+                        <label style="font-size: 0.68rem;">卖出交易所费率</label>
+                        <input type="number" id="ebatch-sell-exchange" step="any" placeholder="例: 0.0005">
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="admin-auth-btn" style="margin-top: 10px; height: 44px; border-radius: 8px; font-weight: 700; background: var(--primary);" id="ebatch-submit-btn">立即提交执行投资</button>
+        </form>
+    </div>
+</div>

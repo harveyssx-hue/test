@@ -1382,7 +1382,7 @@ function renderActiveSettleListHtml(batches = []) {
                 <td style="color: #EF4444; font-size: 0.7rem; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${errStr}">${errStr}</td>
                 <td class="sticky-right" style="text-align: center;">
                     ${(b.status === 'CREATED' || b.status === 'PENDING') 
-                        ? `<button class="action-btn btn-approve" onclick="executeQuantBatch('${idStr}')" style="padding: 2px 8px; font-size: 0.7rem; cursor: pointer; white-space: nowrap;">▶ 执行</button>`
+                        ? `<button class="action-btn btn-approve" onclick="openExecuteBatchModal('${idStr}')" style="padding: 2px 8px; font-size: 0.7rem; cursor: pointer; white-space: nowrap;">▶ 执行</button>`
                         : '--'}
                 </td>
             </tr>
@@ -1478,6 +1478,7 @@ export function closeCreateCompletedBatchModal() {
 
 export async function onBatchRiskLevelChange() {
     const levelId = document.getElementById('cbatch-risk-level').value;
+    const timeZone = document.getElementById('cbatch-timezone')?.value || 'Asia/Kolkata';
     const statsBox = document.getElementById('cbatch-stats-box');
     if (!statsBox) return;
     
@@ -1489,6 +1490,8 @@ export async function onBatchRiskLevelChange() {
     statsBox.style.display = 'block';
     statsBox.innerHTML = '⏳ 正在统计该层级活跃订单数据...';
     
+    window.activeTimezoneOverride = timeZone;
+    
     try {
         const statsRes = await apiFetch('GET', `/trading/quant/orders/statistics/risk-levels?status=ACTIVE&riskLevelIds=${levelId}`, null, true);
         const ordersRes = await apiFetch('GET', `/trading/quant/orders?status=ACTIVE&page=1&pageSize=1000`, null, true);
@@ -1496,7 +1499,10 @@ export async function onBatchRiskLevelChange() {
         let ordersTimesStr = '';
         if (ordersRes.code === 200) {
             const list = ordersRes.result || ordersRes.data || [];
-            const filtered = list.filter(o => String(o.riskLevelId) === String(levelId));
+            const filtered = list.filter(o => {
+                const rId = o.riskLevelId || (o.riskLevel ? o.riskLevel.id : '');
+                return String(rId) === String(levelId);
+            });
             if (filtered.length > 0) {
                 const timeZone = document.getElementById('cbatch-timezone').value || 'Asia/Kolkata';
                 const formattedTimes = filtered.map(o => {
@@ -1525,6 +1531,8 @@ export async function onBatchRiskLevelChange() {
     } catch (e) {
         console.error("Failed to load risk level order stats:", e);
         statsBox.innerHTML = '❌ 统计数据加载网络异常';
+    } finally {
+        window.activeTimezoneOverride = null;
     }
 }
 
@@ -1542,31 +1550,45 @@ function getTimestampInTimezone(dateTimeStr, timeZone) {
     const localUtc = Date.UTC(year, month - 1, day, hour, minute);
     
     try {
-        const date = new Date(localUtc);
-        const options = {
-            timeZone: timeZone,
+        const dummyDate = new Date(localUtc);
+        const formatter = new Intl.DateTimeFormat('en-US', {
+            timeZone,
             year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: false
-        };
-        // sv-SE locale always returns standard 24-hour format "YYYY-MM-DD HH:mm:ss"
-        const svStr = date.toLocaleString('sv-SE', options);
-        const svParts = svStr.split(/[- :]/);
-        if (svParts.length < 5) return localUtc;
+            month: 'numeric',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: 'numeric',
+            second: 'numeric',
+            hour12: true
+        });
+        const formattedParts = formatter.formatToParts(dummyDate);
         
-        const tzYear = parseInt(svParts[0]);
-        const tzMonth = parseInt(svParts[1]);
-        const tzDay = parseInt(svParts[2]);
-        const tzHour = parseInt(svParts[3]);
-        const tzMinute = parseInt(svParts[4]);
-        const tzSecond = svParts[5] ? parseInt(svParts[5]) : 0;
+        let tzYear = year, tzMonth = month - 1, tzDay = day, tzHour = hour, tzMinute = minute, tzSecond = 0;
+        let isPM = false;
         
-        const tzUtc = Date.UTC(tzYear, tzMonth - 1, tzDay, tzHour, tzMinute, tzSecond);
-        const offset = tzUtc - localUtc;
+        formattedParts.forEach(p => {
+            if (p.type === 'year') tzYear = parseInt(p.value);
+            else if (p.type === 'month') tzMonth = parseInt(p.value) - 1;
+            else if (p.type === 'day') tzDay = parseInt(p.value);
+            else if (p.type === 'hour') tzHour = parseInt(p.value);
+            else if (p.type === 'minute') tzMinute = parseInt(p.value);
+            else if (p.type === 'second') tzSecond = parseInt(p.value);
+            else if (p.type === 'dayPeriod') {
+                const val = p.value.toUpperCase();
+                if (val.includes('PM')) {
+                    isPM = true;
+                }
+            }
+        });
+        
+        if (isPM && tzHour < 12) {
+            tzHour += 12;
+        } else if (!isPM && tzHour === 12) {
+            tzHour = 0;
+        }
+        
+        const tzDateUtc = Date.UTC(tzYear, tzMonth, tzDay, tzHour, tzMinute, tzSecond);
+        const offset = tzDateUtc - dummyDate.getTime();
         
         return localUtc - offset;
     } catch (e) {
@@ -1654,7 +1676,7 @@ export async function submitCreateCompletedBatch(event) {
         submitBtn.disabled = true;
         submitBtn.innerText = '正在提交易手清结算数据...';
     }
-    
+    window.activeTimezoneOverride = timeZone;
     try {
         const res = await apiFetch('POST', '/trading/quant/trades/risk-level/batches/completed', reqBody, true);
         if (res.code === 200) {
@@ -1674,6 +1696,7 @@ export async function submitCreateCompletedBatch(event) {
         console.error("Create completed batch failed:", e);
         showToast('创建投资批次网络异常！', true);
     } finally {
+        window.activeTimezoneOverride = null;
         if (submitBtn) {
             submitBtn.disabled = false;
             submitBtn.innerText = '立即创建并异步清算批次';
@@ -1760,12 +1783,127 @@ export function quickSettleForOrder(riskLevelId) {
 }
 window.quickSettleForOrder = quickSettleForOrder;
 
-export async function executeQuantBatch(batchId) {
-    if (!confirm('确定要执行该投资操作批次吗？')) return;
+export function openExecuteBatchModal(batchId) {
+    const modal = document.getElementById('execute-batch-modal');
+    if (!modal) return;
     
-    showToast('正在提交批次执行投资...', false);
+    const form = document.getElementById('execute-batch-form');
+    if (form) form.reset();
+    
+    const idInput = document.getElementById('ebatch-id');
+    if (idInput) idInput.value = batchId;
+    
+    const tzSelect = document.getElementById('ebatch-timezone');
+    if (tzSelect) tzSelect.value = 'Asia/Kolkata';
+    
+    const exchSelect = document.getElementById('ebatch-exchange');
+    if (exchSelect) exchSelect.value = '';
+    
+    const instSelect = document.getElementById('ebatch-instrument');
+    if (instSelect) {
+        instSelect.innerHTML = '<option value="">-- 请选择交易商品 --</option>';
+    }
+    
+    updateExecuteBatchDefaultTimes('Asia/Kolkata');
+    modal.style.display = 'flex';
+}
+window.openExecuteBatchModal = openExecuteBatchModal;
+
+export function closeExecuteBatchModal() {
+    const modal = document.getElementById('execute-batch-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+window.closeExecuteBatchModal = closeExecuteBatchModal;
+
+export function onExecuteExchangeChange(exch) {
+    const instSelect = document.getElementById('ebatch-instrument');
+    if (!instSelect) return;
+    if (!exch) {
+        instSelect.innerHTML = '<option value="">-- 请选择交易商品 --</option>';
+        return;
+    }
+    const filtered = (window.cachedInstruments || []).filter(i => i.exchangeCode === exch);
+    instSelect.innerHTML = '<option value="">-- 请选择交易商品 --</option>' +
+        filtered.map(i => `<option value="${i.code}" data-name="${i.name}">${i.name} (${i.code})</option>`).join('');
+}
+window.onExecuteExchangeChange = onExecuteExchangeChange;
+
+export function updateExecuteBatchDefaultTimes(timeZone) {
+    const buyTimeInput = document.getElementById('ebatch-buy-time');
+    const sellTimeInput = document.getElementById('ebatch-sell-time');
+    const nowStr = getCurrentTimeInTimezone(timeZone);
+    if (buyTimeInput) buyTimeInput.value = nowStr;
+    if (sellTimeInput) sellTimeInput.value = nowStr;
+}
+window.updateExecuteBatchDefaultTimes = updateExecuteBatchDefaultTimes;
+
+export async function submitExecuteQuantBatch(event) {
+    if (event) event.preventDefault();
+    
+    const batchId = document.getElementById('ebatch-id').value;
+    const timezone = document.getElementById('ebatch-timezone').value;
+    const exchangeCode = document.getElementById('ebatch-exchange').value;
+    const instrumentCode = document.getElementById('ebatch-instrument').value;
+    
+    const instrumentSelect = document.getElementById('ebatch-instrument');
+    const selectedOption = instrumentSelect.options[instrumentSelect.selectedIndex];
+    const instrumentName = selectedOption ? (selectedOption.getAttribute('data-name') || '') : '';
+    
+    const buyPrice = parseFloat(document.getElementById('ebatch-buy-price').value);
+    const buyTimeStr = document.getElementById('ebatch-buy-time').value;
+    const sellPrice = parseFloat(document.getElementById('ebatch-sell-price').value);
+    const sellTimeStr = document.getElementById('ebatch-sell-time').value;
+    
+    if (!exchangeCode || !instrumentCode || isNaN(buyPrice) || !buyTimeStr || isNaN(sellPrice) || !sellTimeStr) {
+        showToast('❌ 请完整填写所有必填字段！', true);
+        return;
+    }
+    
+    const buyExecutedAt = Math.floor(getTimestampInTimezone(buyTimeStr, timezone) / 1000);
+    const sellExecutedAt = Math.floor(getTimestampInTimezone(sellTimeStr, timezone) / 1000);
+    
+    if (isNaN(buyExecutedAt) || buyExecutedAt <= 0 || isNaN(sellExecutedAt) || sellExecutedAt <= 0) {
+        showToast('❌ 委托时间格式无效，请重新选择！', true);
+        return;
+    }
+    
+    const reqBody = {
+        buyExecutedAt: buyExecutedAt,
+        buyPrice: buyPrice,
+        exchangeCode: exchangeCode,
+        instrumentCode: instrumentCode,
+        instrumentName: instrumentName,
+        sellExecutedAt: sellExecutedAt,
+        sellPrice: sellPrice,
+        tradeTimezone: timezone
+    };
+    
+    // Optional fee rates
+    const buyAIComputingCostRate = parseFloat(document.getElementById('ebatch-buy-computing').value);
+    const buyBrokerageRate = parseFloat(document.getElementById('ebatch-buy-brokerage').value);
+    const buyExchangeFeeRate = parseFloat(document.getElementById('ebatch-buy-exchange').value);
+    const sellAIComputingCostRate = parseFloat(document.getElementById('ebatch-sell-computing').value);
+    const sellBrokerageRate = parseFloat(document.getElementById('ebatch-sell-brokerage').value);
+    const sellExchangeFeeRate = parseFloat(document.getElementById('ebatch-sell-exchange').value);
+    
+    if (!isNaN(buyAIComputingCostRate)) reqBody.buyAIComputingCostRate = buyAIComputingCostRate;
+    if (!isNaN(buyBrokerageRate)) reqBody.buyBrokerageRate = buyBrokerageRate;
+    if (!isNaN(buyExchangeFeeRate)) reqBody.buyExchangeFeeRate = buyExchangeFeeRate;
+    if (!isNaN(sellAIComputingCostRate)) reqBody.sellAIComputingCostRate = sellAIComputingCostRate;
+    if (!isNaN(sellBrokerageRate)) reqBody.sellBrokerageRate = sellBrokerageRate;
+    if (!isNaN(sellExchangeFeeRate)) reqBody.sellExchangeFeeRate = sellExchangeFeeRate;
+    
+    const submitBtn = document.getElementById('ebatch-submit-btn');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerText = '正在提交执行投资...';
+    }
+    
+    window.activeTimezoneOverride = timezone;
     try {
-        const res = await apiFetch('POST', `/trading/quant/trades/risk-level/batches/${batchId}/execute`, null, true);
+        const res = await apiFetch('POST', `/trading/quant/trades/risk-level/batches/${batchId}/execute`, reqBody, true);
         if (res.code === 200) {
             const batch = res.result || res.data || {};
             if (batch.status === 'FAILED') {
@@ -1773,6 +1911,7 @@ export async function executeQuantBatch(batchId) {
             } else {
                 showToast('✓ 批次投资执行成功！已提交后台处理。', false);
             }
+            closeExecuteBatchModal();
             loadQuantSettleList();
         } else {
             showToast(res.errorMessage || '执行批次投资失败！', true);
@@ -1780,9 +1919,15 @@ export async function executeQuantBatch(batchId) {
     } catch (e) {
         console.error("Execute batch failed:", e);
         showToast('执行批次投资网络异常！', true);
+    } finally {
+        window.activeTimezoneOverride = null;
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerText = '立即提交执行投资';
+        }
     }
 }
-window.executeQuantBatch = executeQuantBatch;
+window.submitExecuteQuantBatch = submitExecuteQuantBatch;
 
 // Bind to window to allow calling from HTML
 window.loadQuantSettleList = loadQuantSettleList;

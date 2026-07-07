@@ -21,6 +21,9 @@ function getLocalizedError(key) {
 }
 
 function getSystemTimezone() {
+    if (window.activeTimezoneOverride) {
+        return window.activeTimezoneOverride;
+    }
     try {
         if (typeof Intl !== 'undefined' && Intl.DateTimeFormat) {
             return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
