@@ -1635,7 +1635,7 @@ export async function submitCreateCompletedBatch(event) {
     }
     
     const reqBody = {
-        userRiskLevelId: parseInt(riskLevelId),
+        userRiskLevelId: riskLevelId,
         orderDeadlineAt: orderDeadlineAt
     };
     
