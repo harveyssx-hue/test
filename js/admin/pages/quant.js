@@ -1638,7 +1638,8 @@ function getCurrentTimeInTimezone(timeZone) {
 export function updateBatchTimezoneDefaultTimes(timeZone) {
     const deadlineInput = document.getElementById('cbatch-deadline-time');
     if (deadlineInput) {
-        deadlineInput.value = '';
+        const timeStr = getCurrentTimeInTimezone(timeZone);
+        deadlineInput.value = timeStr;
     }
 }
 window.updateBatchTimezoneDefaultTimes = updateBatchTimezoneDefaultTimes;
@@ -1655,21 +1656,26 @@ export async function submitCreateCompletedBatch(event) {
     }
     
     const deadlineTimeStr = document.getElementById('cbatch-deadline-time')?.value || '';
-    let orderDeadlineAt = null;
-    if (deadlineTimeStr) {
-        orderDeadlineAt = Math.floor(getTimestampInTimezone(deadlineTimeStr, timeZone) / 1000);
-        if (isNaN(orderDeadlineAt) || orderDeadlineAt <= 0) {
-            showToast('❌ 订单截止时间格式无效，请重新选择！', true);
-            return;
-        }
+    if (!deadlineTimeStr) {
+        showToast('❌ 请指定订单截止时间！', true);
+        return;
+    }
+    
+    // Parse the input datetime-local string (format: YYYY-MM-DDTHH:mm or YYYY/MM/DD HH:mm) as a UTC timestamp
+    // to bypass the timezone offset calculation discrepancy on the backend comparison query.
+    const cleanStr = deadlineTimeStr.replace(/\//g, '-').replace(' ', 'T');
+    const utcDate = new Date(cleanStr + ':00Z');
+    const orderDeadlineAt = Math.floor(utcDate.getTime() / 1000);
+    
+    if (isNaN(orderDeadlineAt) || orderDeadlineAt <= 0) {
+        showToast('❌ 订单截止时间格式无效，请重新选择！', true);
+        return;
     }
     
     const reqBody = {
-        userRiskLevelId: riskLevelId
+        userRiskLevelId: riskLevelId,
+        orderDeadlineAt: orderDeadlineAt
     };
-    if (orderDeadlineAt) {
-        reqBody.orderDeadlineAt = orderDeadlineAt;
-    }
     
     const submitBtn = document.getElementById('cbatch-submit-btn');
     if (submitBtn) {
