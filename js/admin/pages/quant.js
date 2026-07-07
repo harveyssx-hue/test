@@ -1661,21 +1661,15 @@ export async function submitCreateCompletedBatch(event) {
         return;
     }
     
-    // Parse the input datetime-local string (format: YYYY-MM-DDTHH:mm or YYYY/MM/DD HH:mm) as a UTC timestamp
-    // to bypass the timezone offset calculation discrepancy on the backend comparison query.
-    const cleanStr = deadlineTimeStr.replace(/\//g, '-').replace(' ', 'T');
-    const utcDate = new Date(cleanStr + ':00Z');
-    const orderDeadlineAt = Math.floor(utcDate.getTime() / 1000);
+    const orderDeadlineAt = Math.floor(getTimestampInTimezone(deadlineTimeStr, timeZone) / 1000);
     
     if (isNaN(orderDeadlineAt) || orderDeadlineAt <= 0) {
         showToast('❌ 订单截止时间格式无效，请重新选择！', true);
         return;
     }
     
-    const reqBody = {
-        userRiskLevelId: riskLevelId,
-        orderDeadlineAt: orderDeadlineAt
-    };
+    // Construct raw JSON body with unquoted 64-bit userRiskLevelId to comply with Swagger integer schema
+    const rawBody = `{"userRiskLevelId":${riskLevelId},"orderDeadlineAt":${orderDeadlineAt}}`;
     
     const submitBtn = document.getElementById('cbatch-submit-btn');
     if (submitBtn) {
@@ -1684,7 +1678,7 @@ export async function submitCreateCompletedBatch(event) {
     }
     window.activeTimezoneOverride = timeZone;
     try {
-        const res = await apiFetch('POST', '/trading/quant/trades/risk-level/batches/completed', reqBody, true);
+        const res = await apiFetchWithRawBody('POST', '/trading/quant/trades/risk-level/batches/completed', rawBody, true);
         if (res.code === 200) {
             const batch = res.result || res.data || {};
             if (batch.status === 'FAILED') {
