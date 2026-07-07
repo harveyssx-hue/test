@@ -1621,7 +1621,7 @@ export async function submitCreateCompletedBatch(event) {
         showToast('❌ 请指定订单截止时间！', true);
         return;
     }
-    const orderDeadlineAt = Math.floor(getTimestampInTimezone(deadlineTimeStr, timeZone) / 1000);
+    const orderDeadlineAt = getTimestampInTimezone(deadlineTimeStr, timeZone);
     if (isNaN(orderDeadlineAt) || orderDeadlineAt <= 0) {
         showToast('❌ 订单截止时间格式无效，请重新选择！', true);
         return;
