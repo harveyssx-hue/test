@@ -2453,6 +2453,7 @@ async function handleFollowRelation(relationId, action) {
 window.handleFollowRelation = handleFollowRelation;
 
 let cachedInstruments = [];
+window.cachedInstruments = cachedInstruments;
 let instrumentsLoaded = false;
 
 async function loadInstruments() {
@@ -2460,6 +2461,7 @@ async function loadInstruments() {
         const res = await apiFetch('GET', '/instruments?enabled=true&pageSize=100', null, true);
         if (res.code === 200) {
             cachedInstruments = res.result || res.data || [];
+            window.cachedInstruments = cachedInstruments;
             populateInstrumentSelects();
         }
     } catch (e) {
