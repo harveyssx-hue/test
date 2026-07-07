@@ -1491,6 +1491,23 @@ export async function onBatchRiskLevelChange() {
     
     try {
         const statsRes = await apiFetch('GET', `/trading/quant/orders/statistics/risk-levels?status=ACTIVE&riskLevelIds=${levelId}`, null, true);
+        const ordersRes = await apiFetch('GET', `/trading/quant/orders?status=ACTIVE&page=1&pageSize=1000`, null, true);
+        
+        let ordersTimesStr = '';
+        if (ordersRes.code === 200) {
+            const list = ordersRes.result || ordersRes.data || [];
+            const filtered = list.filter(o => String(o.riskLevelId) === String(levelId));
+            if (filtered.length > 0) {
+                const timeZone = document.getElementById('cbatch-timezone').value || 'Asia/Kolkata';
+                const formattedTimes = filtered.map(o => {
+                    const t = parseInt(o.createdAt);
+                    const date = new Date(t < 10000000000 ? t * 1000 : t);
+                    return date.toLocaleString('sv-SE', { timeZone });
+                });
+                ordersTimesStr = `<br>• 订单创建时间 (${timeZone}):<br>${formattedTimes.map(time => `  - <span style="font-family: monospace;">${time}</span>`).join('<br>')}`;
+            }
+        }
+        
         if (statsRes.code === 200) {
             const statsList = statsRes.result || statsRes.data || [];
             const lvlStat = statsList.find(s => String(s.riskLevelId) === String(levelId));
@@ -1498,7 +1515,7 @@ export async function onBatchRiskLevelChange() {
                 const totalOrders = lvlStat.totalOrders || 0;
                 const totalAmount = lvlStat.totalInvestAmount ? parseFloat(lvlStat.totalInvestAmount).toFixed(2) : '0.00';
                 const totalUsers = lvlStat.totalUsers || 0;
-                statsBox.innerHTML = `👥 <b>${lvlStat.riskLevel || '该层级'}</b> 当前活跃订单统计：<br>• 活动订单总数: <b>${totalOrders}</b> 笔<br>• 去重下单用户: <b>${totalUsers}</b> 人<br>• 活动投资总金额: <b style="color: var(--primary); font-size: 0.8rem;">${totalAmount} USDT</b>`;
+                statsBox.innerHTML = `👥 <b>${lvlStat.riskLevel || '该层级'}</b> 当前活跃订单统计：<br>• 活动订单总数: <b>${totalOrders}</b> 笔<br>• 去重下单用户: <b>${totalUsers}</b> 人<br>• 活动投资总金额: <b style="color: var(--primary); font-size: 0.8rem;">${totalAmount} USDT</b>${ordersTimesStr}`;
             } else {
                 statsBox.innerHTML = 'ℹ️ 该风控层级当前无活跃 (ACTIVE) 量化订单。';
             }
@@ -1621,7 +1638,7 @@ export async function submitCreateCompletedBatch(event) {
         showToast('❌ 请指定订单截止时间！', true);
         return;
     }
-    const orderDeadlineAt = getTimestampInTimezone(deadlineTimeStr, timeZone);
+    const orderDeadlineAt = Math.floor(getTimestampInTimezone(deadlineTimeStr, timeZone) / 1000);
     if (isNaN(orderDeadlineAt) || orderDeadlineAt <= 0) {
         showToast('❌ 订单截止时间格式无效，请重新选择！', true);
         return;
