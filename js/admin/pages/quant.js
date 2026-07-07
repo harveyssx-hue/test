@@ -1792,15 +1792,17 @@ export function quickSettleForOrder(riskLevelId) {
 }
 window.quickSettleForOrder = quickSettleForOrder;
 
-export function openExecuteBatchModal(batchId) {
+export async function openExecuteBatchModal(batchId) {
     const modal = document.getElementById('execute-batch-modal');
     if (!modal) return;
     
     const form = document.getElementById('execute-batch-form');
     if (form) form.reset();
     
-    const idInput = document.getElementById('ebatch-id');
-    if (idInput) idInput.value = batchId;
+    const idSelect = document.getElementById('ebatch-id');
+    if (idSelect) {
+        idSelect.innerHTML = '<option value="">-- 正在获取待操盘批次列表... --</option>';
+    }
     
     const tzSelect = document.getElementById('ebatch-timezone');
     if (tzSelect) tzSelect.value = 'Asia/Kolkata';
@@ -1817,7 +1819,31 @@ export function openExecuteBatchModal(batchId) {
     modal.style.display = 'flex';
     modal.classList.add('active');
 
-    // Dynamically load exchanges from backend API
+    // 1. Fetch pending BUY_PENDING batches to populate the batch selector dropdown
+    try {
+        const pendingRes = await apiFetch('GET', '/trading/quant/trades/risk-level/batches?status=BUY_PENDING&page=1&pageSize=100', null, true);
+        if (pendingRes && pendingRes.code === 200 && idSelect) {
+            const pendingBatches = pendingRes.result || pendingRes.data || [];
+            if (pendingBatches.length === 0) {
+                idSelect.innerHTML = '<option value="">-- 当前暂无待清算的活跃投资批次 --</option>';
+            } else {
+                idSelect.innerHTML = '<option value="">-- 请选择要执行投资的批次 --</option>' +
+                    pendingBatches.map(b => 
+                        `<option value="${b.id}">批次: ${b.id} (${b.userRiskLevel || '层级未分组'} | 待清算 ${b.matchedOrderCount || 0} 笔)</option>`
+                    ).join('');
+                if (batchId) {
+                    idSelect.value = batchId;
+                }
+            }
+        }
+    } catch (e) {
+        console.error("Failed to load pending batches for execution:", e);
+        if (idSelect) {
+            idSelect.innerHTML = '<option value="">-- 加载批次列表失败 --</option>';
+        }
+    }
+
+    // 2. Dynamically load exchanges from backend API
     apiFetch('GET', '/exchanges?enabled=true', null, true).then(res => {
         if (res.code === 200) {
             const exchanges = res.result || res.data || [];
@@ -2103,8 +2129,8 @@ export async function submitExecuteQuantBatch(event) {
     const sellPrice = parseFloat(document.getElementById('ebatch-sell-price').value);
     const sellTimeStr = document.getElementById('ebatch-sell-time').value;
     
-    if (!exchangeCode || !instrumentCode || isNaN(buyPrice) || !buyTimeStr || isNaN(sellPrice) || !sellTimeStr) {
-        showToast('❌ 请完整填写所有必填字段！', true);
+    if (!batchId || !exchangeCode || !instrumentCode || isNaN(buyPrice) || !buyTimeStr || isNaN(sellPrice) || !sellTimeStr) {
+        showToast('❌ 请完整填写所有必填字段（且必须选择待执行投资批次）！', true);
         return;
     }
     
