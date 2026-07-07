@@ -401,6 +401,7 @@ export async function loadQuantMonitor() {
                         <td style="text-align: center; font-family: monospace;">1</td>
                         <td>
                             <div style="font-family: monospace; font-size: 0.72rem; font-weight: 600;">${o.orderNo}</div>
+                            ${o.batchId ? `<div style="font-size: 0.68rem; margin-top: 2.5px;">⚡ 批次: <a href="javascript:void(0)" onclick="openBatchDetailsModal('${o.batchId}')" style="color: var(--primary); font-family: monospace; font-weight: 600; text-decoration: underline;">${o.batchId}</a></div>` : ''}
                             <div style="color: var(--text-muted); font-size: 0.68rem; margin-top: 2px;">${formattedFullTime}${o.tradeTimezone ? ` <span style="color: var(--primary); font-weight: 600;">(${o.tradeTimezone})</span>` : ''}</div>
                             ${(o.status === 'ACTIVE' || o.status === 'COMPLETED') && o.price && o.quantity ? `<div style="color: var(--primary); font-size: 0.68rem; margin-top: 3px; font-weight: 600;">📈 买入: ${parseFloat(o.price).toFixed(2)} / ${parseFloat(o.quantity).toFixed(4)}</div>` : ''}
                         </td>
@@ -1381,9 +1382,13 @@ function renderActiveSettleListHtml(batches = []) {
                 <td>${statusBadge}</td>
                 <td style="color: #EF4444; font-size: 0.7rem; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${errStr}">${errStr}</td>
                 <td class="sticky-right" style="text-align: center;">
-                    ${(b.status === 'BUY_PENDING') 
-                        ? `<button class="action-btn btn-approve" onclick="openExecuteBatchModal('${idStr}')" style="padding: 2px 8px; font-size: 0.7rem; cursor: pointer; white-space: nowrap;">▶ 执行</button>`
-                        : '--'}
+                    <div style="display: flex; gap: 4px; justify-content: center; align-items: center;">
+                        <button class="action-btn" onclick="openBatchDetailsModal('${idStr}')" style="padding: 2px 8px; font-size: 0.7rem; cursor: pointer; white-space: nowrap; background: rgba(59, 130, 246, 0.08); color: #3b82f6; border: 1.5px solid rgba(59, 130, 246, 0.2); border-radius: 4px; font-weight: 600;">👁️ 详情</button>
+                        ${(b.status === 'BUY_PENDING') 
+                            ? `<button class="action-btn btn-approve" onclick="openExecuteBatchModal('${idStr}')" style="padding: 2px 8px; font-size: 0.7rem; cursor: pointer; white-space: nowrap; border-radius: 4px;">▶ 执行</button>`
+                            : ''
+                        }
+                    </div>
                 </td>
             </tr>
         `;
@@ -1838,6 +1843,215 @@ export function closeExecuteBatchModal() {
     }
 }
 window.closeExecuteBatchModal = closeExecuteBatchModal;
+
+export async function openBatchDetailsModal(batchId) {
+    let modal = document.getElementById('batch-details-modal');
+    if (!modal) {
+        // Dynamically create modal if not present in active DOM tab
+        modal = document.createElement('div');
+        modal.id = 'batch-details-modal';
+        modal.className = 'overlay';
+        modal.style.cssText = 'display: none; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(15px); background: rgba(0,0,0,0.6); position: fixed; top: 0; left: 0; width: 100%; height: 100%;';
+        modal.innerHTML = `
+            <div class="glass-panel modal-content-payment" style="max-width: 850px; width: 90%; padding: 25px; max-height: 90vh; overflow-y: auto; border-radius: 12px; position: relative;">
+                <button class="drawer-close-btn" onclick="closeBatchDetailsModal()" style="position: absolute; top: 20px; right: 20px; font-size: 1.2rem; background: transparent; border: none; color: var(--text-secondary); cursor: pointer;">✕</button>
+                <div class="modal-header-admin" style="margin-bottom: 18px; border-bottom: 1.5px solid var(--border-light); padding-bottom: 12px;">
+                    <h2 style="font-size: 1.25rem; display: flex; align-items: center; gap: 8px; color: var(--primary); font-weight: bold; margin: 0;">📊 投资操作批次详情 & 关联订单</h2>
+                    <p style="font-size: 0.75rem; color: #64748B; margin-top: 4px; font-weight: 500;">查看该量化操盘批次的成交参数快照及当前下发执行的所有用户订单交易明细</p>
+                </div>
+                
+                <!-- Batch stats summary grid -->
+                <div id="bdetails-summary-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px;">
+                    <!-- Loaded dynamically -->
+                </div>
+
+                <!-- Orders table title -->
+                <div style="font-size: 0.85rem; font-weight: bold; color: var(--primary); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                    📦 批次下属订单明细 (Orders List)
+                </div>
+                
+                <!-- Orders list table -->
+                <div class="table-container compact-table" style="max-height: 300px; overflow-y: auto; border: 1.5px solid var(--border-light); border-radius: 8px; margin-bottom: 10px; background: rgba(255, 255, 255, 0.15);">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: rgba(255, 255, 255, 0.3); border-bottom: 1px solid var(--border-light);">
+                                <th style="font-size: 0.72rem; padding: 8px 10px; text-align: left;">订单 ID</th>
+                                <th style="font-size: 0.72rem; padding: 8px 10px; text-align: left;">用户 UID</th>
+                                <th style="font-size: 0.72rem; padding: 8px 10px; text-align: left;">本金 (USDT)</th>
+                                <th style="font-size: 0.72rem; padding: 8px 10px; text-align: left;">算力费 / 费率</th>
+                                <th style="font-size: 0.72rem; padding: 8px 10px; text-align: left;">经纪费 / 费率</th>
+                                <th style="font-size: 0.72rem; padding: 8px 10px; text-align: left;">交易所费 / 费率</th>
+                                <th style="font-size: 0.72rem; padding: 8px 10px; text-align: left;">实际收益</th>
+                                <th style="font-size: 0.72rem; padding: 8px 10px; text-align: left;">结算时间</th>
+                                <th style="font-size: 0.72rem; padding: 8px 10px; text-align: center;">状态</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bdetails-orders-tbody">
+                            <!-- Loaded dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    modal.style.display = 'flex';
+    modal.classList.add('active');
+
+    const summaryGrid = document.getElementById('bdetails-summary-grid');
+    const ordersTbody = document.getElementById('bdetails-orders-tbody');
+
+    if (summaryGrid) {
+        summaryGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 20px 0;">🔄 正在安全获取批次详情配置...</div>';
+    }
+    if (ordersTbody) {
+        ordersTbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 25px 0;">🔄 正在同步批次关联订单列表...</td></tr>';
+    }
+
+    try {
+        // 1. Fetch batch details
+        const detailsRes = await apiFetch('GET', `/trading/quant/trades/risk-level/batches/${batchId}`, null, true);
+        if (detailsRes && detailsRes.code === 200 && detailsRes.data) {
+            const d = detailsRes.data;
+            const buyTime = d.buyExecutedAt ? new Date(parseInt(d.buyExecutedAt)).toLocaleString() : '--';
+            const sellTime = d.sellExecutedAt ? new Date(parseInt(d.sellExecutedAt)).toLocaleString() : '--';
+            const createdTime = d.createdAt ? new Date(parseInt(d.createdAt)).toLocaleString() : '--';
+            const completedTime = d.completedAt ? new Date(parseInt(d.completedAt)).toLocaleString() : '--';
+
+            const statusBadges = {
+                'BUY_PENDING': '<span class="badge" style="background: rgba(245, 158, 11, 0.12); color: #f59e0b; border: 1.5px solid rgba(245, 158, 11, 0.25);">买入中</span>',
+                'BUY_COMPLETED': '<span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1.5px solid rgba(16, 185, 129, 0.25);">买入完成</span>',
+                'SELL_PENDING': '<span class="badge" style="background: rgba(59, 130, 246, 0.12); color: #3b82f6; border: 1.5px solid rgba(59, 130, 246, 0.25);">卖出中</span>',
+                'COMPLETED': '<span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1.5px solid rgba(16, 185, 129, 0.25); font-weight: 700;">已完成</span>',
+                'FAILED': '<span class="badge" style="background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1.5px solid rgba(239, 68, 68, 0.25);">失败</span>'
+            };
+            const statusHtml = statusBadges[d.status] || `<span class="badge">${d.status || '--'}</span>`;
+
+            if (summaryGrid) {
+                summaryGrid.innerHTML = `
+                    <div style="background: rgba(255, 255, 255, 0.08); border: 1px solid var(--border-light); border-radius: 8px; padding: 12px;">
+                        <div style="font-size: 0.65rem; color: var(--text-secondary); font-weight: 600;">批次基础信息</div>
+                        <div style="margin-top: 6px; font-size: 0.75rem; color: var(--text-primary); line-height: 1.5;">
+                            <div>🆔 ID: <strong style="font-family: monospace; color: var(--primary);">${d.id}</strong></div>
+                            <div>🛡️ 风控层级: <strong>${d.userRiskLevel || '未知'}</strong></div>
+                            <div>交易商品: <strong>${d.instrumentName || d.instrumentCode || '--'} (${d.exchangeCode || '--'})</strong></div>
+                            <div>时区: <code>${d.tradeTimezone || '--'}</code></div>
+                        </div>
+                    </div>
+                    <div style="background: rgba(255, 255, 255, 0.08); border: 1px solid var(--border-light); border-radius: 8px; padding: 12px;">
+                        <div style="font-size: 0.65rem; color: var(--text-secondary); font-weight: 600;">执行价格与时间</div>
+                        <div style="margin-top: 6px; font-size: 0.75rem; color: var(--text-primary); line-height: 1.5;">
+                            <div>📈 买入价格: <strong>${d.buyPrice ? parseFloat(d.buyPrice).toFixed(4) : '--'}</strong></div>
+                            <div style="font-size: 0.68rem; color: var(--text-muted); padding-left: 10px;">🕒 ${buyTime}</div>
+                            <div>📉 卖出价格: <strong>${d.sellPrice ? parseFloat(d.sellPrice).toFixed(4) : '--'}</strong></div>
+                            <div style="font-size: 0.68rem; color: var(--text-muted); padding-left: 10px;">🕒 ${sellTime}</div>
+                        </div>
+                    </div>
+                    <div style="background: rgba(255, 255, 255, 0.08); border: 1px solid var(--border-light); border-radius: 8px; padding: 12px;">
+                        <div style="font-size: 0.65rem; color: var(--text-secondary); font-weight: 600;">金额与收益统计</div>
+                        <div style="margin-top: 6px; font-size: 0.75rem; color: var(--text-primary); line-height: 1.5;">
+                            <div>💰 总投入金额: <strong>${d.totalBuyAmount ? parseFloat(d.totalBuyAmount).toFixed(2) : '--'} USDT</strong></div>
+                            <div>💵 总回收金额: <strong>${d.totalSellAmount ? parseFloat(d.totalSellAmount).toFixed(2) : '--'} USDT</strong></div>
+                            <div>📊 总净收益: <strong style="color: ${parseFloat(d.actualProfit || 0) >= 0 ? 'var(--green)' : 'var(--red)'}; font-size: 0.8rem;">${d.actualProfit ? parseFloat(d.actualProfit).toFixed(2) : '--'} USDT</strong></div>
+                            <div>🏷️ 批次状态: ${statusHtml}</div>
+                        </div>
+                    </div>
+                    <div style="background: rgba(255, 255, 255, 0.08); border: 1px solid var(--border-light); border-radius: 8px; padding: 12px;">
+                        <div style="font-size: 0.65rem; color: var(--text-secondary); font-weight: 600;">清算与生命周期</div>
+                        <div style="margin-top: 6px; font-size: 0.75rem; color: var(--text-primary); line-height: 1.5;">
+                            <div>🎯 关联订单数: <strong>${d.matchedOrderCount || 0} 笔</strong></div>
+                            <div>创建时间: <span style="font-size: 0.68rem; color: var(--text-muted);">${createdTime}</span></div>
+                            <div>清算时间: <span style="font-size: 0.68rem; color: var(--text-muted);">${completedTime}</span></div>
+                            <div>重试次数: <code>${d.retryCount || 0}</code></div>
+                        </div>
+                    </div>
+                `;
+            }
+        } else {
+            if (summaryGrid) {
+                summaryGrid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: #EF4444; padding: 20px 0;">❌ 获取详情失败: ${detailsRes?.errorMessage || '未知错误'}</div>`;
+            }
+        }
+
+        // 2. Fetch orders list under batch
+        const ordersRes = await apiFetch('GET', `/trading/quant/trades/risk-level/batches/${batchId}/orders?page=1&pageSize=1000`, null, true);
+        if (ordersRes && ordersRes.code === 200 && ordersRes.data) {
+            const orders = ordersRes.data || [];
+            if (orders.length === 0) {
+                if (ordersTbody) {
+                    ordersTbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 25px 0;">该批次下暂无关联订单记录</td></tr>';
+                }
+            } else {
+                const ordersHtml = orders.map(o => {
+                    const idStr = o.id ? String(o.id) : '--';
+                    const userUidStr = o.userId ? String(o.userId) : '--';
+                    const investAmount = o.investAmount ? parseFloat(o.investAmount).toFixed(2) : '--';
+                    
+                    const aiComputingFee = o.actualBuyFee?.aiComputingCostFee ? parseFloat(o.actualBuyFee.aiComputingCostFee).toFixed(2) : '0.00';
+                    const aiComputingRate = o.actualBuyFee?.aiComputingCostRate ? (parseFloat(o.actualBuyFee.aiComputingCostRate) * 100).toFixed(2) + '%' : '0.00%';
+                    
+                    const brokerageFee = o.actualBuyFee?.brokerageFee ? parseFloat(o.actualBuyFee.brokerageFee).toFixed(2) : '0.00';
+                    const brokerageRate = o.actualBuyFee?.brokerageRate ? (parseFloat(o.actualBuyFee.brokerageRate) * 100).toFixed(2) + '%' : '0.00%';
+                    
+                    const exchangeFee = o.actualBuyFee?.exchangeFee ? parseFloat(o.actualBuyFee.exchangeFee).toFixed(2) : '0.00';
+                    const exchangeRate = o.actualBuyFee?.exchangeFeeRate ? (parseFloat(o.actualBuyFee.exchangeFeeRate) * 100).toFixed(2) + '%' : '0.00%';
+                    
+                    const profitVal = parseFloat(o.actualProfit || 0);
+                    const profitColor = profitVal > 0 ? 'var(--green)' : (profitVal < 0 ? 'var(--red)' : 'var(--text-secondary)');
+                    const actualProfit = o.actualProfit ? parseFloat(o.actualProfit).toFixed(2) : '--';
+                    
+                    const settledTime = o.settledAt ? new Date(parseInt(o.settledAt)).toLocaleString() : '--';
+                    
+                    const statusBadges = {
+                        'PENDING': '<span class="badge" style="background: rgba(245, 158, 11, 0.12); color: #f59e0b; border: 1.5px solid rgba(245, 158, 11, 0.25);">未审核</span>',
+                        'ACTIVE': '<span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1.5px solid rgba(16, 185, 129, 0.25);">运行中</span>',
+                        'COMPLETED': '<span class="badge" style="background: rgba(59, 130, 246, 0.12); color: #3b82f6; border: 1.5px solid rgba(59, 130, 246, 0.25);">已结算</span>',
+                        'CANCELLED': '<span class="badge" style="background: rgba(107, 114, 128, 0.12); color: #6b7280; border: 1.5px solid rgba(107, 114, 128, 0.25);">已取消</span>'
+                    };
+                    const statusBadge = statusBadges[o.status] || `<span class="badge">${o.status}</span>`;
+
+                    return `
+                        <tr style="border-bottom: 1px solid var(--border-light);">
+                            <td style="font-family: monospace; font-size: 0.7rem; font-weight: 600; color: var(--primary); padding: 8px 10px;">${idStr}</td>
+                            <td style="font-size: 0.72rem; padding: 8px 10px;">${userUidStr}</td>
+                            <td style="font-family: 'Outfit'; font-size: 0.72rem; padding: 8px 10px; font-weight: 600;">${investAmount}</td>
+                            <td style="font-size: 0.68rem; padding: 8px 10px;">${aiComputingFee} <br> <span style="color: var(--text-secondary); font-size: 0.62rem;">(${aiComputingRate})</span></td>
+                            <td style="font-size: 0.68rem; padding: 8px 10px;">${brokerageFee} <br> <span style="color: var(--text-secondary); font-size: 0.62rem;">(${brokerageRate})</span></td>
+                            <td style="font-size: 0.68rem; padding: 8px 10px;">${exchangeFee} <br> <span style="color: var(--text-secondary); font-size: 0.62rem;">(${exchangeRate})</span></td>
+                            <td style="font-family: 'Outfit'; font-size: 0.72rem; padding: 8px 10px; font-weight: 700; color: ${profitColor};">${actualProfit} USDT</td>
+                            <td style="font-size: 0.65rem; padding: 8px 10px; color: var(--text-muted);">${settledTime}</td>
+                            <td style="padding: 8px 10px; text-align: center;">${statusBadge}</td>
+                        </tr>
+                    `;
+                }).join('');
+                if (ordersTbody) ordersTbody.innerHTML = ordersHtml;
+            }
+        } else {
+            if (ordersTbody) {
+                ordersTbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: #EF4444; padding: 25px 0;">❌ 加载订单失败: ${ordersRes?.errorMessage || '未知错误'}</td></tr>`;
+            }
+        }
+    } catch (err) {
+        console.error("Failed to load batch details modal:", err);
+        if (summaryGrid) {
+            summaryGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #EF4444; padding: 20px 0;">❌ 获取批次详情发生网络异常！</div>';
+        }
+        if (ordersTbody) {
+            ordersTbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #EF4444; padding: 25px 0;">❌ 获取订单明细发生网络异常！</td></tr>';
+        }
+    }
+}
+window.openBatchDetailsModal = openBatchDetailsModal;
+
+export function closeBatchDetailsModal() {
+    const modal = document.getElementById('batch-details-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('active');
+    }
+}
+window.closeBatchDetailsModal = closeBatchDetailsModal;
 
 export function onExecuteExchangeChange(exch) {
     const instSelect = document.getElementById('ebatch-instrument');
