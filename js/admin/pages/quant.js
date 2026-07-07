@@ -1522,45 +1522,38 @@ function getTimestampInTimezone(dateTimeStr, timeZone) {
     const hour = parseInt(parts[3]);
     const minute = parseInt(parts[4]);
     
-    // 1. Create a dummy date around this time in UTC to calculate the offset for this specific date
-    const dummyDate = new Date(Date.UTC(year, month - 1, day, hour, minute));
+    const localUtc = Date.UTC(year, month - 1, day, hour, minute);
     
-    // 2. Format to parts in the target timezone
     try {
-        const formatter = new Intl.DateTimeFormat('en-US', {
-            timeZone,
+        const date = new Date(localUtc);
+        const options = {
+            timeZone: timeZone,
             year: 'numeric',
-            month: 'numeric',
-            day: 'numeric',
-            hour: 'numeric',
-            minute: 'numeric',
-            second: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
             hour12: false
-        });
-        const formattedParts = formatter.formatToParts(dummyDate);
+        };
+        // sv-SE locale always returns standard 24-hour format "YYYY-MM-DD HH:mm:ss"
+        const svStr = date.toLocaleString('sv-SE', options);
+        const svParts = svStr.split(/[- :]/);
+        if (svParts.length < 5) return localUtc;
         
-        let tzYear = year, tzMonth = month - 1, tzDay = day, tzHour = hour, tzMinute = minute, tzSecond = 0;
-        formattedParts.forEach(p => {
-            if (p.type === 'year') tzYear = parseInt(p.value);
-            else if (p.type === 'month') tzMonth = parseInt(p.value) - 1;
-            else if (p.type === 'day') tzDay = parseInt(p.value);
-            else if (p.type === 'hour') {
-                let val = parseInt(p.value);
-                if (val === 24) val = 0;
-                tzHour = val;
-            }
-            else if (p.type === 'minute') tzMinute = parseInt(p.value);
-            else if (p.type === 'second') tzSecond = parseInt(p.value);
-        });
+        const tzYear = parseInt(svParts[0]);
+        const tzMonth = parseInt(svParts[1]);
+        const tzDay = parseInt(svParts[2]);
+        const tzHour = parseInt(svParts[3]);
+        const tzMinute = parseInt(svParts[4]);
+        const tzSecond = svParts[5] ? parseInt(svParts[5]) : 0;
         
-        const tzDateUtc = Date.UTC(tzYear, tzMonth, tzDay, tzHour, tzMinute, tzSecond);
-        const offset = tzDateUtc - dummyDate.getTime();
+        const tzUtc = Date.UTC(tzYear, tzMonth - 1, tzDay, tzHour, tzMinute, tzSecond);
+        const offset = tzUtc - localUtc;
         
-        // 3. The actual UTC timestamp is local time minus offset
-        const localUtc = Date.UTC(year, month - 1, day, hour, minute);
         return localUtc - offset;
     } catch (e) {
-        console.error("Timezone conversion failed, fallback to local date parsing:", e);
+        console.error("Timezone offset calculation failed, fallback to local parsing:", e);
         return new Date(dateTimeStr).getTime();
     }
 }
