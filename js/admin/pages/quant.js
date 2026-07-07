@@ -1411,12 +1411,18 @@ export async function openCreateCompletedBatchModal() {
         const ratesRes = await apiFetch('GET', '/trading/quant/fee-rates', null, true);
         if (ratesRes.code === 200) {
             const rates = ratesRes.result || ratesRes.data || {};
-            document.getElementById('cbatch-buy-rate-computing').value = rates.buyAIComputingCostRate || '';
-            document.getElementById('cbatch-buy-rate-brokerage').value = rates.buyBrokerageRate || '';
-            document.getElementById('cbatch-buy-rate-exchange').value = rates.buyExchangeFeeRate || '';
-            document.getElementById('cbatch-sell-rate-computing').value = rates.sellAIComputingCostRate || '';
-            document.getElementById('cbatch-sell-rate-brokerage').value = rates.sellBrokerageRate || '';
-            document.getElementById('cbatch-sell-rate-exchange').value = rates.sellExchangeFeeRate || '';
+            const buyComp = document.getElementById('cbatch-buy-rate-computing');
+            if (buyComp) buyComp.value = rates.buyAIComputingCostRate || '';
+            const buyBro = document.getElementById('cbatch-buy-rate-brokerage');
+            if (buyBro) buyBro.value = rates.buyBrokerageRate || '';
+            const buyExc = document.getElementById('cbatch-buy-rate-exchange');
+            if (buyExc) buyExc.value = rates.buyExchangeFeeRate || '';
+            const sellComp = document.getElementById('cbatch-sell-rate-computing');
+            if (sellComp) sellComp.value = rates.sellAIComputingCostRate || '';
+            const sellBro = document.getElementById('cbatch-sell-rate-brokerage');
+            if (sellBro) sellBro.value = rates.sellBrokerageRate || '';
+            const sellExc = document.getElementById('cbatch-sell-rate-exchange');
+            if (sellExc) sellExc.value = rates.sellExchangeFeeRate || '';
         }
     } catch (e) {
         console.error("Failed to pre-fill fee rates:", e);
@@ -1642,11 +1648,12 @@ export async function submitCreateCompletedBatch(event) {
     try {
         const res = await apiFetch('POST', '/trading/quant/trades/risk-level/batches/completed', reqBody, true);
         if (res.code === 200) {
-            const batchObj = res.result || res.data || {};
-            if (batchObj.status === 'FAILED' || batchObj.errorMessage) {
-                showToast(`✓ 创建批次成功，但清算遇到错误：${batchObj.errorMessage || '部分订单清算失败'}`, true);
+            const batch = res.result || res.data || {};
+            if (batch.status === 'FAILED') {
+                showToast(`❌ 创建批次失败：${batch.errorMessage || '未知错误'}`, true);
             } else {
-                showToast(`✓ 完整投资批次已成功创建！共成功清算 ${batchObj.matchedOrderCount || 0} 笔订单。`, false);
+                const matchedCount = batch.matchedOrderCount !== undefined ? batch.matchedOrderCount : 0;
+                showToast(`✓ 完整投资批次已成功创建！${matchedCount > 0 ? `共成功清算 ${matchedCount} 笔订单。` : ''}`, false);
             }
             closeCreateCompletedBatchModal();
             loadQuantSettleList();
@@ -1750,7 +1757,12 @@ export async function executeQuantBatch(batchId) {
     try {
         const res = await apiFetch('POST', `/trading/quant/trades/risk-level/batches/${batchId}/execute`, null, true);
         if (res.code === 200) {
-            showToast('✓ 批次投资执行成功！已提交后台处理。', false);
+            const batch = res.result || res.data || {};
+            if (batch.status === 'FAILED') {
+                showToast(`❌ 执行批次失败：${batch.errorMessage || '未知错误'}`, true);
+            } else {
+                showToast('✓ 批次投资执行成功！已提交后台处理。', false);
+            }
             loadQuantSettleList();
         } else {
             showToast(res.errorMessage || '执行批次投资失败！', true);
