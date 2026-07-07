@@ -1852,7 +1852,7 @@ export function onExecuteExchangeChange(exch) {
     });
 
     instSelect.innerHTML = '<option value="">-- 请选择交易商品 --</option>' +
-        filtered.map(i => `<option value="${i.code}" data-name="${i.name}">${i.name} (${i.code})</option>`).join('');
+        filtered.map(i => `<option value="${i.symbol}" data-name="${i.name}">${i.name} (${i.symbol})</option>`).join('');
 }
 window.onExecuteExchangeChange = onExecuteExchangeChange;
 
