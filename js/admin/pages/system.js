@@ -108,66 +108,7 @@ async function loadTenantSettings() {
             });
         });
 
-        // Append Local App Download links section
-        html += `
-            <tr style="background: rgba(91, 81, 249, 0.03); border-bottom: 1px solid var(--border-light); border-top: 1px solid var(--border-light);">
-                <td colspan="3" style="font-weight: 700; color: var(--primary); font-size: 0.85rem; padding: 10px 24px;">📲 APP 客户端下载配置 (LocalStorage Settings)</td>
-            </tr>
-            <tr>
-                <td>
-                    <div style="font-weight: 600; color: var(--text-primary); font-size: 0.82rem;">安卓 APP 下载地址</div>
-                    <span style="font-size: 0.68rem; color: var(--text-secondary); font-family: monospace; display: block; margin-top: 2px;">app_download_android</span>
-                </td>
-                <td>
-                    <input type="text" id="input-app-download-android" placeholder="例如: https://matp-app.qchats.org/download/android.apk" style="width: 100%; max-width: 240px; padding: 8px 12px; border: 1.5px solid var(--border-light); border-radius: 8px; background: rgba(255,255,255,0.6); outline: none;">
-                </td>
-                <td style="font-size: 0.75rem; color: var(--text-secondary); line-height: 1.4;">
-                    用户端安卓平台点击下载 APP 按钮时的直接 apk 下载跳转链接。
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    <div style="font-weight: 600; color: var(--text-primary); font-size: 0.82rem;">苹果 APP 下载地址</div>
-                    <span style="font-size: 0.68rem; color: var(--text-secondary); font-family: monospace; display: block; margin-top: 2px;">app_download_ios</span>
-                </td>
-                <td>
-                    <input type="text" id="input-app-download-ios" placeholder="例如: https://apps.apple.com/app/xxxx" style="width: 100%; max-width: 240px; padding: 8px 12px; border: 1.5px solid var(--border-light); border-radius: 8px; background: rgba(255,255,255,0.6); outline: none;">
-                </td>
-                <td style="font-size: 0.75rem; color: var(--text-secondary); line-height: 1.4;">
-                    用户端苹果 iOS 平台点击下载 APP 按钮时跳转的 App Store 分发链接。
-                </td>
-            </tr>
-        `;
-
         tbody.innerHTML = html;
-
-        // Cookie helpers for cross-subdomain sharing
-        function getCookieDomain() {
-            const host = window.location.hostname;
-            const parts = host.split('.');
-            if (parts.length >= 2) {
-                if (host === 'localhost' || /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host)) {
-                    return '';
-                }
-                return '.' + parts.slice(-2).join('.');
-            }
-            return '';
-        }
-        function getSharedCookie(name) {
-            const matches = document.cookie.match(new RegExp(
-                "(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"
-            ));
-            return matches ? decodeURIComponent(matches[1]) : '';
-        }
-
-        const androidInput = document.getElementById('input-app-download-android');
-        const iosInput = document.getElementById('input-app-download-ios');
-        if (androidInput) {
-            androidInput.value = getSharedCookie('app_download_android') || localStorage.getItem('app_download_android') || '';
-        }
-        if (iosInput) {
-            iosInput.value = getSharedCookie('app_download_ios') || localStorage.getItem('app_download_ios') || '';
-        }
 
         loader.style.display = 'none';
         form.style.display = 'flex';
@@ -187,46 +128,7 @@ async function submitTenantSettings(event) {
         return;
     }
 
-    // Cookie helper functions for saving
-    function getCookieDomain() {
-        const host = window.location.hostname;
-        const parts = host.split('.');
-        if (parts.length >= 2) {
-            if (host === 'localhost' || /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host)) {
-                return '';
-            }
-            return '.' + parts.slice(-2).join('.');
-        }
-        return '';
-    }
-    function setSharedCookie(name, value) {
-        const domain = getCookieDomain();
-        const domainStr = domain ? `; domain=${domain}` : '';
-        document.cookie = `${name}=${encodeURIComponent(value)}; path=/${domainStr}; max-age=${365 * 24 * 60 * 60}`;
-    }
 
-    // Save local app download links
-    let localChanged = false;
-    const androidInput = document.getElementById('input-app-download-android');
-    const iosInput = document.getElementById('input-app-download-ios');
-    if (androidInput) {
-        const val = androidInput.value.trim();
-        const oldVal = localStorage.getItem('app_download_android') || '';
-        if (val !== oldVal) {
-            localStorage.setItem('app_download_android', val);
-            setSharedCookie('app_download_android', val);
-            localChanged = true;
-        }
-    }
-    if (iosInput) {
-        const val = iosInput.value.trim();
-        const oldVal = localStorage.getItem('app_download_ios') || '';
-        if (val !== oldVal) {
-            localStorage.setItem('app_download_ios', val);
-            setSharedCookie('app_download_ios', val);
-            localChanged = true;
-        }
-    }
 
     showToast('正在安全提交并保存设置参数...', false);
 

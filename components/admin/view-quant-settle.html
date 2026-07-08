@@ -190,23 +190,19 @@
                     </select>
                 </div>
                 <div class="auth-input-group">
-                    <label>选择交易所 *</label>
-                    <select id="ebatch-exchange" required class="payment-add-select" onchange="onExecuteExchangeChange(this.value)">
-                        <option value="">-- 请选择交易所 --</option>
-                        <option value="NSE">印度NSE</option>
-                        <option value="BSE">印度BSE</option>
-                        <option value="NYSE">纽约证券交易所 NYSE</option>
-                        <option value="NASDAQ">纳斯达克 NASDAQ</option>
-                    </select>
+                    <label>交易所 Code *</label>
+                    <input type="text" id="ebatch-exchange" placeholder="例如: BINANCE" required style="height: 38px; font-size: 0.85rem; border-radius: 6px; border: 1.5px solid var(--border); padding: 0 12px; background: transparent; color: var(--text-primary);">
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr; gap: 16px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                 <div class="auth-input-group">
-                    <label>选择交易商品 *</label>
-                    <select id="ebatch-instrument" required class="payment-add-select">
-                        <option value="">-- 请选择交易商品 --</option>
-                    </select>
+                    <label>交易商品名称 *</label>
+                    <input type="text" id="ebatch-instrument-name" placeholder="例如: Bitcoin" required style="height: 38px; font-size: 0.85rem; border-radius: 6px; border: 1.5px solid var(--border); padding: 0 12px; background: transparent; color: var(--text-primary);">
+                </div>
+                <div class="auth-input-group">
+                    <label>交易商品 Code *</label>
+                    <input type="text" id="ebatch-instrument" placeholder="例如: BTC/USDT" required style="height: 38px; font-size: 0.85rem; border-radius: 6px; border: 1.5px solid var(--border); padding: 0 12px; background: transparent; color: var(--text-primary);">
                 </div>
             </div>
 

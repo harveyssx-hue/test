@@ -1807,13 +1807,14 @@ export async function openExecuteBatchModal(batchId) {
     const tzSelect = document.getElementById('ebatch-timezone');
     if (tzSelect) tzSelect.value = 'Asia/Kolkata';
     
-    const exchSelect = document.getElementById('ebatch-exchange');
-    if (exchSelect) exchSelect.value = '';
+    const exchInput = document.getElementById('ebatch-exchange');
+    if (exchInput) exchInput.value = '';
     
-    const instSelect = document.getElementById('ebatch-instrument');
-    if (instSelect) {
-        instSelect.innerHTML = '<option value="">-- 请选择交易商品 --</option>';
-    }
+    const instNameInput = document.getElementById('ebatch-instrument-name');
+    if (instNameInput) instNameInput.value = '';
+    
+    const instInput = document.getElementById('ebatch-instrument');
+    if (instInput) instInput.value = '';
     
     updateExecuteBatchDefaultTimes('Asia/Kolkata');
     modal.style.display = 'flex';
@@ -1842,22 +1843,6 @@ export async function openExecuteBatchModal(batchId) {
             idSelect.innerHTML = '<option value="">-- 加载批次列表失败 --</option>';
         }
     }
-
-    // 2. Dynamically load exchanges from backend API
-    apiFetch('GET', '/exchanges?enabled=true', null, true).then(res => {
-        if (res.code === 200) {
-            const exchanges = res.result || res.data || [];
-            window.cachedExchanges = exchanges;
-            if (exchanges.length > 0 && exchSelect) {
-                const currentVal = exchSelect.value;
-                exchSelect.innerHTML = '<option value="">-- 请选择交易所 --</option>' +
-                    exchanges.map(e => `<option value="${e.code}">${e.displayName || e.name || e.code}</option>`).join('');
-                exchSelect.value = currentVal;
-            }
-        }
-    }).catch(e => {
-        console.error("Failed to load exchanges:", e);
-    });
 }
 window.openExecuteBatchModal = openExecuteBatchModal;
 
@@ -2078,30 +2063,6 @@ export function closeBatchDetailsModal() {
     }
 }
 window.closeBatchDetailsModal = closeBatchDetailsModal;
-
-export function onExecuteExchangeChange(exch) {
-    const instSelect = document.getElementById('ebatch-instrument');
-    if (!instSelect) return;
-    if (!exch) {
-        instSelect.innerHTML = '<option value="">-- 请选择交易商品 --</option>';
-        return;
-    }
-    
-    // Find matching exchange ID from cachedExchanges to support matching by ID when exchangeCode is null in DB
-    const matchExchange = (window.cachedExchanges || []).find(e => e.code === exch);
-    const exchId = matchExchange ? matchExchange.id : null;
-
-    const filtered = (window.cachedInstruments || []).filter(i => {
-        const matchCode = i.exchangeCode && i.exchangeCode.toUpperCase() === exch.toUpperCase();
-        const matchId = exchId && String(i.exchangeId) === String(exchId);
-        return matchCode || matchId;
-    });
-
-    instSelect.innerHTML = '<option value="">-- 请选择交易商品 --</option>' +
-        filtered.map(i => `<option value="${i.symbol}" data-name="${i.name}">${i.name} (${i.symbol})</option>`).join('');
-}
-window.onExecuteExchangeChange = onExecuteExchangeChange;
-
 export function updateExecuteBatchDefaultTimes(timeZone) {
     const buyTimeInput = document.getElementById('ebatch-buy-time');
     const sellTimeInput = document.getElementById('ebatch-sell-time');
@@ -2117,19 +2078,16 @@ export async function submitExecuteQuantBatch(event) {
     
     const batchId = document.getElementById('ebatch-id').value;
     const timezone = document.getElementById('ebatch-timezone').value;
-    const exchangeCode = document.getElementById('ebatch-exchange').value;
-    const instrumentCode = document.getElementById('ebatch-instrument').value;
-    
-    const instrumentSelect = document.getElementById('ebatch-instrument');
-    const selectedOption = instrumentSelect.options[instrumentSelect.selectedIndex];
-    const instrumentName = selectedOption ? (selectedOption.getAttribute('data-name') || '') : '';
+    const exchangeCode = document.getElementById('ebatch-exchange').value.trim();
+    const instrumentCode = document.getElementById('ebatch-instrument').value.trim();
+    const instrumentName = document.getElementById('ebatch-instrument-name').value.trim();
     
     const buyPrice = parseFloat(document.getElementById('ebatch-buy-price').value);
     const buyTimeStr = document.getElementById('ebatch-buy-time').value;
     const sellPrice = parseFloat(document.getElementById('ebatch-sell-price').value);
     const sellTimeStr = document.getElementById('ebatch-sell-time').value;
     
-    if (!batchId || !exchangeCode || !instrumentCode || isNaN(buyPrice) || !buyTimeStr || isNaN(sellPrice) || !sellTimeStr) {
+    if (!batchId || !exchangeCode || !instrumentCode || !instrumentName || isNaN(buyPrice) || !buyTimeStr || isNaN(sellPrice) || !sellTimeStr) {
         showToast('❌ 请完整填写所有必填字段（且必须选择待执行投资批次）！', true);
         return;
     }
