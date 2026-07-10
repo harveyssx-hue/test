@@ -168,6 +168,18 @@ const tabConfig = {
         desc: '分页并筛选查看 APP 客户端（iOS/Android）上报的崩溃及业务处理错误，排查堆栈上下文',
         controller: 'system',
         init: () => window.loadErrorReportsList()
+    },
+    'entrust': {
+        title: '📋 委托交易订单管理中心',
+        desc: '查看、审核、驳回或执行平台交易商品下所有用户的委托订单交易与结算结果',
+        controller: 'entrust',
+        init: () => window.loadEntrustOrdersList()
+    },
+    'exchanges': {
+        title: '🏛️ 交易所管理控制中心',
+        desc: '管理和配置交易终端支持的所有市场交易所以及它们的交易时段、结算资产类别和时区参数',
+        controller: 'exchanges',
+        init: () => window.loadExchangesList()
     }
 };
 
@@ -336,7 +348,9 @@ window.adminPages = {
     dailyReport: { current: 1, size: 50 },
     holidays: { current: 1, size: 10 },
     locales: { current: 1, size: 20 },
-    errorReports: { current: 1, size: 10 }
+    errorReports: { current: 1, size: 10 },
+    entrust: { current: 1, size: 10 },
+    exchanges: { current: 1, size: 10 }
 };
 
 export function paginateList(list, type) {
@@ -405,6 +419,8 @@ export function changeAdminPage(type, delta) {
     else if (typeof window.loadHolidaysList === 'function' && type === 'holidays') window.loadHolidaysList();
     else if (typeof window.loadLocalesList === 'function' && type === 'locales') window.loadLocalesList();
     else if (typeof window.loadErrorReportsList === 'function' && type === 'errorReports') window.loadErrorReportsList();
+    else if (typeof window.loadEntrustOrdersList === 'function' && type === 'entrust') window.loadEntrustOrdersList();
+    else if (typeof window.loadExchangesList === 'function' && type === 'exchanges') window.loadExchangesList();
 }
 window.changeAdminPage = changeAdminPage;
 
@@ -436,6 +452,8 @@ export function changeAdminPageSize(type, newSize) {
     else if (typeof window.loadHolidaysList === 'function' && type === 'holidays') window.loadHolidaysList();
     else if (typeof window.loadLocalesList === 'function' && type === 'locales') window.loadLocalesList();
     else if (typeof window.loadErrorReportsList === 'function' && type === 'errorReports') window.loadErrorReportsList();
+    else if (typeof window.loadEntrustOrdersList === 'function' && type === 'entrust') window.loadEntrustOrdersList();
+    else if (typeof window.loadExchangesList === 'function' && type === 'exchanges') window.loadExchangesList();
 }
 window.changeAdminPageSize = changeAdminPageSize;
 

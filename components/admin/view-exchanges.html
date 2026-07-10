@@ -1,0 +1,164 @@
+<div class="view-tab-content active" id="view-exchanges">
+    <div class="glass-panel data-panel" style="padding: 18px;">
+        <!-- Advanced Query and Filter Panel -->
+        <div style="border-bottom: 1.5px solid var(--border-light); padding-bottom: 15px; margin-bottom: 15px;">
+            <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap; justify-content: space-between;">
+                <!-- Filter Inputs Left -->
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                        <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">交易所 Code</span>
+                        <input type="text" id="filter-exchange-code" placeholder="如: NSE" oninput="window.adminPages.exchanges.current=1; loadExchangesList()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 6px; width: 120px;">
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                        <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">交易所名称</span>
+                        <input type="text" id="filter-exchange-name" placeholder="输入名称关键字" oninput="window.adminPages.exchanges.current=1; loadExchangesList()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 6px; width: 150px;">
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                        <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">状态</span>
+                        <select id="filter-exchange-enabled" onchange="window.adminPages.exchanges.current=1; loadExchangesList()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 4px; width: 100px;">
+                            <option value="ALL">全部</option>
+                            <option value="true" selected>启用</option>
+                            <option value="false">禁用</option>
+                        </select>
+                    </div>
+                    
+                    <button class="action-btn" onclick="loadExchangesList()" style="background: #5B51F9; color: #FFF; font-size: 0.72rem; padding: 4px 10px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 28px;">查询</button>
+                    <button class="action-btn" onclick="resetExchangeFilters()" style="background: #E2E8F0; color: #475569; font-size: 0.72rem; padding: 4px 10px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 28px;">重置</button>
+                    <button class="action-btn" onclick="openAddExchangeModal()" style="background: var(--green); color: #FFF; font-size: 0.72rem; padding: 4px 10px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 28px; margin-left: 10px;">➕ 新增交易所</button>
+                </div>
+                
+                <!-- Pagination Controls Right -->
+                <div style="display: flex; gap: 6px; align-items: center; background: rgba(255, 255, 255, 0.05); padding: 2px 8px; border-radius: 6px; border: 1.5px solid var(--border-light);">
+                    <select class="filter-select" id="exchanges-size-select" onchange="changeAdminPageSize('exchanges', this.value)" style="height: 24px; font-size: 0.7rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 2px; width: 85px; background: transparent; color: var(--text-primary); font-weight: 600; cursor: pointer; outline: none; margin-right: 5px;">
+                        <option value="10" selected>10 条/页</option>
+                        <option value="30">30 条/页</option>
+                        <option value="50">50 条/页</option>
+                        <option value="100">100 条/页</option>
+                    </select>
+                    <button class="action-btn" onclick="changeAdminPage('exchanges', -1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">上一页</button>
+                    <span id="exchanges-page-indicator" style="font-size: 0.72rem; font-weight: 600; color: var(--text-primary); margin: 0 4px; white-space: nowrap;">第 1 / 1 页 (共 0 条)</span>
+                    <button class="action-btn" onclick="changeAdminPage('exchanges', 1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">下一页</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Table Container -->
+        <div class="table-container compact-table">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr>
+                        <th>交易所 ID</th>
+                        <th>交易所 Code</th>
+                        <th>官方全称 (代码)</th>
+                        <th>英文展示名称 (地区)</th>
+                        <th>计价资产 ID</th>
+                        <th>市场时区 (Timezone)</th>
+                        <th>开盘交易时段 (Sessions)</th>
+                        <th>结算资产类别 (Asset Classes)</th>
+                        <th style="text-align: center;">状态</th>
+                        <th class="sticky-right" style="text-align: center; width: 120px;">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="exchanges-tbody">
+                    <!-- Dynamically loaded -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- VIEW: EXCHANGE EDIT/ADD MODAL -->
+<div id="exchange-edit-modal" class="overlay" style="display: none; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(15px); background: rgba(0,0,0,0.6);">
+    <div class="glass-panel modal-content-payment" style="max-width: 650px; width: 90%; padding: 25px; max-height: 92vh; overflow-y: auto; border-radius: 12px; position: relative;">
+        <button class="drawer-close-btn" onclick="closeExchangeEditModal()" style="position: absolute; top: 20px; right: 20px; font-size: 1.2rem; background: transparent; border: none; color: var(--text-secondary); cursor: pointer;">✕</button>
+        <div class="modal-header-admin" style="margin-bottom: 18px; border-bottom: 1.5px solid var(--border-light); padding-bottom: 12px;">
+            <h2 id="exchange-modal-title" style="font-size: 1.25rem; display: flex; align-items: center; gap: 8px; color: var(--primary); font-weight: bold; margin: 0;">🏛️ 编辑交易所参数</h2>
+            <p style="font-size: 0.75rem; color: #64748B; margin-top: 4px; font-weight: 500;">配置或更新交易市场规则，包含开盘时段划分、挂牌资产类别限制及结算参数。</p>
+        </div>
+        
+        <form class="auth-form" id="exchange-edit-form" onsubmit="submitExchangeEdit(event)" style="display: flex; flex-direction: column; gap: 14px;">
+            <input type="hidden" id="edit-exch-id">
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="auth-input-group">
+                    <label>交易所唯一 Code *</label>
+                    <input type="text" id="edit-exch-code" placeholder="如: NSE, BINANCE" required>
+                </div>
+                <div class="auth-input-group">
+                    <label>交易所官方全称 *</label>
+                    <input type="text" id="edit-exch-name" placeholder="如: National Stock Exchange of India" required>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="auth-input-group">
+                    <label>英文展示名称 (displayName) *</label>
+                    <input type="text" id="edit-exch-display" placeholder="如: NSE India" required>
+                </div>
+                <div class="auth-input-group">
+                    <label>国家地区代码 (regionCode)</label>
+                    <input type="text" id="edit-exch-region" placeholder="如: IN, US">
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="auth-input-group">
+                    <label>市场时区 (Timezone) *</label>
+                    <select id="edit-exch-timezone" required class="payment-add-select">
+                        <option value="Asia/Kolkata">印度 (Asia/Kolkata - GMT+5:30)</option>
+                        <option value="US/Eastern">美国东部 (US/Eastern - GMT-5/GMT-4)</option>
+                        <option value="Asia/Shanghai">中国/香港 (Asia/Shanghai - GMT+8)</option>
+                        <option value="Europe/London">英国 (Europe/London - GMT+0/GMT+1)</option>
+                        <option value="Asia/Tokyo">日本 (Asia/Tokyo - GMT+9)</option>
+                        <option value="UTC">世界协调时 (UTC - GMT+0)</option>
+                    </select>
+                </div>
+                <div class="auth-input-group">
+                    <label>计价本位资产 ID (quoteAssetId)</label>
+                    <input type="number" id="edit-exch-quote-asset" placeholder="例: 1126151490264633456">
+                </div>
+            </div>
+
+            <!-- Trading Sessions Row List -->
+            <div style="border: 1px solid var(--border-light); border-radius: 8px; padding: 12px; background: rgba(91, 81, 249, 0.02);">
+                <label style="font-size: 0.8rem; font-weight: 700; color: var(--primary); display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                    ⏰ 交易所开盘交易时段 (tradingSessions)
+                </label>
+                <div id="session-editor-container" style="display: flex; flex-direction: column; gap: 8px;">
+                    <!-- Session rows get inserted here -->
+                </div>
+                <button type="button" class="action-btn" onclick="addSessionRow()" style="margin-top: 8px; font-size: 0.72rem; padding: 4px 10px; border-radius: 4px; border: 1px solid var(--primary); background: transparent; color: var(--primary); font-weight: bold; cursor: pointer;">➕ 添加交易时段</button>
+            </div>
+
+            <!-- Tradable Asset Classes -->
+            <div style="border: 1px solid var(--border-light); border-radius: 8px; padding: 12px; background: rgba(255, 255, 255, 0.02);">
+                <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-primary); display: block; margin-bottom: 8px;">🏷️ 交易所允许交易资产类型 (tradableAssetClasses)</label>
+                <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap; font-size: 0.8rem;">
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text-primary);">
+                        <input type="checkbox" name="tradable-asset" value="STOCK" style="width: 15px; height: 15px; cursor: pointer;"> STOCK (股票)
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text-primary);">
+                        <input type="checkbox" name="tradable-asset" value="CRYPTO" style="width: 15px; height: 15px; cursor: pointer;"> CRYPTO (加密货币)
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text-primary);">
+                        <input type="checkbox" name="tradable-asset" value="FOREX" style="width: 15px; height: 15px; cursor: pointer;"> FOREX (外汇)
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text-primary);">
+                        <input type="checkbox" name="tradable-asset" value="COMMODITY" style="width: 15px; height: 15px; cursor: pointer;"> COMMODITY (商品)
+                    </label>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 15px; border-top: 1.5px solid var(--border-light); padding-top: 15px;">
+                <div class="auth-input-group">
+                    <label>状态启用 *</label>
+                    <select id="edit-exch-enabled" required class="payment-add-select">
+                        <option value="true" selected>开启 (Enabled)</option>
+                        <option value="false">关闭 (Disabled)</option>
+                    </select>
+                </div>
+                <button type="submit" class="admin-auth-btn" style="height: 38px; margin-top: 18px; border-radius: 6px; font-weight: 700; background: var(--primary);" id="exch-submit-btn">保存交易所设置</button>
+            </div>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,254 @@
+<div class="view-tab-content active" id="view-entrust">
+    <div class="glass-panel data-panel" style="padding: 18px;">
+        <!-- Advanced Query and Filter Panel -->
+        <div style="border-bottom: 1.5px solid var(--border-light); padding-bottom: 15px; margin-bottom: 15px;">
+            <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap; justify-content: space-between;">
+                <!-- Filter Inputs Left -->
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                        <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">订单 ID</span>
+                        <input type="number" id="filter-entrust-id" placeholder="输入 ID" oninput="window.adminPages.entrust.current=1; loadEntrustOrdersList()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 6px; width: 100px;">
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                        <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">用户 ID</span>
+                        <input type="text" id="filter-entrust-uid" placeholder="输入用户 ID" oninput="window.adminPages.entrust.current=1; loadEntrustOrdersList()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 6px; width: 110px;">
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                        <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">订单号</span>
+                        <input type="text" id="filter-entrust-orderNo" placeholder="输入订单号" oninput="window.adminPages.entrust.current=1; loadEntrustOrdersList()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 6px; width: 140px;">
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                        <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">商品代码</span>
+                        <input type="text" id="filter-entrust-symbol" placeholder="如: BTC/USDT" oninput="window.adminPages.entrust.current=1; loadEntrustOrdersList()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 6px; width: 120px;">
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                        <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">状态</span>
+                        <select id="filter-entrust-status" onchange="window.adminPages.entrust.current=1; loadEntrustOrdersList()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 4px; width: 120px;">
+                            <option value="ALL">全部状态</option>
+                            <option value="PENDING" selected>待执行 (PENDING)</option>
+                            <option value="COMPLETED">已完成 (COMPLETED)</option>
+                            <option value="REJECTED">已驳回 (REJECTED)</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Date Pickers -->
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                        <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap;">起止时间</span>
+                        <input type="date" id="filter-entrust-start-date" onchange="window.adminPages.entrust.current=1; loadEntrustOrdersList()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 4px; width: 110px;">
+                        <span style="color: var(--text-muted); font-size: 0.75rem;">-</span>
+                        <input type="date" id="filter-entrust-end-date" onchange="window.adminPages.entrust.current=1; loadEntrustOrdersList()" style="height: 28px; font-size: 0.72rem; border-radius: 4px; border: 1px solid var(--border); padding: 0 4px; width: 110px;">
+                    </div>
+                    
+                    <button class="action-btn" onclick="loadEntrustOrdersList()" style="background: #5B51F9; color: #FFF; font-size: 0.72rem; padding: 4px 10px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 28px;">查询</button>
+                    <button class="action-btn" onclick="resetEntrustFilters()" style="background: #E2E8F0; color: #475569; font-size: 0.72rem; padding: 4px 10px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 28px;">重置</button>
+                </div>
+                
+                <!-- Pagination Controls Right -->
+                <div style="display: flex; gap: 6px; align-items: center; background: rgba(255, 255, 255, 0.05); padding: 2px 8px; border-radius: 6px; border: 1.5px solid var(--border-light);">
+                    <select class="filter-select" id="entrust-size-select" onchange="changeAdminPageSize('entrust', this.value)" style="height: 24px; font-size: 0.7rem; border-radius: 4px; border: 1px solid var(--border-light); padding: 0 2px; width: 85px; background: transparent; color: var(--text-primary); font-weight: 600; cursor: pointer; outline: none; margin-right: 5px;">
+                        <option value="10" selected>10 条/页</option>
+                        <option value="30">30 条/页</option>
+                        <option value="50">50 条/页</option>
+                        <option value="100">100 条/页</option>
+                    </select>
+                    <button class="action-btn" onclick="changeAdminPage('entrust', -1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">上一页</button>
+                    <span id="entrust-page-indicator" style="font-size: 0.72rem; font-weight: 600; color: var(--text-primary); margin: 0 4px; white-space: nowrap;">第 1 / 1 页 (共 0 条)</span>
+                    <button class="action-btn" onclick="changeAdminPage('entrust', 1)" style="background: var(--primary); color: #FFF; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; height: 24px;">下一页</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Table Container -->
+        <div class="table-container compact-table">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr>
+                        <th>订单 ID</th>
+                        <th>用户信息 (UID)</th>
+                        <th>交易商品</th>
+                        <th>订单号</th>
+                        <th>风险等级</th>
+                        <th>本金 & 预估费用</th>
+                        <th>收费 (实际)</th>
+                        <th>收益指标 (USDT)</th>
+                        <th>创建 / 结算时间</th>
+                        <th style="text-align: center;">状态</th>
+                        <th class="sticky-right" style="text-align: center;">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="entrust-orders-tbody">
+                    <!-- Dynamically loaded -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- VIEW: ENTRUST ORDER DETAILS MODAL -->
+<div id="entrust-detail-modal" class="overlay" style="display: none; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(15px); background: rgba(0,0,0,0.6);">
+    <div class="glass-panel modal-content-payment" style="max-width: 650px; width: 90%; padding: 25px; max-height: 90vh; overflow-y: auto; border-radius: 12px; position: relative;">
+        <button class="drawer-close-btn" onclick="closeEntrustDetailModal()" style="position: absolute; top: 20px; right: 20px; font-size: 1.2rem; background: transparent; border: none; color: var(--text-secondary); cursor: pointer;">✕</button>
+        <div class="modal-header-admin" style="margin-bottom: 18px; border-bottom: 1.5px solid var(--border-light); padding-bottom: 12px;">
+            <h2 style="font-size: 1.25rem; display: flex; align-items: center; gap: 8px; color: var(--primary); font-weight: bold; margin: 0;">📋 委托交易订单详情</h2>
+            <p style="font-size: 0.75rem; color: #64748B; margin-top: 4px; font-weight: 500;">查看该委托委托订单的完整参数、资产分配及清算结算明细数据</p>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 0.8rem; color: var(--text-primary); line-height: 1.6;">
+            <!-- Section 1: Order info -->
+            <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-light); border-radius: 8px; padding: 12px;">
+                <div style="font-weight: 700; color: var(--primary); margin-bottom: 8px; font-size: 0.82rem; border-bottom: 1px solid var(--border-light); padding-bottom: 4px;">基本参数</div>
+                <div>🆔 订单 ID: <strong style="font-family: monospace;">${d.id}</strong></div>
+                <div>👤 用户 UID: <strong>${d.userId}</strong></div>
+                <div>📄 订单编号: <strong style="font-family: monospace;">${d.orderNo}</strong></div>
+                <div>🛡️ 风险等级: <strong>${d.riskLevel || '--'}</strong></div>
+            </div>
+            
+            <!-- Section 2: Instrument info -->
+            <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-light); border-radius: 8px; padding: 12px;">
+                <div style="font-weight: 700; color: var(--primary); margin-bottom: 8px; font-size: 0.82rem; border-bottom: 1px solid var(--border-light); padding-bottom: 4px;">商品市场信息</div>
+                <div>交易商品: <strong>${d.instrumentName} (${d.instrumentCode})</strong></div>
+                <div>资产类别: <code>${d.assetClass}</code></div>
+                <div>交易所: <strong>${d.exchangeCode || '--'}</strong> (ID: ${d.exchangeId})</div>
+                <div>市场时区: <code>${d.exchangeTimezone || '--'}</code></div>
+            </div>
+
+            <!-- Section 3: Financial settings -->
+            <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-light); border-radius: 8px; padding: 12px;">
+                <div style="font-weight: 700; color: var(--primary); margin-bottom: 8px; font-size: 0.82rem; border-bottom: 1px solid var(--border-light); padding-bottom: 4px;">投资与费用快照</div>
+                <div>💰 投资本金: <strong>${d.investAmount} USDT</strong></div>
+                <div>🛑 止损率 (StopLoss): <strong>${d.stopLossRate}%</strong></div>
+                <div>🏷️ 预估买入费用: <strong>${d.estimatedBuyFee} USDT</strong></div>
+            </div>
+
+            <!-- Section 4: Settlement details -->
+            <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-light); border-radius: 8px; padding: 12px;">
+                <div style="font-weight: 700; color: var(--primary); margin-bottom: 8px; font-size: 0.82rem; border-bottom: 1px solid var(--border-light); padding-bottom: 4px;">最终清算核算</div>
+                <div>买入成交手续费: <strong>${d.actualBuyFee || '0.00'} USDT</strong></div>
+                <div>卖出成交手续费: <strong>${d.actualSellFee || '0.00'} USDT</strong></div>
+                <div>服务总费用 (Fee): <strong>${d.feeAmount || '0.00'} USDT</strong></div>
+                <div>物理投资毛利: <strong style="color: ${parseFloat(d.investmentProfit || 0) >= 0 ? 'var(--green)' : 'var(--red)'};">${d.investmentProfit || '0.00'} USDT</strong></div>
+                <div>实际净收益 (Net): <strong style="color: ${parseFloat(d.actualProfit || 0) >= 0 ? 'var(--green)' : 'var(--red)'}; font-size: 0.85rem;">${d.actualProfit || '0.00'} USDT</strong></div>
+            </div>
+            
+            <!-- Section 5: Timeline -->
+            <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-light); border-radius: 8px; padding: 12px; grid-column: 1 / -1;">
+                <div style="font-weight: 700; color: var(--primary); margin-bottom: 8px; font-size: 0.82rem; border-bottom: 1px solid var(--border-light); padding-bottom: 4px;">时间流水记录</div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
+                    <div>🕒 提交时间: <span>${d.createdAt ? new Date(parseInt(d.createdAt)).toLocaleString() : '--'}</span></div>
+                    <div>🕒 驳回时间: <span>${d.rejectedAt ? new Date(parseInt(d.rejectedAt)).toLocaleString() : '--'}</span></div>
+                    <div>🕒 结算完成: <span>${d.settledAt ? new Date(parseInt(d.settledAt)).toLocaleString() : '--'}</span></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Action bottom panel -->
+        <div id="entrust-detail-actions" style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end; border-top: 1.5px solid var(--border-light); padding-top: 15px;">
+            <!-- Rendered dynamically -->
+        </div>
+    </div>
+</div>
+
+<!-- VIEW: ENTRUST ORDER EXECUTE MODAL -->
+<div id="entrust-execute-modal" class="overlay" style="display: none; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(15px); background: rgba(0,0,0,0.6);">
+    <div class="glass-panel modal-content-payment" style="max-width: 600px; padding: 25px; max-height: 95vh; overflow-y: auto; border-radius: 12px; position: relative;">
+        <button class="drawer-close-btn" onclick="closeEntrustExecuteModal()" style="position: absolute; top: 20px; right: 20px; font-size: 1.2rem; background: transparent; border: none; color: var(--text-secondary); cursor: pointer;">✕</button>
+        <div class="modal-header-admin" style="margin-bottom: 18px; border-bottom: 1.5px solid var(--border-light); padding-bottom: 12px;">
+            <h2 style="font-size: 1.25rem; display: flex; align-items: center; gap: 8px; color: var(--primary); font-weight: bold; margin: 0;">📈 执行委托订单操盘结算</h2>
+            <p style="font-size: 0.75rem; color: #64748B; margin-top: 4px; font-weight: 500;">录入真实市场买入/卖出成交金额及经纪商/交易所费率覆盖，系统将自动核算盈亏资金解冻与收益派发。</p>
+        </div>
+        
+        <form class="auth-form" id="entrust-execute-form" onsubmit="submitEntrustExecute(event)" style="display: flex; flex-direction: column; gap: 12px;">
+            <input type="hidden" id="eexec-order-id">
+            <input type="hidden" id="eexec-timezone">
+            <input type="hidden" id="eexec-order-created-at">
+            
+            <div style="background: rgba(91, 81, 249, 0.05); border: 1.5px solid var(--border-light); border-radius: 8px; padding: 12px; font-size: 0.78rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 8px;">
+                <div>📄 订单号: <strong id="eexec-orderNo-text" style="font-family: monospace; color: var(--primary);">--</strong></div>
+                <div>🛡️ 资产类型: <strong id="eexec-asset-text" style="color: var(--text-primary);">--</strong> | 投资本金: <strong id="eexec-amount-text" style="color: var(--green);">0.00 USDT</strong></div>
+                <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">⚠️ 注意：执行时间必须落在该交易所的开盘交易时段内，且卖出执行时间必须晚于买入执行时间。</div>
+            </div>
+
+            <!-- BUY Trades Input Grid -->
+            <div style="border: 1px solid var(--border-light); border-radius: 8px; padding: 12px; background: rgba(16, 185, 129, 0.02);">
+                <div style="font-size: 0.8rem; font-weight: bold; color: var(--green); margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">🟢 买入成交参数 (BUY Trade)</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px;">
+                    <div class="auth-input-group">
+                        <label>买入成交金额 (Buy Amount) *</label>
+                        <input type="number" id="eexec-buy-amount" step="any" min="0.000001" placeholder="输入买入实际成交额" required>
+                    </div>
+                    <div class="auth-input-group">
+                        <label>买入执行时间 (Buy Time) *</label>
+                        <input type="datetime-local" id="eexec-buy-time" required>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="auth-input-group">
+                        <label style="font-size: 0.68rem;">买入经纪费率覆盖 (选填)</label>
+                        <input type="number" id="eexec-buy-brokerage" step="any" placeholder="空表示使用系统默认">
+                    </div>
+                    <div class="auth-input-group">
+                        <label style="font-size: 0.68rem;">买入交易所费率覆盖 (选填)</label>
+                        <input type="number" id="eexec-buy-exchange" step="any" placeholder="空表示使用系统默认">
+                    </div>
+                </div>
+            </div>
+
+            <!-- SELL Trades Input Grid -->
+            <div style="border: 1px solid var(--border-light); border-radius: 8px; padding: 12px; background: rgba(239, 68, 68, 0.02);">
+                <div style="font-size: 0.8rem; font-weight: bold; color: var(--red); margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">🔴 卖出成交参数 (SELL Trade)</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px;">
+                    <div class="auth-input-group">
+                        <label>卖出成交金额 (Sell Amount) *</label>
+                        <input type="number" id="eexec-sell-amount" step="any" min="0.000001" placeholder="输入卖出实际成交额" required>
+                    </div>
+                    <div class="auth-input-group">
+                        <label>卖出执行时间 (Sell Time) *</label>
+                        <input type="datetime-local" id="eexec-sell-time" required>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="auth-input-group">
+                        <label style="font-size: 0.68rem;">卖出经纪费率覆盖 (选填)</label>
+                        <input type="number" id="eexec-sell-brokerage" step="any" placeholder="空表示使用系统默认">
+                    </div>
+                    <div class="auth-input-group">
+                        <label style="font-size: 0.68rem;">卖出交易所费率覆盖 (选填)</label>
+                        <input type="number" id="eexec-sell-exchange" step="any" placeholder="空表示使用系统默认">
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="admin-auth-btn" style="margin-top: 8px; height: 44px; border-radius: 8px; font-weight: 700; background: var(--primary);" id="eexec-submit-btn">确认撮合执行并进行资金清算</button>
+        </form>
+    </div>
+</div>
+
+<!-- VIEW: ENTRUST ORDER TRADES LIST MODAL -->
+<div id="entrust-trades-modal" class="overlay" style="display: none; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(15px); background: rgba(0,0,0,0.6);">
+    <div class="glass-panel modal-content-payment" style="max-width: 750px; width: 90%; padding: 25px; max-height: 90vh; overflow-y: auto; border-radius: 12px; position: relative;">
+        <button class="drawer-close-btn" onclick="closeEntrustTradesModal()" style="position: absolute; top: 20px; right: 20px; font-size: 1.2rem; background: transparent; border: none; color: var(--text-secondary); cursor: pointer;">✕</button>
+        <div class="modal-header-admin" style="margin-bottom: 18px; border-bottom: 1.5px solid var(--border-light); padding-bottom: 12px;">
+            <h2 style="font-size: 1.25rem; display: flex; align-items: center; gap: 8px; color: var(--primary); font-weight: bold; margin: 0;">📦 委托订单成交流水记录</h2>
+            <p style="font-size: 0.75rem; color: #64748B; margin-top: 4px; font-weight: 500;">查看该委托委托订单在各交易阶段生成的真实物理买入/卖出成交流水</p>
+        </div>
+        
+        <div class="table-container compact-table">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: rgba(255, 255, 255, 0.05);">
+                        <th>成交记录 ID</th>
+                        <th>交易类型</th>
+                        <th>商品 / 交易所</th>
+                        <th>成交金额 (Amount)</th>
+                        <th>交易手续费 (Fee)</th>
+                        <th>操作员 ID</th>
+                        <th>实际执行时间</th>
+                    </tr>
+                </thead>
+                <tbody id="entrust-trades-tbody">
+                    <!-- Dynamically populated -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
